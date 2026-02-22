@@ -553,7 +553,7 @@ function renderGhostList() {
         </div>
         <div class="ghost-time">${timeAgo(g.createdAt)}</div>
       </div>
-      <div class="ghost-preview">"${(g.message||'').substring(0,55)}…"</div>
+      <div class="ghost-preview">${g.secret && (!currentUser || g.authorUid !== currentUser.uid) ? '🔮 <em style="color:rgba(168,100,255,0.5);font-style:italic;">Message secret — approchez-vous pour révéler</em>' : '"' + (g.message||'').substring(0,55) + '…"'}</div>
       <div class="ghost-footer">
         <div class="ghost-tag">${g.anonymous ? '👻 anonyme' : g.author || ''}</div>
         <div class="ghost-tag">⏳ ${timeRemaining(g)}</div>
