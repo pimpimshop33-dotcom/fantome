@@ -498,7 +498,15 @@ function renderRadarDots() {
 // ── OPEN GHOST ──
 window.openGhost = async (id) => {
   selectedGhost = nearbyGhosts.find(g => g.id === id);
-  if (!selectedGhost) return;
+  
+  // Si pas dans la liste locale, on charge depuis Firestore
+  if (!selectedGhost) {
+    try {
+      const snap = await getDocs(query(collection(db, 'ghosts'), where('__name__', '==', id)));
+      if (snap.empty) return;
+      snap.forEach(d => { selectedGhost = { id: d.id, ...d.data(), distance: 0 }; });
+    } catch(e) { return; }
+  }
 
   document.getElementById('detailLocation').textContent = '📍 ' + (selectedGhost.location || 'Lieu inconnu');
   document.getElementById('detailDistance').textContent = formatDistance(selectedGhost.distance) + ' de vous';
