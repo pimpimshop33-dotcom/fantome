@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
+<html lang="fr"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>👻 Fantôme</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Instrument+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="index_fichiers/css2.css" rel="stylesheet">
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -682,7 +682,7 @@ body {
 </style>
 </head>
 <body>
-<div class="particles" id="particles"></div>
+<div class="particles" id="particles"><div class="particle" style="left: 2.15479%; animation-duration: 10.0992s; animation-delay: 8.58312s;"></div><div class="particle" style="left: 2.11585%; animation-duration: 15.6225s; animation-delay: 9.43294s;"></div><div class="particle" style="left: 36.1444%; animation-duration: 9.064s; animation-delay: 1.99638s;"></div><div class="particle" style="left: 27.2954%; animation-duration: 11.2511s; animation-delay: 7.38335s;"></div><div class="particle" style="left: 38.5127%; animation-duration: 19.8139s; animation-delay: 8.38279s;"></div><div class="particle" style="left: 20.6228%; animation-duration: 13.3858s; animation-delay: 4.13955s;"></div><div class="particle" style="left: 94.9267%; animation-duration: 10.5481s; animation-delay: 6.16795s;"></div><div class="particle" style="left: 59.1889%; animation-duration: 11.8862s; animation-delay: 3.28755s;"></div><div class="particle" style="left: 17.2826%; animation-duration: 9.97861s; animation-delay: 3.24329s;"></div><div class="particle" style="left: 86.6172%; animation-duration: 17.8458s; animation-delay: 4.22456s;"></div><div class="particle" style="left: 89.5925%; animation-duration: 14.2297s; animation-delay: 2.64079s;"></div><div class="particle" style="left: 32.1023%; animation-duration: 13.7481s; animation-delay: 6.09736s;"></div><div class="particle" style="left: 0.51432%; animation-duration: 8.36588s; animation-delay: 6.94534s;"></div><div class="particle" style="left: 22.7531%; animation-duration: 16.532s; animation-delay: 3.85523s;"></div><div class="particle" style="left: 15.1664%; animation-duration: 13.769s; animation-delay: 1.52255s;"></div><div class="particle" style="left: 92.333%; animation-duration: 13.28s; animation-delay: 6.45095s;"></div><div class="particle" style="left: 75.9828%; animation-duration: 19.4978s; animation-delay: 0.0547455s;"></div><div class="particle" style="left: 0.0326192%; animation-duration: 9.25635s; animation-delay: 6.10292s;"></div><div class="particle" style="left: 37.7965%; animation-duration: 18.4893s; animation-delay: 4.52392s;"></div><div class="particle" style="left: 42.1664%; animation-duration: 18.224s; animation-delay: 9.69489s;"></div><div class="particle" style="left: 52.7076%; animation-duration: 10.4424s; animation-delay: 3.37997s;"></div><div class="particle" style="left: 27.5228%; animation-duration: 8.97633s; animation-delay: 0.975501s;"></div><div class="particle" style="left: 10.9629%; animation-duration: 8.508s; animation-delay: 3.58381s;"></div><div class="particle" style="left: 45.0205%; animation-duration: 15.7461s; animation-delay: 7.34676s;"></div><div class="particle" style="left: 11.034%; animation-duration: 10.0404s; animation-delay: 4.37158s;"></div></div>
 
 <div class="phone">
 
@@ -696,7 +696,7 @@ body {
   <div class="notch"></div>
 
   <!-- ── ONBOARD ── -->
-  <div class="screen active" id="screenOnboard">
+  <div class="screen" id="screenOnboard">
     <div class="ghost-logo">👻</div>
     <div class="onboard-title">Fantôme</div>
     <div class="onboard-sub">Laissez des messages ancrés dans les lieux.<br>Découvrez-les en passant.</div>
@@ -736,7 +736,7 @@ body {
   </div>
 
   <!-- ── RADAR ── -->
-  <div class="screen" id="screenRadar">
+  <div class="screen active" id="screenRadar">
     <div class="radar-header">
       <div class="radar-title">Aux alentours</div>
       <button class="refresh-btn" onclick="loadNearbyGhosts()">↻ Actualiser</button>
@@ -756,13 +756,11 @@ body {
         <div id="radarDots"></div>
       </div>
     </div>
-    <div class="radar-status" id="radarStatus">Localisation en cours…</div>
+    <div class="radar-status" id="radarStatus">Aucun fantôme dans les 5km — soyez le premier !</div>
     <div class="ghost-count-line"><span id="ghostCount">0</span> fantôme(s) dans les alentours</div>
     <div class="scroll">
       <div class="section-label">Fantômes proches</div>
-      <div class="ghost-list" id="ghostList">
-        <div style="text-align:center;color:var(--spirit-dim);padding:20px 0;font-size:13px;">Chargement…</div>
-      </div>
+      <div class="ghost-list" id="ghostList"><div style="text-align:center;color:var(--spirit-dim);padding:30px 0;font-size:13px;">Aucun fantôme proche.<br>Déposez le premier ! 👻</div></div>
     </div>
   </div>
 
@@ -864,8 +862,8 @@ body {
   <div class="screen" id="screenProfile">
     <div class="scroll">
       <div class="profile-hdr">
-        <div class="profile-avatar-big" id="profileAvatar">?</div>
-        <div class="profile-name-big" id="profileName">…</div>
+        <div class="profile-avatar-big" id="profileAvatar">P</div>
+        <div class="profile-name-big" id="profileName">pipo33</div>
       </div>
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-num">👻</div><div class="stat-label">Fantôme</div></div>
@@ -883,7 +881,7 @@ body {
   </div>
 
   <!-- ── BOTTOM NAV ── -->
-  <div class="bottom-nav" id="bottomNav" style="display:none;">
+  <div class="bottom-nav" id="bottomNav" style="display: flex;">
     <div class="nav-item active" id="nav-radar" onclick="showScreen('screenRadar');setNav('nav-radar')">
       <div class="nav-icon">🌫️</div><span>Radar</span>
     </div>
@@ -898,5 +896,6 @@ body {
     </div>
   </div>
 </div>
-</body>
-</html>
+
+
+</body></html>
