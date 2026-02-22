@@ -361,9 +361,12 @@ window.showScreen = (id) => {
   document.getElementById(id).classList.add('active');
   if (id === 'screenMap') {
     setTimeout(() => {
-      if (!map) initMap();
-      else map.invalidateSize();
-    }, 100);
+      if (!map) {
+        initMap();
+      } else {
+        map.invalidateSize();
+      }
+    }, 200);
   }
 };
 window.setNav = (id) => {
@@ -584,14 +587,24 @@ body {
 .logout-btn:hover { background:rgba(255,100,100,.08); }
 
 /* ── MAP ── */
+#screenMap {
+  display:none;
+  flex-direction:column;
+  height: 100%;
+}
+#screenMap.active {
+  display:flex !important;
+}
 #mapContainer {
   width:100%;
-  height: calc(100dvh - 180px);
-  min-height: 400px;
+  height: 600px;
+  min-height: 500px;
+  flex:1;
   background: var(--deep);
+  display:block;
 }
 .map-screen-wrap {
-  flex:1; display:flex; flex-direction:column; overflow:hidden;
+  flex:1; display:flex; flex-direction:column;
 }
 .map-header {
   padding: 12px 20px 10px;
