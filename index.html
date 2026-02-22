@@ -245,6 +245,26 @@ async function checkResonances() {
   });
 }
 
+async function checkDiscoveries() {
+  if (!currentUser) return;
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'discoveries'),
+      where('authorUid', '==', currentUser.uid),
+      where('notified', '==', false)
+    ));
+    for (const d of snap.docs) {
+      const disc = d.data();
+      showNotif(
+        '🔮 Votre fantôme secret a été trouvé !',
+        `${disc.discoveredBy} a découvert votre fantôme à "${disc.ghostLocation}"`
+      );
+      // Marquer comme notifié
+      updateDoc(doc(db, 'discoveries', d.id), { notified: true }).catch(() => {});
+    }
+  } catch(e) {}
+}
+
 window.enableNotifications = async () => {
   const btn = document.getElementById('notifBtn');
   const granted = await requestNotifPermission();
@@ -258,6 +278,8 @@ window.enableNotifications = async () => {
     // Polling toutes les 5 minutes
     setInterval(checkNewGhosts, 5 * 60 * 1000);
     setInterval(checkResonances, 10 * 60 * 1000);
+    setInterval(checkDiscoveries, 3 * 60 * 1000);
+    checkDiscoveries(); // vérification immédiate
   } else {
     btn.textContent = '🔕 Notifications refusées';
     btn.style.borderColor = 'rgba(255,100,100,.3)';
@@ -270,7 +292,7 @@ registerServiceWorker().then(reg => {
   if (reg && localStorage.getItem('notif_enabled') === '1' && Notification.permission === 'granted') {
     setInterval(checkNewGhosts, 5 * 60 * 1000);
     setInterval(checkResonances, 10 * 60 * 1000);
-    // Mettre à jour le bouton
+    setInterval(checkDiscoveries, 3 * 60 * 1000);
     const btn = document.getElementById('notifBtn');
     if (btn) {
       btn.textContent = '🔔 Notifications activées';
@@ -464,8 +486,6 @@ window.loadNearbyGhosts = async () => {
     if (g.lat && g.lng) {
       g.distance = distanceMeters(userLat, userLng, g.lat, g.lng);
       if (g.distance <= 5000) {
-        // Fantômes secrets : seulement si à moins de 3m
-        if (g.secret && g.distance > 3) return;
         nearbyGhosts.push(g);
       }
     }
@@ -473,16 +493,34 @@ window.loadNearbyGhosts = async () => {
   nearbyGhosts.sort((a,b) => a.distance - b.distance);
 
   // Vibration + notif pour les fantômes secrets révélés
-  nearbyGhosts.forEach(g => {
+  for (const g of nearbyGhosts) {
     if (g.secret) {
       const key = 'secret_revealed_' + g.id;
       if (!sessionStorage.getItem(key)) {
         sessionStorage.setItem(key, '1');
         if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 500]);
-        showNotif('🔮 Fantôme secret révélé !', `Vous êtes à ${formatDistance(g.distance)} — ${g.location || 'Lieu mystérieux'}`);
+
+        // Notif au découvreur avec le contenu du fantôme
+        showNotif(
+          `🔮 Fantôme secret de ${g.anonymous ? 'l\'ombre' : (g.author || 'quelqu\'un')}`,
+          `"${(g.message || '').substring(0, 80)}" — à ${formatDistance(g.distance)}`
+        );
+
+        // Notif au créateur via Firestore (seulement si ce n'est pas le créateur lui-même)
+        if (currentUser && g.authorUid && g.authorUid !== currentUser.uid) {
+          addDoc(collection(db, 'discoveries'), {
+            ghostId: g.id,
+            ghostLocation: g.location || 'Lieu inconnu',
+            ghostMessage: (g.message || '').substring(0, 60),
+            authorUid: g.authorUid,
+            discoveredBy: currentUser.displayName || 'quelqu\'un',
+            discoveredAt: serverTimestamp(),
+            notified: false
+          }).catch(() => {});
+        }
       }
     }
-  });
+  }
 
   const count = nearbyGhosts.length;
   document.getElementById('radarStatus').textContent = count === 0
@@ -559,36 +597,71 @@ window.openGhost = async (id) => {
 
   document.getElementById('detailLocation').textContent = '📍 ' + (selectedGhost.location || 'Lieu inconnu');
   document.getElementById('detailDistance').textContent = formatDistance(selectedGhost.distance) + ' de vous';
-  document.getElementById('detailMessage').textContent = '"' + selectedGhost.message + '"';
-  document.getElementById('detailAuthor').textContent = selectedGhost.anonymous ? '👻 Anonyme' : '🌫️ ' + (selectedGhost.author || '');
-  document.getElementById('detailTime').textContent = '🕰 ' + timeAgo(selectedGhost.createdAt);
-  document.getElementById('detailDuration').textContent = '⏳ ' + timeRemaining(selectedGhost);
-  document.getElementById('detailRadius').textContent = '📡 ' + (selectedGhost.radius || '10m');
-  document.getElementById('resonanceCount').textContent = '✦ Résonner · ' + (selectedGhost.resonances || 0) + ' résonances';
-  document.getElementById('resonanceBtn').classList.remove('resonated');
 
-  // Audio
-  const audioEl = document.getElementById('detailAudio');
-  if (selectedGhost.audioUrl) {
-    audioEl.innerHTML = `
-      <div style="margin-bottom:12px;">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:6px;">🎙 Message vocal</div>
-        <audio controls src="${selectedGhost.audioUrl}" style="width:100%;border-radius:12px;"></audio>
-      </div>`;
-  } else {
-    audioEl.innerHTML = '';
-  }
+  // Fantôme secret : contenu verrouillé si trop loin (sauf créateur)
+  const isOwner = currentUser && selectedGhost.authorUid === currentUser.uid;
+  const isLocked = selectedGhost.secret && selectedGhost.distance > 3 && !isOwner;
 
-  // Photo
-  const photoEl = document.getElementById('detailPhoto');
-  if (selectedGhost.photoUrl) {
-    photoEl.innerHTML = `
-      <div style="margin-bottom:12px;">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:6px;">📷 Photo</div>
-        <img src="${selectedGhost.photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--border);max-height:240px;object-fit:cover;" loading="lazy">
-      </div>`;
+  if (isLocked) {
+    document.getElementById('detailMessage').textContent = '🔮 Ce fantôme est secret — approchez-vous à moins de 3m pour le révéler.';
+    document.getElementById('detailMessage').style.color = 'rgba(168,100,255,0.6)';
+    document.getElementById('detailAudio').innerHTML = '';
+    document.getElementById('detailPhoto').innerHTML = '';
+    document.getElementById('resonanceBtn').style.display = 'none';
+    document.getElementById('secretBtn').style.display = 'none';
+    document.querySelector('#screenDetail .btn-secondary').style.display = 'none';
   } else {
-    photoEl.innerHTML = '';
+    document.getElementById('detailMessage').style.color = '';
+    document.getElementById('resonanceBtn').style.display = '';
+    document.querySelector('#screenDetail .btn-secondary').style.display = '';
+    document.getElementById('detailMessage').textContent = '"' + selectedGhost.message + '"';
+    document.getElementById('detailAuthor').textContent = selectedGhost.anonymous ? '👻 Anonyme' : '🌫️ ' + (selectedGhost.author || '');
+    document.getElementById('detailTime').textContent = '🕰 ' + timeAgo(selectedGhost.createdAt);
+    document.getElementById('detailDuration').textContent = '⏳ ' + timeRemaining(selectedGhost);
+    document.getElementById('detailRadius').textContent = '📡 ' + (selectedGhost.radius || '10m');
+    document.getElementById('resonanceCount').textContent = '✦ Résonner · ' + (selectedGhost.resonances || 0) + ' résonances';
+    document.getElementById('resonanceBtn').classList.remove('resonated');
+
+    // Bouton secret — visible uniquement par le créateur
+    const secretBtn = document.getElementById('secretBtn');
+    if (isOwner) {
+      secretBtn.style.display = 'block';
+      if (selectedGhost.secret) {
+        secretBtn.textContent = '🔮 Mode secret activé';
+        secretBtn.style.borderColor = 'rgba(168,100,255,.5)';
+        secretBtn.style.color = 'rgba(200,150,255,.9)';
+      } else {
+        secretBtn.textContent = '🔮 Passer en secret';
+        secretBtn.style.borderColor = '';
+        secretBtn.style.color = '';
+      }
+    } else {
+      secretBtn.style.display = 'none';
+    }
+
+    // Audio
+    const audioEl = document.getElementById('detailAudio');
+    if (selectedGhost.audioUrl) {
+      audioEl.innerHTML = `
+        <div style="margin-bottom:12px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:6px;">🎙 Message vocal</div>
+          <audio controls src="${selectedGhost.audioUrl}" style="width:100%;border-radius:12px;"></audio>
+        </div>`;
+    } else {
+      audioEl.innerHTML = '';
+    }
+
+    // Photo
+    const photoEl = document.getElementById('detailPhoto');
+    if (selectedGhost.photoUrl) {
+      photoEl.innerHTML = `
+        <div style="margin-bottom:12px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:6px;">📷 Photo</div>
+          <img src="${selectedGhost.photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--border);max-height:240px;object-fit:cover;" loading="lazy">
+        </div>`;
+    } else {
+      photoEl.innerHTML = '';
+    }
   }
 
   // Load replies
@@ -623,6 +696,25 @@ window.resonate = async () => {
   btn.classList.add('resonated');
   btn.textContent = '✦ Résonance envoyée — merci';
   await updateDoc(doc(db, 'ghosts', selectedGhost.id), { resonances: increment(1) });
+};
+
+// ── TOGGLE SECRET ──
+window.toggleSecret = async () => {
+  if (!selectedGhost || !currentUser) return;
+  if (selectedGhost.authorUid !== currentUser.uid) return;
+  const nowSecret = !selectedGhost.secret;
+  const btn = document.getElementById('secretBtn');
+  btn.textContent = 'En cours…';
+  await updateDoc(doc(db, 'ghosts', selectedGhost.id), {
+    secret: nowSecret,
+    radius: nowSecret ? '3m' : (selectedGhost.radius || '10m'),
+    emoji: nowSecret ? '🔮' : '👻'
+  });
+  selectedGhost.secret = nowSecret;
+  btn.textContent = nowSecret ? '🔮 Mode secret activé' : '🔮 Passer en secret';
+  btn.style.borderColor = nowSecret ? 'rgba(168,100,255,.5)' : '';
+  btn.style.color = nowSecret ? 'rgba(200,150,255,.9)' : '';
+  document.getElementById('detailRadius').textContent = '📡 ' + (nowSecret ? '3m' : (selectedGhost.radius || '10m'));
 };
 
 // ── DEPOSIT GHOST ──
@@ -1098,6 +1190,7 @@ body {
       <button class="resonance-btn" id="resonanceBtn" onclick="resonate()">
         <span id="resonanceCount">✦ Résonner</span>
       </button>
+      <button class="btn-secondary" id="secretBtn" onclick="toggleSecret()" style="display:none;margin-bottom:8px;font-size:13px;padding:11px;">🔮 Passer en secret</button>
       <button class="btn-secondary" onclick="showScreen('screenReply')" style="margin-bottom:20px;">↩ Laisser une réponse ici</button>
       <div class="section-label">Réponses dans ce lieu</div>
       <div id="repliesList"></div>
