@@ -560,7 +560,7 @@ function renderGhostList() {
         <div class="envelope-emoji">${emoji}</div>
         <div class="envelope-content">
           <div class="envelope-location">📍 ${g.location || 'Lieu inconnu'}${g.secret ? ' <span class="secret-badge">SECRET</span>' : ''}</div>
-          <div class="envelope-hint">${isSecret ? '✦ Ouvrir pour révéler…' : '✦ ' + (g.message||'').substring(0,40) + (g.message && g.message.length > 40 ? '…' : '')}</div>
+          <div class="envelope-hint">✦ Ouvrir pour révéler…</div>
         </div>
         <div class="envelope-meta">
           <div class="envelope-dist">${formatDistance(g.distance)}</div>
