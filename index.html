@@ -559,6 +559,120 @@ window.activatePremium = async () => {
   }
 };
 
+// ── SIGNALEMENT ─────────────────────────────────────────
+const REPORT_THRESHOLD = 3; // suppression automatique après 3 signalements
+
+function openReportModal() {
+  if (!currentUser) return;
+  if (!selectedGhost) return;
+  // Vérifier si déjà signalé par cet utilisateur
+  const key = 'reported_' + currentUser.uid + '_' + selectedGhost.id;
+  if (localStorage.getItem(key)) {
+    showReportFeedback('Vous avez déjà signalé ce fantôme.');
+    return;
+  }
+  // Ne pas pouvoir signaler ses propres fantômes
+  if (selectedGhost.authorUid === currentUser.uid) {
+    showReportFeedback('Vous ne pouvez pas signaler votre propre fantôme.');
+    return;
+  }
+  document.getElementById('reportModal').classList.add('show');
+}
+window.openReportModal = openReportModal;
+
+function closeReportModal(e) {
+  if (e && e.target !== document.getElementById('reportModal')) return;
+  document.getElementById('reportModal').classList.remove('show');
+}
+window.closeReportModal = closeReportModal;
+
+window.submitReport = async (reason) => {
+  if (!currentUser || !selectedGhost) return;
+  document.getElementById('reportModal').classList.remove('show');
+
+  const ghostId = selectedGhost.id;
+  const reporterUid = currentUser.uid;
+  const key = 'reported_' + reporterUid + '_' + ghostId;
+
+  try {
+    // Enregistrer le signalement dans Firestore
+    await addDoc(collection(db, 'reports'), {
+      ghostId,
+      ghostLocation: selectedGhost.location || '',
+      ghostAuthorUid: selectedGhost.authorUid || '',
+      reporterUid,
+      reason,
+      createdAt: serverTimestamp()
+    });
+
+    // Marquer localement pour éviter double signalement
+    localStorage.setItem(key, '1');
+
+    // Mettre à jour le compteur sur le fantôme (pour la Cloud Function)
+    await updateDoc(doc(db, 'ghosts', ghostId), {
+      reportCount: increment(1)
+    });
+
+    // Vérification client-side en fallback (si pas de Cloud Function déployée)
+    const ghostDoc = await getDocs(query(
+      collection(db, 'reports'),
+      where('ghostId', '==', ghostId)
+    ));
+    if (ghostDoc.size >= REPORT_THRESHOLD) {
+      await deleteDoc(doc(db, 'ghosts', ghostId));
+      // Retour radar
+      showScreen('screenRadar');
+      setNav('nav-radar');
+      await loadNearbyGhosts();
+      showReportFeedback('Fantôme supprimé — merci pour la communauté. 🌫️');
+      return;
+    }
+
+    // Griser le bouton
+    const btn = document.getElementById('reportBtn');
+    if (btn) {
+      btn.classList.add('reported');
+      btn.innerHTML = '✓ Signalement envoyé';
+    }
+    showReportFeedback('Signalement enregistré. Merci.');
+
+  } catch(e) {
+    showReportFeedback('Erreur — réessayez.');
+  }
+};
+
+function showReportFeedback(msg) {
+  // Réutilise le toast découverte
+  const toast = document.getElementById('discoveryToast');
+  const icon  = document.getElementById('toastIcon');
+  const text  = document.getElementById('toastText');
+  if (!toast) return;
+  icon.textContent = '⚑';
+  text.innerHTML = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// Mettre à jour le bouton rapport quand on ouvre un fantôme
+function updateReportBtn(ghostId) {
+  const btn = document.getElementById('reportBtn');
+  if (!btn || !currentUser) return;
+  const key = 'reported_' + currentUser.uid + '_' + ghostId;
+  const isOwn = selectedGhost && selectedGhost.authorUid === currentUser.uid;
+  if (isOwn) {
+    btn.style.display = 'none';
+  } else {
+    btn.style.display = '';
+    if (localStorage.getItem(key)) {
+      btn.classList.add('reported');
+      btn.innerHTML = '✓ Déjà signalé';
+    } else {
+      btn.classList.remove('reported');
+      btn.innerHTML = '⚑ Signaler ce fantôme';
+    }
+  }
+}
+
 window.logout = async () => { await signOut(auth); };
 
 window.deleteMyGhosts = async () => {
@@ -966,6 +1080,7 @@ window.openGhost = async (id) => {
   }
 
   updateSwipeUI();
+  updateReportBtn(id);
   showScreen('screenDetail');
   setNav('');
 };
@@ -1929,6 +2044,61 @@ createParticles();
   animation:obHintFade 2s ease-in-out infinite;
 }
 @keyframes obHintFade{0%,100%{opacity:.4;}50%{opacity:.9;}}
+
+.report-btn{
+  width:100%;padding:10px;
+  background:transparent;
+  border:1px solid rgba(255,100,100,.15);
+  border-radius:13px;color:rgba(255,100,100,.4);
+  font-family:"Instrument Sans",sans-serif;font-size:12px;
+  cursor:pointer;transition:all .2s;margin-bottom:20px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.report-btn:hover{border-color:rgba(255,100,100,.35);color:rgba(255,100,100,.7);background:rgba(255,100,100,.04);}
+.report-btn.reported{color:rgba(255,100,100,.3);pointer-events:none;border-color:rgba(255,100,100,.08);}
+
+/* Modal signalement */
+.report-modal{
+  position:fixed;inset:0;z-index:10000;
+  display:flex;align-items:flex-end;justify-content:center;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.report-modal.show{opacity:1;pointer-events:all;}
+.report-sheet{
+  width:100%;max-width:390px;
+  background:var(--surface2);
+  border-radius:24px 24px 0 0;
+  border:1px solid var(--border);
+  border-bottom:none;
+  padding:20px 20px 36px;
+  transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.25,.46,.45,.94);
+}
+.report-modal.show .report-sheet{transform:translateY(0);}
+.report-sheet-title{
+  font-family:"Cormorant Garamond",serif;
+  font-size:20px;font-style:italic;
+  color:var(--ether);margin-bottom:4px;text-align:center;
+}
+.report-sheet-sub{font-size:11px;color:var(--spirit-dim);text-align:center;margin-bottom:18px;}
+.report-reasons{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.report-reason{
+  padding:12px 16px;
+  background:rgba(168,180,255,.04);
+  border:1px solid var(--border);border-radius:13px;
+  font-size:13px;color:var(--warm-dim);
+  cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;gap:10px;
+}
+.report-reason:hover{border-color:rgba(255,100,100,.3);color:rgba(255,150,150,.9);background:rgba(255,100,100,.04);}
+.report-cancel{
+  width:100%;padding:12px;background:transparent;
+  border:1px solid var(--border);border-radius:13px;
+  color:var(--spirit-dim);font-family:"Instrument Sans",sans-serif;
+  font-size:13px;cursor:pointer;transition:all .2s;
+}
+.report-cancel:hover{border-color:var(--border-bright);color:var(--warm);}
 </style>
 </head>
 <body>
@@ -2092,7 +2262,7 @@ createParticles();
       </div>
     </div>
     <div class="radar-status" id="radarStatus">Localisation en cours…</div>
-    <div class="ghost-count-line"><span id="ghostCount">0</span> fantôme(s) dans les alentours</div>
+    <span id="ghostCount" style="display:none;">0</span>
     <div class="scroll">
       <div class="section-label">Fantômes proches</div>
       <div class="ghost-list" id="ghostList">
@@ -2150,7 +2320,8 @@ createParticles();
           <span id="resonanceCount">✦ Résonner</span>
         </button>
         <button class="btn-secondary" id="secretBtn" onclick="toggleSecret()" style="display:none;margin-bottom:8px;font-size:13px;padding:11px;">🔮 Passer en secret</button>
-        <button class="btn-secondary" onclick="showScreen('screenReply')" style="margin-bottom:20px;">↩ Laisser une réponse ici</button>
+        <button class="btn-secondary" onclick="showScreen('screenReply')" style="margin-bottom:8px;">↩ Laisser une réponse ici</button>
+        <button class="report-btn" id="reportBtn" onclick="openReportModal()">⚑ Signaler ce fantôme</button>
         <div class="section-label">Réponses dans ce lieu</div>
         <div id="repliesList"></div>
       </div>
@@ -2414,6 +2585,22 @@ createParticles();
     </div>
   </div>
 </div>
+<!-- MODAL SIGNALEMENT -->
+<div class="report-modal" id="reportModal" onclick="closeReportModal(event)">
+  <div class="report-sheet">
+    <div class="report-sheet-title">Signaler ce fantôme</div>
+    <div class="report-sheet-sub">Après 3 signalements, le message sera supprimé automatiquement.</div>
+    <div class="report-reasons">
+      <div class="report-reason" onclick="submitReport('spam')">🚫 <span>Spam ou contenu répétitif</span></div>
+      <div class="report-reason" onclick="submitReport('harcèlement')">😠 <span>Harcèlement ou attaque personnelle</span></div>
+      <div class="report-reason" onclick="submitReport('contenu_inapproprié')">⚠️ <span>Contenu inapproprié ou offensant</span></div>
+      <div class="report-reason" onclick="submitReport('fausses_informations')">❌ <span>Fausses informations dangereuses</span></div>
+      <div class="report-reason" onclick="submitReport('autre')">💬 <span>Autre raison</span></div>
+    </div>
+    <button class="report-cancel" onclick="closeReportModal()">Annuler</button>
+  </div>
+</div>
+
 <div class="discovery-toast" id="discoveryToast">
   <span class="discovery-toast-icon" id="toastIcon">👻</span>
   <span id="toastText">Fantôme découvert</span>
