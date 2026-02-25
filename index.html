@@ -9,7 +9,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, onSnapshot, doc, updateDoc, deleteDoc, increment, serverTimestamp, GeoPoint } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, increment, serverTimestamp, GeoPoint } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDtxsiaZgs2iycJRBK3SCvNuOarW7wEWaI",
@@ -28,6 +28,7 @@ const CLOUDINARY_CLOUD = 'dcarogsye';
 const CLOUDINARY_UPLOAD_PRESET = 'fantome_unsigned';
 
 let currentUser = null;
+let isPremium = false;
 let userLat = null;
 let userLng = null;
 let nearbyGhosts = [];
@@ -139,6 +140,10 @@ onAuthStateChanged(auth, async user => {
     currentUser = user;
     document.getElementById('profileName').textContent = user.displayName || user.email;
     document.getElementById('profileAvatar').textContent = (user.displayName || user.email).charAt(0).toUpperCase();
+    // Load premium status
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    isPremium = userDoc.exists() && userDoc.data().premium === true;
+    updatePremiumUI();
     showScreen('screenRadar');
     setNav('nav-radar');
     document.getElementById('bottomNav').style.display = 'flex';
@@ -418,6 +423,57 @@ async function uploadMedia(uid) {
 
   return { audioUrl, photoUrl };
 }
+
+function updatePremiumUI() {
+  const planEl = document.getElementById('planInfo');
+  const codeSection = document.getElementById('codeSection');
+  if (!planEl) return;
+  if (isPremium) {
+    planEl.innerHTML = '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,200,80,.7);margin-bottom:4px;">👑 Spectre Premium</div><div style="font-size:13px;color:var(--warm-dim);">Toutes les fonctionnalités débloquées</div>';
+    if (codeSection) codeSection.style.display = 'none';
+  } else {
+    planEl.innerHTML = '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:4px;">Plan gratuit</div><div style="font-size:13px;color:var(--warm-dim);">Chaîne de fantômes 🔗 réservée au Premium</div>';
+    if (codeSection) codeSection.style.display = 'block';
+  }
+}
+
+window.activatePremium = async () => {
+  const input = document.getElementById('premiumCode');
+  const code = input.value.trim().toUpperCase();
+  const errEl = document.getElementById('premiumError');
+  if (!code) { errEl.textContent = 'Entrez un code.'; return; }
+  errEl.textContent = '';
+  const btn = document.getElementById('activateBtn');
+  btn.textContent = 'Vérification…';
+  btn.disabled = true;
+  try {
+    const codeDoc = await getDoc(doc(db, 'premiumCodes', code));
+    if (!codeDoc.exists()) {
+      errEl.textContent = 'Code invalide.';
+      btn.textContent = 'Activer';
+      btn.disabled = false;
+      return;
+    }
+    const data = codeDoc.data();
+    if (data.used) {
+      errEl.textContent = 'Code déjà utilisé.';
+      btn.textContent = 'Activer';
+      btn.disabled = false;
+      return;
+    }
+    // Mark code as used and set user premium
+    await updateDoc(doc(db, 'premiumCodes', code), { used: true, usedBy: currentUser.uid, usedAt: serverTimestamp() });
+    await setDoc(doc(db, 'users', currentUser.uid), { premium: true, premiumSince: serverTimestamp() }, { merge: true });
+    isPremium = true;
+    updatePremiumUI();
+    input.value = '';
+    btn.textContent = 'Activé !';
+  } catch(e) {
+    errEl.textContent = 'Erreur : ' + e.message;
+    btn.textContent = 'Activer';
+    btn.disabled = false;
+  }
+};
 
 window.logout = async () => { await signOut(auth); };
 
@@ -899,8 +955,8 @@ window.depositGhost = async () => {
     const ghostTempId = currentUser.uid + '_' + Date.now();
     const { audioUrl, photoUrl } = await uploadMedia(ghostTempId);
 
-    const chainHint = document.getElementById('chainHint').value.trim();
-    const chainNext = window._chainNextCoords || null;
+    const chainHint = isPremium ? document.getElementById('chainHint').value.trim() : null;
+    const chainNext = isPremium ? (window._chainNextCoords || null) : null;
 
     await addDoc(collection(db, 'ghosts'), {
       message,
@@ -988,6 +1044,23 @@ window.showScreen = (id) => {
   if (id === 'screenMap') {
     renderStaticMap();
   }
+  if (id === 'screenDeposit') {
+    setWizardStep(1);
+    // Show/hide chain lock based on premium
+    const chainContent = document.getElementById('chainContent');
+    const chainLock = document.getElementById('chainLock');
+    const chainSection = document.getElementById('chainSection');
+    if (chainSection) chainSection.style.position = 'relative';
+    if (!isPremium) {
+      if (chainContent) chainContent.style.opacity = '0.3';
+      if (chainContent) chainContent.style.pointerEvents = 'none';
+      if (chainLock) chainLock.style.display = 'flex';
+    } else {
+      if (chainContent) chainContent.style.opacity = '1';
+      if (chainContent) chainContent.style.pointerEvents = '';
+      if (chainLock) chainLock.style.display = 'none';
+    }
+  }
   if (id === 'screenDetail') {
     // Reset envelope to sealed state
     const sealed = document.getElementById('envelopeSealed');
@@ -1009,6 +1082,72 @@ window.showTab = (tab) => {
   document.getElementById('tab-' + tab).classList.add('active');
   document.getElementById('authError').textContent = '';
 };
+window.wizardNext = (step) => {
+  if (step === 1) {
+    const msg = document.getElementById('depositMsg').value.trim();
+    if (!msg) {
+      document.getElementById('depositMsg').style.borderColor = 'rgba(255,100,100,.5)';
+      setTimeout(() => document.getElementById('depositMsg').style.borderColor = '', 1500);
+      return;
+    }
+    setWizardStep(2);
+  } else if (step === 2) {
+    setWizardStep(3);
+  }
+};
+
+window.wizardBack = (step) => {
+  setWizardStep(step - 1);
+};
+
+function setWizardStep(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById('wizardStep' + i).style.display = i === n ? 'block' : 'none';
+    const ws = document.getElementById('ws' + i);
+    ws.classList.remove('active','done');
+    if (i === n) ws.classList.add('active');
+    else if (i < n) ws.classList.add('done');
+  });
+  // Update done dots to checkmark
+  [1,2,3].forEach(i => {
+    const dot = document.querySelector('#ws' + i + ' .wizard-step-dot');
+    if (dot) dot.textContent = i < n ? '✓' : String(i);
+  });
+  document.querySelector('#screenDeposit .scroll').scrollTop = 0;
+}
+
+window.pickEmoji = (el, emoji) => {
+  document.querySelectorAll('.emoji-opt').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('depositEmoji').value = emoji;
+};
+
+window.pickEmojiCustom = (input) => {
+  document.querySelectorAll('.emoji-opt:not(.emoji-custom)').forEach(e => e.classList.remove('active'));
+};
+
+// Char counter
+document.addEventListener('DOMContentLoaded', () => {
+  // Init emoji default
+  const emojiInput = document.getElementById('depositEmoji');
+  if (emojiInput && !emojiInput.value) emojiInput.value = '👻';
+
+  const msg = document.getElementById('depositMsg');
+  if (msg) {
+    msg.addEventListener('input', () => {
+      const len = msg.value.length;
+      const counter = document.getElementById('msgCharCount');
+      if (counter) {
+        counter.textContent = len;
+        const parent = counter.parentElement;
+        parent.classList.remove('near','full');
+        if (len > 250) parent.classList.add('full');
+        else if (len > 200) parent.classList.add('near');
+      }
+    });
+  }
+});
+
 window.selectType = (el) => {
   el.parentElement.querySelectorAll('.type-btn,.radius-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
@@ -1252,6 +1391,34 @@ createParticles();
   from{opacity:0;transform:translateY(20px);}
   to{opacity:1;transform:translateY(0);}
 }
+
+.wizard-header{padding:16px 0 8px;}
+.wizard-steps{display:flex;align-items:center;justify-content:center;gap:0;}
+.wizard-step{display:flex;flex-direction:column;align-items:center;gap:4px;opacity:.35;transition:opacity .3s;}
+.wizard-step.active{opacity:1;}
+.wizard-step.done{opacity:.7;}
+.wizard-step-dot{width:28px;height:28px;border-radius:50%;background:rgba(168,180,255,.1);border:1px solid rgba(168,180,255,.2);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--spirit-dim);transition:all .3s;}
+.wizard-step.active .wizard-step-dot{background:rgba(168,180,255,.2);border-color:var(--spirit);color:var(--ether);box-shadow:0 0 12px rgba(168,180,255,.3);}
+.wizard-step.done .wizard-step-dot{background:rgba(100,220,160,.15);border-color:rgba(100,220,160,.5);color:rgba(100,220,160,.9);}
+.wizard-step span{font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--spirit-dim);}
+.wizard-step.active span{color:var(--spirit);}
+.wizard-step-line{width:40px;height:1px;background:rgba(168,180,255,.15);margin:0 4px;margin-bottom:14px;}
+.wizard-pane{animation:sIn .3s ease;}
+.wizard-pane-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ether);margin-bottom:4px;margin-top:8px;}
+.wizard-pane-sub{font-size:12px;color:var(--warm-dim);margin-bottom:18px;}
+.wizard-next-btn{width:100%;padding:14px;background:linear-gradient(135deg,rgba(168,180,255,.2),rgba(168,180,255,.08));border:1px solid rgba(168,180,255,.35);border-radius:15px;color:var(--ether);font-family:'Instrument Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;margin-top:16px;letter-spacing:.3px;}
+.wizard-next-btn:hover{background:rgba(168,180,255,.28);box-shadow:0 0 20px rgba(168,180,255,.15);}
+.wizard-back-btn{flex:1;padding:14px;background:transparent;border:1px solid rgba(168,180,255,.15);border-radius:15px;color:var(--spirit-dim);font-family:'Instrument Sans',sans-serif;font-size:14px;cursor:pointer;transition:all .2s;margin-top:16px;}
+.wizard-back-btn:hover{border-color:rgba(168,180,255,.3);color:var(--spirit);}
+.wizard-textarea{margin-bottom:4px;}
+.wizard-char-count{font-size:10px;color:rgba(168,180,255,.3);text-align:right;margin-bottom:16px;}
+.wizard-char-count.near{color:rgba(255,180,50,.6);}
+.wizard-char-count.full{color:rgba(255,100,100,.7);}
+.emoji-picker{display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.emoji-opt{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;border-radius:12px;background:rgba(168,180,255,.06);border:1px solid rgba(168,180,255,.1);cursor:pointer;transition:all .2s;}
+.emoji-opt.active{background:rgba(168,180,255,.18);border-color:rgba(168,180,255,.4);box-shadow:0 0 10px rgba(168,180,255,.2);}
+.emoji-opt:hover{background:rgba(168,180,255,.12);}
+.emoji-custom{width:44px;height:40px;background:rgba(168,180,255,.06);border:1px solid rgba(168,180,255,.1);border-radius:12px;text-align:center;font-size:18px;color:var(--warm);outline:none;padding:0;}
 </style>
 </head>
 <body>
@@ -1407,89 +1574,166 @@ createParticles();
 
   
   <div class="screen" id="screenDeposit">
-    <div class="scroll">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-style:italic;color:var(--ether);margin-bottom:4px;padding-top:8px;">Déposer un fantôme</div>
-      <div style="font-size:12px;color:var(--warm-dim);margin-bottom:14px;">Ancré à votre position actuelle.</div>
-      <div class="deposit-map">
-        <div class="map-grid"></div>
-        <div class="map-pulse"></div>
-        <div class="map-pulse2"></div>
-        <div class="map-pin">📍</div>
-        <div class="map-loc" id="userCoords">📡 Localisation en cours…</div>
-      </div>
-      <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Emoji du fantôme</label><input class="form-input" id="depositEmoji" type="text" placeholder="👻" maxlength="2" style="font-size:20px;text-align:center;"></div>
-      <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Nom du lieu</label><input class="form-input" id="depositLocation" type="text" placeholder="ex: Banc du parc, Café du coin…"></div>
-      <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Votre message</label><textarea class="form-textarea" id="depositMsg" placeholder="Laissez quelque chose ici…"></textarea></div>
+    <div class="scroll" style="padding-bottom:32px;">
 
-      
-      <div class="form-group" style="margin-bottom:12px;">
-        <label class="form-label">Message vocal (optionnel)</label>
-        <button class="media-btn" id="recordBtn" onclick="toggleRecording()" type="button">
-          <span class="media-icon">🎙</span>
-          <span id="recordLabel">Enregistrer un message vocal</span>
-          <span id="recordTimer" style="margin-left:auto;font-size:11px;opacity:.5;">00:00</span>
-        </button>
-        <div id="audioPreview"></div>
+      <!-- BARRE DE PROGRESSION -->
+      <div class="wizard-header">
+        <div class="wizard-steps">
+          <div class="wizard-step active" id="ws1">
+            <div class="wizard-step-dot">1</div>
+            <span>Message</span>
+          </div>
+          <div class="wizard-step-line"></div>
+          <div class="wizard-step" id="ws2">
+            <div class="wizard-step-dot">2</div>
+            <span>Lieu</span>
+          </div>
+          <div class="wizard-step-line"></div>
+          <div class="wizard-step" id="ws3">
+            <div class="wizard-step-dot">3</div>
+            <span>Options</span>
+          </div>
+        </div>
       </div>
 
-      <div class="form-group" style="margin-bottom:12px;">
-        <label class="form-label">Photo (optionnel)</label>
-        <button class="media-btn" onclick="triggerPhoto()" type="button">
-          <span class="media-icon">📷</span>
-          <span>Ajouter une photo</span>
-        </button>
-        <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
-        <div id="photoPreview"></div>
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label class="form-label">Mode secret</label>
-        <div class="type-selector">
-          <div class="type-btn active" data-val="normal" onclick="selectType(this)">👻 Normal</div>
-          <div class="type-btn" data-val="secret" onclick="selectType(this)">🔮 Secret (3m)</div>
+      <!-- ÉTAPE 1 : MESSAGE + EMOJI -->
+      <div class="wizard-pane" id="wizardStep1">
+        <div class="wizard-pane-title">Qu'est-ce que vous laissez ici ?</div>
+        <div class="wizard-pane-sub">Ancré à votre position actuelle.</div>
+
+        <!-- Sélecteur emoji rapide -->
+        <div class="emoji-picker">
+          <div class="emoji-opt active" onclick="pickEmoji(this,'👻')">👻</div>
+          <div class="emoji-opt" onclick="pickEmoji(this,'💬')">💬</div>
+          <div class="emoji-opt" onclick="pickEmoji(this,'❤️')">❤️</div>
+          <div class="emoji-opt" onclick="pickEmoji(this,'🌙')">🌙</div>
+          <div class="emoji-opt" onclick="pickEmoji(this,'✨')">✨</div>
+          <div class="emoji-opt" onclick="pickEmoji(this,'🔥')">🔥</div>
+          <div class="emoji-opt" onclick="pickEmoji(this,'🌸')">🌸</div>
+          <input class="emoji-custom" id="depositEmoji" type="text" placeholder="…" maxlength="2" oninput="pickEmojiCustom(this)">
         </div>
-        <div style="font-size:11px;color:var(--spirit-dim);margin-top:5px;">Un fantôme secret est invisible — il apparaît seulement quand on est à moins de 3 mètres.</div>
+
+        <textarea class="form-textarea wizard-textarea" id="depositMsg" placeholder="Laissez quelque chose ici… une pensée, un souvenir, un mystère." style="height:130px;margin-bottom:0;"></textarea>
+        <div class="wizard-char-count"><span id="msgCharCount">0</span>/280</div>
+
+        <button class="wizard-next-btn" onclick="wizardNext(1)">Continuer →</button>
       </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label class="form-label">Anonymat</label>
-        <div class="type-selector">
-          <div class="type-btn active" data-val="anon" onclick="selectType(this)">👻 Anonyme</div>
-          <div class="type-btn" data-val="named" onclick="selectType(this)">🌫️ Pseudo</div>
+
+      <!-- ÉTAPE 2 : LIEU + DURÉE -->
+      <div class="wizard-pane" id="wizardStep2" style="display:none;">
+        <div class="wizard-pane-title">Où et combien de temps ?</div>
+        <div class="wizard-pane-sub">Le fantôme sera ancré ici.</div>
+
+        <div class="deposit-map" style="margin-bottom:14px;">
+          <div class="map-grid"></div>
+          <div class="map-pulse"></div>
+          <div class="map-pulse2"></div>
+          <div class="map-pin">📍</div>
+          <div class="map-loc" id="userCoords">📡 Localisation en cours…</div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">Nom du lieu</label>
+          <input class="form-input" id="depositLocation" type="text" placeholder="ex: Banc du parc, Café du coin…">
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">Durée de vie</label>
+          <div class="duration-selector">
+            <div class="dur-btn" onclick="selectDur(this)">24h</div>
+            <div class="dur-btn active" onclick="selectDur(this)">7 jours</div>
+            <div class="dur-btn" onclick="selectDur(this)">1 mois</div>
+            <div class="dur-btn" onclick="selectDur(this)">♾ Éternel</div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Rayon de détection</label>
+          <div class="radius-selector">
+            <div class="radius-btn" onclick="selectType(this)">3m</div>
+            <div class="radius-btn active" onclick="selectType(this)">10m</div>
+            <div class="radius-btn" onclick="selectType(this)">50m</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <button class="wizard-back-btn" onclick="wizardBack(2)">← Retour</button>
+          <button class="wizard-next-btn" style="flex:2;" onclick="wizardNext(2)">Continuer →</button>
         </div>
       </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label class="form-label">Rayon de détection</label>
-        <div class="radius-selector">
-          <div class="radius-btn" onclick="selectType(this)">3m</div>
-          <div class="radius-btn active" onclick="selectType(this)">10m</div>
-          <div class="radius-btn" onclick="selectType(this)">50m</div>
+
+      <!-- ÉTAPE 3 : OPTIONS AVANCÉES -->
+      <div class="wizard-pane" id="wizardStep3" style="display:none;">
+        <div class="wizard-pane-title">Derniers réglages</div>
+        <div class="wizard-pane-sub">Tout est optionnel — les valeurs par défaut sont bonnes.</div>
+
+        <!-- Anonymat + Mode secret sur une ligne -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+          <div>
+            <label class="form-label">Identité</label>
+            <div class="type-selector">
+              <div class="type-btn active" data-val="anon" onclick="selectType(this)">👻 Anon</div>
+              <div class="type-btn" data-val="named" onclick="selectType(this)">🌫️ Pseudo</div>
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Visibilité</label>
+            <div class="type-selector">
+              <div class="type-btn active" data-val="normal" onclick="selectType(this)">Normal</div>
+              <div class="type-btn" data-val="secret" onclick="selectType(this)">🔮 Secret</div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="form-group" style="margin-bottom:14px;">
-        <label class="form-label">Durée de vie</label>
-        <div class="duration-selector">
-          <div class="dur-btn" onclick="selectDur(this)">24h</div>
-          <div class="dur-btn active" onclick="selectDur(this)">7 jours</div>
-          <div class="dur-btn" onclick="selectDur(this)">1 mois</div>
-          <div class="dur-btn" onclick="selectDur(this)">♾ Éternel</div>
-        </div>
-      </div>
-      <!-- CHAÎNE DE FANTÔMES -->
-      <div class="form-group" style="margin-bottom:14px;">
-        <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
-          <span>🔗 Chaîne de fantômes (optionnel)</span>
-          <span style="font-size:9px;color:var(--spirit-dim);font-style:italic;">Créez une piste</span>
-        </label>
-        <div style="background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.1);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;">
-          <input class="form-input" id="chainHint" type="text" placeholder="ex: continue vers la fontaine…" style="font-size:13px;">
-          <button type="button" onclick="setChainMarker()" id="chainMapBtn" class="media-btn" style="width:100%;">
-            <span class="media-icon">🗺</span>
-            <span id="chainMapLabel">Placer le prochain point sur la carte</span>
+
+        <!-- Médias -->
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label">Message vocal (optionnel)</label>
+          <button class="media-btn" id="recordBtn" onclick="toggleRecording()" type="button">
+            <span class="media-icon">🎙</span>
+            <span id="recordLabel">Enregistrer</span>
+            <span id="recordTimer" style="margin-left:auto;font-size:11px;opacity:.5;">00:00</span>
           </button>
-          <div id="chainMapPreview" style="display:none;height:120px;border-radius:12px;overflow:hidden;border:1px solid rgba(168,180,255,.2);"></div>
+          <div id="audioPreview"></div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">Photo (optionnel)</label>
+          <button class="media-btn" onclick="triggerPhoto()" type="button">
+            <span class="media-icon">📷</span>
+            <span>Ajouter une photo</span>
+          </button>
+          <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+          <div id="photoPreview"></div>
+        </div>
+
+        <!-- CHAÎNE DE FANTÔMES PREMIUM -->
+        <div class="form-group" style="margin-bottom:14px;position:relative;" id="chainSection">
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>🔗 Chaîne de fantômes</span>
+            <span id="chainBadge" style="font-size:9px;background:rgba(255,200,80,.15);border:1px solid rgba(255,200,80,.3);border-radius:8px;padding:2px 6px;color:rgba(255,200,80,.8);">👑 Premium</span>
+          </label>
+          <div id="chainContent" style="background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.1);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;">
+            <input class="form-input" id="chainHint" type="text" placeholder="ex: continue vers la fontaine…" style="font-size:13px;">
+            <button type="button" onclick="setChainMarker()" id="chainMapBtn" class="media-btn" style="width:100%;">
+              <span class="media-icon">🗺</span>
+              <span id="chainMapLabel">Placer le prochain point sur la carte</span>
+            </button>
+            <div id="chainMapPreview" style="display:none;height:120px;border-radius:12px;overflow:hidden;border:1px solid rgba(168,180,255,.2);"></div>
+          </div>
+          <div id="chainLock" style="display:none;position:absolute;inset:0;background:rgba(6,6,8,.85);border-radius:14px;flex-direction:column;align-items:center;justify-content:center;gap:6px;backdrop-filter:blur(3px);cursor:pointer;" onclick="showScreen('screenProfile');setNav('nav-profile')">
+            <div style="font-size:24px;">🔒</div>
+            <div style="font-size:12px;color:var(--ether);">Fonctionnalité Premium</div>
+            <div style="font-size:11px;color:var(--spirit-dim);">Activer un code →</div>
+          </div>
+        </div>
+
+        <div class="deposit-error" id="depositError"></div>
+        <div style="display:flex;gap:10px;">
+          <button class="wizard-back-btn" onclick="wizardBack(3)">← Retour</button>
+          <button class="btn-primary" id="depositBtn" style="flex:2;" onclick="depositGhost()">👻 Déposer</button>
         </div>
       </div>
-      <div class="deposit-error" id="depositError"></div>
-      <button class="btn-primary" id="depositBtn" onclick="depositGhost()">👻 Déposer le fantôme</button>
+
     </div>
   </div>
 
@@ -1517,10 +1761,18 @@ createParticles();
       </div>
       <div class="section-label" style="margin-bottom:8px;">Mon compte</div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:4px;">Plan gratuit</div>
-        <div style="font-size:13px;color:var(--warm-dim);">3 fantômes déposés / mois</div>
-        <div style="margin-top:10px;background:var(--ghost);border-radius:4px;height:4px;"><div style="height:4px;background:var(--spirit-dim);border-radius:4px;width:33%"></div></div>
-        <button class="btn-primary" style="margin-top:12px;font-size:12px;padding:10px;">✦ Passer en Spectre — 3€/mois</button>
+        <div id="planInfo">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:4px;">Plan gratuit</div>
+          <div style="font-size:13px;color:var(--warm-dim);">Chaîne de fantômes 🔗 réservée au Premium</div>
+        </div>
+        <div id="codeSection" style="margin-top:12px;">
+          <div style="font-size:11px;color:var(--spirit-dim);margin-bottom:6px;letter-spacing:.5px;">Vous avez un code d'activation ?</div>
+          <div style="display:flex;gap:8px;">
+            <input id="premiumCode" class="form-input" type="text" placeholder="CODE-XXXX" style="flex:1;font-size:13px;text-transform:uppercase;letter-spacing:1px;">
+            <button id="activateBtn" onclick="activatePremium()" style="padding:10px 14px;background:linear-gradient(135deg,rgba(255,200,80,.15),rgba(255,200,80,.06));border:1px solid rgba(255,200,80,.4);border-radius:12px;color:rgba(255,200,80,.9);font-family:'Instrument Sans',sans-serif;font-size:13px;cursor:pointer;white-space:nowrap;">Activer</button>
+          </div>
+          <div id="premiumError" style="font-size:11px;color:var(--red);margin-top:4px;min-height:14px;"></div>
+        </div>
       </div>
       <button class="logout-btn" onclick="logout()">🚪 Se déconnecter</button>
       <button id="deleteBtn" onclick="deleteMyGhosts()" style="width:100%;padding:12px;background:transparent;border:1px solid rgba(255,100,100,.2);border-radius:13px;color:rgba(255,100,100,.5);font-family:'Instrument Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;margin-top:8px;">🗑 Vider mes fantômes & réponses</button>
