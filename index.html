@@ -680,7 +680,73 @@ function renderRadarDots() {
   });
 }
 
+let currentGhostIndex = 0;
+
+function updateSwipeUI() {
+  const total = nearbyGhosts.length;
+  const counter = document.getElementById('swipeCounter');
+  const prev = document.getElementById('swipePrev');
+  const next = document.getElementById('swipeNext');
+  if (!counter) return;
+  if (total > 1) {
+    counter.textContent = (currentGhostIndex + 1) + ' / ' + total;
+    prev.classList.toggle('disabled', currentGhostIndex === 0);
+    next.classList.toggle('disabled', currentGhostIndex === total - 1);
+  } else {
+    counter.textContent = '';
+    prev.classList.add('disabled');
+    next.classList.add('disabled');
+  }
+}
+
+window.swipeGhost = (dir) => {
+  const newIndex = currentGhostIndex + dir;
+  if (newIndex < 0 || newIndex >= nearbyGhosts.length) return;
+  const scroll = document.querySelector('#screenDetail .scroll');
+  // Animate out
+  scroll.classList.add(dir > 0 ? 'swipe-left' : 'swipe-right');
+  setTimeout(() => {
+    scroll.classList.remove('swipe-left','swipe-right');
+    scroll.style.transform = dir > 0 ? 'translateX(60px)' : 'translateX(-60px)';
+    scroll.style.opacity = '0';
+    // Load next ghost
+    currentGhostIndex = newIndex;
+    openGhost(nearbyGhosts[newIndex].id);
+    // Animate in
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scroll.style.transition = 'transform .25s cubic-bezier(.25,.46,.45,.94),opacity .2s';
+        scroll.style.transform = '';
+        scroll.style.opacity = '';
+      });
+    });
+  }, 200);
+};
+
+// Touch swipe support
+(function() {
+  let startX = 0, startY = 0, dragging = false;
+  document.addEventListener('touchstart', e => {
+    if (!document.getElementById('screenDetail').classList.contains('active')) return;
+    // Don't swipe if touching scrollable content (replies etc)
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    dragging = true;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (!dragging) return;
+    dragging = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      swipeGhost(dx < 0 ? 1 : -1);
+    }
+  }, { passive: true });
+})();
+
 window.openGhost = async (id) => {
+  const idx = nearbyGhosts.findIndex(g => g.id === id);
+  if (idx !== -1) currentGhostIndex = idx;
   selectedGhost = nearbyGhosts.find(g => g.id === id);
   
   // Si pas dans la liste locale, on charge depuis Firestore
@@ -811,6 +877,7 @@ window.openGhost = async (id) => {
     });
   }
 
+  updateSwipeUI();
   showScreen('screenDetail');
   setNav('');
 };
@@ -1419,6 +1486,17 @@ createParticles();
 .emoji-opt.active{background:rgba(168,180,255,.18);border-color:rgba(168,180,255,.4);box-shadow:0 0 10px rgba(168,180,255,.2);}
 .emoji-opt:hover{background:rgba(168,180,255,.12);}
 .emoji-custom{width:44px;height:40px;background:rgba(168,180,255,.06);border:1px solid rgba(168,180,255,.1);border-radius:12px;text-align:center;font-size:18px;color:var(--warm);outline:none;padding:0;}
+
+.swipe-nav{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 0;}
+.swipe-counter{font-size:11px;color:var(--spirit-dim);letter-spacing:.5px;}
+.swipe-arrows{display:flex;gap:6px;}
+.swipe-arrow{width:32px;height:32px;border-radius:50%;background:rgba(168,180,255,.07);border:1px solid rgba(168,180,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--spirit-dim);transition:all .2s;}
+.swipe-arrow:hover{background:rgba(168,180,255,.15);color:var(--spirit);}
+.swipe-arrow:disabled,.swipe-arrow.disabled{opacity:.2;pointer-events:none;}
+.swipe-hint{font-size:10px;color:rgba(168,180,255,.2);text-align:center;padding:6px 0 0;letter-spacing:.5px;}
+#screenDetail .scroll{transition:transform .25s cubic-bezier(.25,.46,.45,.94),opacity .2s;}
+#screenDetail .scroll.swipe-left{transform:translateX(-60px);opacity:0;}
+#screenDetail .scroll.swipe-right{transform:translateX(60px);opacity:0;}
 </style>
 </head>
 <body>
@@ -1509,7 +1587,16 @@ createParticles();
 
   
   <div class="screen" id="screenDetail">
-    <button class="back-btn" onclick="showScreen('screenRadar');setNav('nav-radar')">← retour</button>
+    <div class="swipe-nav">
+      <button class="back-btn" style="padding:12px 0 0;" onclick="showScreen('screenRadar');setNav('nav-radar')">← retour</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="swipe-counter" id="swipeCounter"></span>
+        <div class="swipe-arrows">
+          <div class="swipe-arrow" id="swipePrev" onclick="swipeGhost(-1)">‹</div>
+          <div class="swipe-arrow" id="swipeNext" onclick="swipeGhost(1)">›</div>
+        </div>
+      </div>
+    </div>
     <div class="scroll">
       <div class="detail-location" id="detailLocation">📍 …</div>
       <div class="detail-distance" id="detailDistance"></div>
