@@ -362,7 +362,7 @@ function showAudioPreview(blob) {
     <div style="display:flex;align-items:center;gap:10px;background:linear-gradient(145deg,rgba(168,180,255,.08),rgba(168,180,255,.03));border:1px solid rgba(168,180,255,.2);border-radius:14px;padding:10px 12px;margin-top:8px;">
       <span style="font-size:18px;">🎙</span>
       <audio controls src="${url}" style="flex:1;height:32px;"></audio>
-      <button onclick="clearAudio()" style="background:rgba(255,100,100,.1);border:1px solid rgba(255,100,100,.3);color:rgba(255,120,120,.8);cursor:pointer;font-size:13px;border-radius:8px;width:26px;height:26px;">✕</button>
+      <button onclick="clearAudio()" aria-label="Supprimer l'enregistrement" style="background:rgba(255,100,100,.1);border:1px solid rgba(255,100,100,.3);color:rgba(255,120,120,.8);cursor:pointer;font-size:13px;border-radius:8px;width:26px;height:26px;">✕</button>
     </div>`;
   preview.dataset.blob = 'pending';
   window._pendingAudioBlob = blob;
@@ -389,7 +389,7 @@ window.handlePhoto = (input) => {
   preview.innerHTML = `
     <div style="position:relative;margin-top:8px;">
       <img src="${url}" style="width:100%;border-radius:14px;border:1px solid rgba(168,180,255,.2);max-height:200px;object-fit:cover;box-shadow:0 4px 20px rgba(0,0,0,.5);">
-      <button onclick="clearPhoto()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);color:white;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">✕</button>
+      <button onclick="clearPhoto()" aria-label="Supprimer la photo" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);color:white;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">✕</button>
     </div>`;
   window._pendingPhotoFile = file;
 };
@@ -2154,7 +2154,7 @@ createParticles();
 
 /* Pagination + CTA */
 .ob-dots{display:flex;gap:8px;justify-content:center;padding:16px 0 10px;}
-.ob-dot{width:6px;height:6px;border-radius:50%;background:rgba(168,180,255,.2);cursor:pointer;transition:all .3s;}
+.ob-dot{background:none;border:none;cursor:pointer;padding:0;width:6px;height:6px;border-radius:50%;background:rgba(168,180,255,.2);cursor:pointer;transition:all .3s;}
 .ob-dot.active{width:20px;border-radius:3px;background:var(--spirit);}
 .ob-cta{padding:0 28px 28px;width:100%;transition:opacity .5s;}
 .ob-cta.visible{opacity:1 !important;pointer-events:all !important;}
@@ -2310,6 +2310,53 @@ body.light-theme .particles .particle{background:var(--spirit);}
   color:var(--spirit-dim);font-family:"Instrument Sans",sans-serif;
   font-size:13px;cursor:pointer;
 }
+
+/* ── ACCESSIBILITÉ : prefers-reduced-motion ───────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .radar-sweep { animation: none !important; }
+  .ghost-dot-emoji { animation: none !important; opacity: 0.4 !important; }
+  .ob-ghost-big { animation: none !important; }
+  .ob-glow-ring { animation: none !important; }
+  .ob-env-flap { animation: none !important; }
+  .ob-reso-btn { animation: none !important; }
+  .map-pulse, .map-pulse2 { animation: none !important; }
+  .vibe-dot { animation: none !important; }
+}
+
+/* ── ACCESSIBILITÉ : focus visible ───────────────────── */
+:focus-visible {
+  outline: 2px solid var(--spirit);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible, [role="button"]:focus-visible {
+  outline: 2px solid var(--spirit);
+  outline-offset: 3px;
+}
+/* Supprimer l'outline par défaut uniquement si :focus-visible est supporté */
+:focus:not(:focus-visible) { outline: none; }
+
+/* ── ACCESSIBILITÉ : skip to content ─────────────────── */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  background: var(--spirit);
+  color: var(--void);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: bold;
+  z-index: 99999;
+  transition: top 0.2s;
+}
+.skip-link:focus { top: 16px; }
 </style>
 </head>
 <body>
@@ -2327,9 +2374,9 @@ body.light-theme .particles .particle{background:var(--spirit);}
   <div class="notch"></div>
 
   
-  <div class="screen active" id="screenOnboard">
+  <div class="screen active" id="screenOnboard" aria-label="Introduction à Fantôme">
     <!-- RETOUR (visible si connecté) -->
-    <button class="back-btn" id="obBackBtn" style="display:none;flex-shrink:0;" onclick="showScreen('screenRadar');setNav('nav-radar')">← retour</button>
+    <button class="back-btn" id="obBackBtn" aria-label="Retour au radar" style="display:none;flex-shrink:0;" onclick="showScreen('screenRadar');setNav('nav-radar')">← retour</button>
 
     <!-- CAROUSEL SCÈNES -->
     <div class="ob-carousel" id="obCarousel">
@@ -2406,10 +2453,10 @@ body.light-theme .particles .particle{background:var(--spirit);}
 
     <!-- PAGINATION DOTS -->
     <div class="ob-dots">
-      <div class="ob-dot active" onclick="goObScene(0)"></div>
-      <div class="ob-dot" onclick="goObScene(1)"></div>
-      <div class="ob-dot" onclick="goObScene(2)"></div>
-      <div class="ob-dot" onclick="goObScene(3)"></div>
+      <button class="ob-dot active" onclick="goObScene(0)" aria-label="Scène 1 : Fantôme"></button>
+      <button class="ob-dot" onclick="goObScene(1)" aria-label="Scène 2 : Découvrir"></button>
+      <button class="ob-dot" onclick="goObScene(2)" aria-label="Scène 3 : Ouvrir"></button>
+      <button class="ob-dot" onclick="goObScene(3)" aria-label="Scène 4 : Résonner"></button>
     </div>
 
     <!-- CTA -->
@@ -2424,37 +2471,37 @@ body.light-theme .particles .particle{background:var(--spirit);}
   </div>
 
   
-  <div class="screen" id="screenAuth">
+  <div class="screen" id="screenAuth" aria-label="Connexion ou inscription">
     <div class="auth-scroll">
       <div style="text-align:center;margin-bottom:24px;">
         <div style="font-size:40px;margin-bottom:8px;">👻</div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-style:italic;color:var(--ether);">Fantôme</div>
       </div>
       <div class="auth-tabs">
-        <div class="auth-tab active" id="tab-login" onclick="showTab('login')">Connexion</div>
-        <div class="auth-tab" id="tab-register" onclick="showTab('register')">Inscription</div>
+        <button class="auth-tab active" id="tab-login" onclick="showTab('login')" role="tab" aria-selected="true">Connexion</button>
+        <button class="auth-tab" id="tab-register" onclick="showTab('register')" role="tab" aria-selected="false">Inscription</button>
       </div>
       <div class="auth-form" id="tabLogin">
-        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="loginEmail" type="email" placeholder="votre@email.com"></div>
-        <div class="form-group"><label class="form-label">Mot de passe</label><input class="form-input" id="loginPass" type="password" placeholder="••••••••"></div>
-        <div class="auth-error" id="authError"></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="loginEmail" type="email" placeholder="votre@email.com" autocomplete="email" aria-label="Adresse email" aria-required="true"></div>
+        <div class="form-group"><label class="form-label">Mot de passe</label><input class="form-input" id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" aria-label="Mot de passe" aria-required="true"></div>
+        <div class="auth-error" id="authError" role="alert" aria-live="polite"></div>
         <button class="btn-primary" onclick="login()">Se connecter</button>
       </div>
       <div class="auth-form" id="tabRegister" style="display:none;">
-        <div class="form-group"><label class="form-label">Pseudo</label><input class="form-input" id="regPseudo" type="text" placeholder="ex: Spectre_47"></div>
-        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="regEmail" type="email" placeholder="votre@email.com"></div>
-        <div class="form-group"><label class="form-label">Mot de passe</label><input class="form-input" id="regPass" type="password" placeholder="6 caractères minimum"></div>
-        <div class="auth-error" id="authError"></div>
+        <div class="form-group"><label class="form-label">Pseudo</label><input class="form-input" id="regPseudo" type="text" placeholder="ex: Spectre_47" autocomplete="nickname" aria-label="Pseudo" aria-required="true"></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="regEmail" type="email" placeholder="votre@email.com" autocomplete="email" aria-label="Adresse email" aria-required="true"></div>
+        <div class="form-group"><label class="form-label">Mot de passe</label><input class="form-input" id="regPass" type="password" placeholder="6 caractères minimum" autocomplete="new-password" aria-label="Mot de passe (6 caractères minimum)" aria-required="true"></div>
+        <div class="auth-error" id="authError" role="alert" aria-live="polite"></div>
         <button class="btn-primary" onclick="register()">Créer mon compte</button>
       </div>
     </div>
   </div>
 
   
-  <div class="screen" id="screenRadar">
+  <div class="screen" id="screenRadar" role="main" aria-label="Radar des fantômes proches"><span id="main-content" tabindex="-1" style="position:absolute;"></span>
     <div class="radar-header">
       <div class="radar-title">Aux alentours</div>
-      <button class="refresh-btn" onclick="loadNearbyGhosts()">↻ Actualiser</button>
+      <button class="refresh-btn" onclick="loadNearbyGhosts()" aria-label="Actualiser les fantômes proches">↻ Actualiser</button>
     </div>
     <div class="vibe-bar">
       <div style="font-size:15px;">📳</div>
@@ -2472,7 +2519,7 @@ body.light-theme .particles .particle{background:var(--spirit);}
         <div id="radarDots"></div>
       </div>
     </div>
-    <div class="radar-status" id="radarStatus" style="display:none;"></div>
+    <div class="radar-status" id="radarStatus" style="display:none;" aria-live="polite"></div>
     <div class="ghost-count-line"><span id="ghostCount">0</span> fantôme(s) dans les alentours</div>
     <div class="scroll">
       <div class="section-label">Fantômes proches</div>
@@ -2483,14 +2530,14 @@ body.light-theme .particles .particle{background:var(--spirit);}
   </div>
 
   
-  <div class="screen" id="screenDetail">
+  <div class="screen" id="screenDetail" aria-label="Détail du fantôme">
     <div class="swipe-nav">
-      <button class="back-btn" style="padding:12px 0 0;" onclick="showScreen('screenRadar');setNav('nav-radar')">← retour</button>
+      <button class="back-btn" style="padding:12px 0 0;" onclick="showScreen('screenRadar');setNav('nav-radar')" aria-label="Retour au radar">← retour</button>
       <div style="display:flex;align-items:center;gap:8px;">
         <span class="swipe-counter" id="swipeCounter"></span>
         <div class="swipe-arrows">
-          <div class="swipe-arrow" id="swipePrev" onclick="swipeGhost(-1)">‹</div>
-          <div class="swipe-arrow" id="swipeNext" onclick="swipeGhost(1)">›</div>
+          <button class="swipe-arrow" id="swipePrev" onclick="swipeGhost(-1)" aria-label="Fantôme précédent">‹</button>
+          <button class="swipe-arrow" id="swipeNext" onclick="swipeGhost(1)" aria-label="Fantôme suivant">›</button>
         </div>
       </div>
     </div>
@@ -2510,7 +2557,7 @@ body.light-theme .particles .particle{background:var(--spirit);}
             <div class="envelope-sealed-hint" id="sealedHint">Appuyez pour l'ouvrir</div>
           </div>
         </div>
-        <button class="envelope-open-btn" onclick="openEnvelope()">
+        <button class="envelope-open-btn" onclick="openEnvelope()" aria-label="Ouvrir le fantôme">
           <span>✉ Ouvrir l'enveloppe</span>
         </button>
       </div>
@@ -2527,13 +2574,13 @@ body.light-theme .particles .particle{background:var(--spirit);}
           <div class="detail-badge" id="detailDuration"></div>
           <div class="detail-badge" id="detailRadius"></div>
         </div>
-        <button class="resonance-btn" id="resonanceBtn" onclick="resonate()">
+        <button class="resonance-btn" id="resonanceBtn" onclick="resonate()" aria-label="Résonner avec ce fantôme">
           <span id="resonanceCount">✦ Résonner</span>
         </button>
-        <button class="btn-secondary" id="secretBtn" onclick="toggleSecret()" style="display:none;margin-bottom:8px;font-size:13px;padding:11px;">🔮 Passer en secret</button>
-        <button class="share-btn" onclick="openShareModal()">↗ Partager la position</button>
+        <button class="btn-secondary" id="secretBtn" onclick="toggleSecret()" aria-label="Passer ce fantôme en mode secret" style="display:none;margin-bottom:8px;font-size:13px;padding:11px;">🔮 Passer en secret</button>
+        <button class="share-btn" onclick="openShareModal()" aria-label="Partager la position de ce fantôme">↗ Partager la position</button>
         <button class="btn-secondary" onclick="showScreen('screenReply')" style="margin-bottom:8px;">↩ Laisser une réponse ici</button>
-        <button class="report-btn" id="reportBtn" onclick="openReportModal()">⚑ Signaler ce fantôme</button>
+        <button class="report-btn" id="reportBtn" onclick="openReportModal()" aria-label="Signaler ce fantôme">⚑ Signaler ce fantôme</button>
         <div class="section-label">Réponses dans ce lieu</div>
         <div id="repliesList"></div>
       </div>
@@ -2541,8 +2588,8 @@ body.light-theme .particles .particle{background:var(--spirit);}
   </div>
 
   
-  <div class="screen" id="screenReply">
-    <button class="back-btn" onclick="showScreen('screenDetail')">← retour</button>
+  <div class="screen" id="screenReply" aria-label="Laisser une réponse">
+    <button class="back-btn" onclick="showScreen('screenDetail')" aria-label="Retour au détail">← retour</button>
     <div class="scroll">
       <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ether);margin-bottom:4px;">Répondre ici</div>
       <div style="font-size:12px;color:var(--warm-dim);margin-bottom:18px;">Votre réponse restera ancrée au même endroit.</div>
@@ -2550,8 +2597,8 @@ body.light-theme .particles .particle{background:var(--spirit);}
       <div class="form-group" style="margin-bottom:16px;">
         <label class="form-label">Identité</label>
         <div class="type-selector">
-          <div class="type-btn active" data-val="anon" onclick="selectType(this)">👻 Anonyme</div>
-          <div class="type-btn" data-val="named" onclick="selectType(this)">🌫️ Pseudo</div>
+          <button class="type-btn active" data-val="anon" onclick="selectType(this)" aria-pressed="true" aria-label="Mode anonyme">👻 Anonyme</button>
+          <button class="type-btn" data-val="named" onclick="selectType(this)" aria-pressed="false" aria-label="Afficher mon pseudo">🌫️ Pseudo</button>
         </div>
       </div>
       <button class="btn-primary" onclick="sendReply()">Déposer la réponse</button>
@@ -2559,7 +2606,7 @@ body.light-theme .particles .particle{background:var(--spirit);}
   </div>
 
   
-  <div class="screen" id="screenDeposit">
+  <div class="screen" id="screenDeposit" aria-label="Déposer un fantôme">
     <div class="scroll" style="padding-bottom:32px;">
 
       <!-- BARRE DE PROGRESSION -->
@@ -2589,14 +2636,14 @@ body.light-theme .particles .particle{background:var(--spirit);}
 
         <!-- Sélecteur emoji rapide -->
         <div class="emoji-picker">
-          <div class="emoji-opt active" onclick="pickEmoji(this,'👻')">👻</div>
-          <div class="emoji-opt" onclick="pickEmoji(this,'💬')">💬</div>
-          <div class="emoji-opt" onclick="pickEmoji(this,'❤️')">❤️</div>
-          <div class="emoji-opt" onclick="pickEmoji(this,'🌙')">🌙</div>
-          <div class="emoji-opt" onclick="pickEmoji(this,'✨')">✨</div>
-          <div class="emoji-opt" onclick="pickEmoji(this,'🔥')">🔥</div>
-          <div class="emoji-opt" onclick="pickEmoji(this,'🌸')">🌸</div>
-          <input class="emoji-custom" id="depositEmoji" type="text" placeholder="…" maxlength="2" oninput="pickEmojiCustom(this)">
+          <button class="emoji-opt active" onclick="pickEmoji(this,'👻')" aria-label="Emoji fantôme" aria-pressed="true">👻</button>
+          <button class="emoji-opt" onclick="pickEmoji(this,'💬')" aria-label="Emoji message" aria-pressed="false">💬</button>
+          <button class="emoji-opt" onclick="pickEmoji(this,'❤️')" aria-label="Emoji cœur" aria-pressed="false">❤️</button>
+          <button class="emoji-opt" onclick="pickEmoji(this,'🌙')" aria-label="Emoji lune" aria-pressed="false">🌙</button>
+          <button class="emoji-opt" onclick="pickEmoji(this,'✨')" aria-label="Emoji étoiles" aria-pressed="false">✨</button>
+          <button class="emoji-opt" onclick="pickEmoji(this,'🔥')" aria-label="Emoji feu" aria-pressed="false">🔥</button>
+          <button class="emoji-opt" onclick="pickEmoji(this,'🌸')" aria-label="Emoji fleur" aria-pressed="false">🌸</button>
+          <input class="emoji-custom" id="depositEmoji" type="text" aria-label="Emoji personnalisé" placeholder="…" maxlength="2" oninput="pickEmojiCustom(this)">
         </div>
 
         <textarea class="form-textarea wizard-textarea" id="depositMsg" placeholder="Laissez quelque chose ici… une pensée, un souvenir, un mystère." style="height:130px;margin-bottom:0;"></textarea>
@@ -2620,25 +2667,25 @@ body.light-theme .particles .particle{background:var(--spirit);}
 
         <div class="form-group" style="margin-bottom:12px;">
           <label class="form-label">Nom du lieu</label>
-          <input class="form-input" id="depositLocation" type="text" placeholder="ex: Banc du parc, Café du coin…">
+          <input class="form-input" id="depositLocation" type="text" placeholder="ex: Banc du parc, Café du coin…" aria-label="Nom du lieu" aria-required="true">
         </div>
 
         <div class="form-group" style="margin-bottom:12px;">
           <label class="form-label">Durée de vie</label>
           <div class="duration-selector">
-            <div class="dur-btn" onclick="selectDur(this)">24h</div>
-            <div class="dur-btn active" onclick="selectDur(this)">7 jours</div>
-            <div class="dur-btn" onclick="selectDur(this)">1 mois</div>
-            <div class="dur-btn" onclick="selectDur(this)">♾ Éternel</div>
+            <button class="dur-btn" onclick="selectDur(this)" aria-label="Durée 24 heures">24h</button>
+            <button class="dur-btn active" onclick="selectDur(this)" aria-label="Durée 7 jours" aria-pressed="true">7 jours</button>
+            <button class="dur-btn" onclick="selectDur(this)" aria-label="Durée 1 mois">1 mois</button>
+            <button class="dur-btn" onclick="selectDur(this)" aria-label="Durée éternelle">♾ Éternel</button>
           </div>
         </div>
 
         <div class="form-group" style="margin-bottom:0;">
           <label class="form-label">Rayon de détection</label>
           <div class="radius-selector">
-            <div class="radius-btn" onclick="selectType(this)">3m</div>
-            <div class="radius-btn active" onclick="selectType(this)">10m</div>
-            <div class="radius-btn" onclick="selectType(this)">50m</div>
+            <button class="radius-btn" onclick="selectType(this)" aria-label="Rayon 3 mètres">3m</button>
+            <button class="radius-btn active" onclick="selectType(this)" aria-label="Rayon 10 mètres" aria-pressed="true">10m</button>
+            <button class="radius-btn" onclick="selectType(this)" aria-label="Rayon 50 mètres">50m</button>
           </div>
         </div>
 
@@ -2658,15 +2705,15 @@ body.light-theme .particles .particle{background:var(--spirit);}
           <div>
             <label class="form-label">Identité</label>
             <div class="type-selector">
-              <div class="type-btn active" data-val="anon" onclick="selectType(this)">👻 Anon</div>
-              <div class="type-btn" data-val="named" onclick="selectType(this)">🌫️ Pseudo</div>
+              <button class="type-btn active" data-val="anon" onclick="selectType(this)" aria-pressed="true" aria-label="Anonyme">👻 Anon</button>
+              <button class="type-btn" data-val="named" onclick="selectType(this)" aria-pressed="false" aria-label="Afficher mon pseudo">🌫️ Pseudo</button>
             </div>
           </div>
           <div>
             <label class="form-label">Visibilité</label>
             <div class="type-selector">
-              <div class="type-btn active" data-val="normal" onclick="selectType(this)">Normal</div>
-              <div class="type-btn" data-val="secret" onclick="selectType(this)">🔮 Secret</div>
+              <button class="type-btn active" data-val="normal" onclick="selectType(this)" aria-pressed="true" aria-label="Fantôme visible normalement">Normal</button>
+              <button class="type-btn" data-val="secret" onclick="selectType(this)" aria-pressed="false" aria-label="Fantôme secret — visible seulement à 3 mètres">🔮 Secret</button>
             </div>
           </div>
         </div>
@@ -2699,7 +2746,7 @@ body.light-theme .particles .particle{background:var(--spirit);}
             <span id="chainBadge" style="font-size:9px;background:rgba(255,200,80,.15);border:1px solid rgba(255,200,80,.3);border-radius:8px;padding:2px 6px;color:rgba(255,200,80,.8);">👑 Premium</span>
           </label>
           <div id="chainContent" style="background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.1);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;">
-            <input class="form-input" id="chainHint" type="text" placeholder="ex: continue vers la fontaine…" style="font-size:13px;">
+            <input class="form-input" id="chainHint" type="text" placeholder="ex: continue vers la fontaine…" aria-label="Indice vers le prochain fantôme" style="font-size:13px;">
             <button type="button" onclick="setChainMarker()" id="chainMapBtn" class="media-btn" style="width:100%;">
               <span class="media-icon">🗺</span>
               <span id="chainMapLabel">Placer le prochain point sur la carte</span>
@@ -2713,7 +2760,7 @@ body.light-theme .particles .particle{background:var(--spirit);}
           </div>
         </div>
 
-        <div class="deposit-error" id="depositError"></div>
+        <div class="deposit-error" id="depositError" role="alert" aria-live="polite"></div>
         <div style="display:flex;gap:10px;">
           <button class="wizard-back-btn" onclick="wizardBack(3)">← Retour</button>
           <button class="btn-primary" id="depositBtn" style="flex:2;" onclick="depositGhost()">👻 Déposer</button>
@@ -2724,7 +2771,7 @@ body.light-theme .particles .particle{background:var(--spirit);}
   </div>
 
   
-  <div class="screen" id="screenMap">
+  <div class="screen" id="screenMap" aria-label="Carte des fantômes">
     <div class="map-screen-wrap">
       <div class="map-header">
         <div class="map-title">Carte des fantômes</div>
@@ -2735,7 +2782,7 @@ body.light-theme .particles .particle{background:var(--spirit);}
   </div>
 
   
-  <div class="screen" id="screenProfile">
+  <div class="screen" id="screenProfile" aria-label="Mon profil">
     <div class="scroll">
       <div class="profile-hdr">
         <div class="profile-avatar-big" id="profileAvatar">?</div>
@@ -2768,32 +2815,32 @@ body.light-theme .particles .particle{background:var(--spirit);}
         <div id="codeSection" style="margin-top:12px;">
           <div style="font-size:11px;color:var(--spirit-dim);margin-bottom:6px;letter-spacing:.5px;">Vous avez un code d'activation ?</div>
           <div style="display:flex;gap:8px;">
-            <input id="premiumCode" class="form-input" type="text" placeholder="CODE-XXXX" style="flex:1;font-size:13px;text-transform:uppercase;letter-spacing:1px;">
+            <input id="premiumCode" class="form-input" type="text" placeholder="CODE-XXXX" aria-label="Code Premium" style="flex:1;font-size:13px;text-transform:uppercase;letter-spacing:1px;">
             <button id="activateBtn" onclick="activatePremium()" style="padding:10px 14px;background:linear-gradient(135deg,rgba(255,200,80,.15),rgba(255,200,80,.06));border:1px solid rgba(255,200,80,.4);border-radius:12px;color:rgba(255,200,80,.9);font-family:'Instrument Sans',sans-serif;font-size:13px;cursor:pointer;white-space:nowrap;">Activer</button>
           </div>
           <div id="premiumError" style="font-size:11px;color:var(--red);margin-top:4px;min-height:14px;"></div>
         </div>
       </div>
-      <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()">🌙 Passer en mode jour</button>
+      <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" aria-label="Basculer entre thème clair et sombre">🌙 Passer en mode jour</button>
       <button class="btn-secondary" onclick="showScreen('screenOnboard')" style="margin-bottom:8px;font-size:13px;padding:11px;">👻 Revoir l'intro</button>
-      <button class="logout-btn" onclick="logout()">🚪 Se déconnecter</button>
+      <button class="logout-btn" onclick="logout()" aria-label="Se déconnecter">🚪 Se déconnecter</button>
       <button id="deleteBtn" onclick="deleteMyGhosts()" style="width:100%;padding:12px;background:transparent;border:1px solid rgba(255,100,100,.2);border-radius:13px;color:rgba(255,100,100,.5);font-family:'Instrument Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;margin-top:8px;">🗑 Vider mes fantômes & réponses</button>
-      <button class="btn-secondary" id="notifBtn" onclick="enableNotifications()" style="margin-top:8px;font-size:13px;padding:11px;">🔔 Activer les notifications</button>
+      <button class="btn-secondary" id="notifBtn" onclick="enableNotifications()" aria-label="Activer les notifications push" style="margin-top:8px;font-size:13px;padding:11px;">🔔 Activer les notifications</button>
     </div>
   </div>
 
   
   <div class="bottom-nav" id="bottomNav" style="display:none;">
-    <div class="nav-item active" id="nav-radar" onclick="showScreen('screenRadar');setNav('nav-radar')">
+    <div class="nav-item active" id="nav-radar" onclick="showScreen('screenRadar');setNav('nav-radar')" role="button" aria-label="Radar — voir les fantômes proches">
       <div class="nav-icon">🌫️</div><span>Radar</span>
     </div>
-    <div class="nav-item" id="nav-map" onclick="showScreen('screenMap');setNav('nav-map')">
+    <div class="nav-item" id="nav-map" onclick="showScreen('screenMap');setNav('nav-map')" role="button" aria-label="Carte — voir la carte des fantômes">
       <div class="nav-icon">🗺️</div><span>Carte</span>
     </div>
-    <div class="nav-item" id="nav-deposit" onclick="showScreen('screenDeposit');setNav('nav-deposit')">
+    <div class="nav-item" id="nav-deposit" onclick="showScreen('screenDeposit');setNav('nav-deposit')" role="button" aria-label="Déposer un fantôme">
       <div class="nav-icon">👻</div><span>Déposer</span>
     </div>
-    <div class="nav-item" id="nav-profile" onclick="showScreen('screenProfile');setNav('nav-profile')">
+    <div class="nav-item" id="nav-profile" onclick="showScreen('screenProfile');setNav('nav-profile')" role="button" aria-label="Mon profil">
       <div class="nav-icon">🌑</div><span>Profil</span>
     </div>
   </div>
@@ -2828,7 +2875,7 @@ body.light-theme .particles .particle{background:var(--spirit);}
   </div>
 </div>
 
-<div class="discovery-toast" id="discoveryToast">
+<div class="discovery-toast" id="discoveryToast" role="status" aria-live="polite" aria-atomic="true">
   <span class="discovery-toast-icon" id="toastIcon">👻</span>
   <span id="toastText">Fantôme découvert</span>
 </div>
