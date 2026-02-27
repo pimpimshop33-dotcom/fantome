@@ -996,7 +996,7 @@ window.deleteMyGhosts = async () => {
   const confirmed = await showConfirm('Supprimer tous mes fantômes ?', 'Cette action est irréversible — tous vos messages et réponses seront effacés.');
   if (!confirmed) return;
   const btn = document.getElementById('deleteBtn');
-  btn.textContent = 'Suppression…';
+  btn.textContent = '⏳ Suppression…';
   btn.disabled = true;
   try {
     const snap = await getDocs(query(collection(db, 'ghosts'), where('authorUid', '==', currentUser.uid)));
@@ -1004,7 +1004,7 @@ window.deleteMyGhosts = async () => {
     const rSnap = await getDocs(query(collection(db, 'replies'), where('authorUid', '==', currentUser.uid)));
     const rDels = rSnap.docs.map(d => deleteDoc(doc(db, 'replies', d.id)));
     await Promise.all([...dels, ...rDels]);
-    btn.textContent = '✓ ' + (snap.size + rSnap.size) + ' messages supprimés';
+    btn.textContent = '✓ ' + (snap.size + rSnap.size) + ' supprimés';
     btn.style.borderColor = 'rgba(100,220,160,.4)';
     btn.style.color = 'rgba(100,220,160,.9)';
     nearbyGhosts = [];
@@ -3474,9 +3474,11 @@ button:focus-visible,[role="button"]:focus-visible{outline:2px solid var(--spiri
         </div>
       </div>
       <div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()">🌙 Mode jour</button></div>
-      <button class="btn-secondary" onclick="showScreen('screenOnboard')" style="margin-bottom:8px;font-size:13px;padding:11px;" aria-label="Revoir l'introduction à l'application">👻 Revoir l'intro</button>
-      <button class="logout-btn" onclick="logout()">🚪 Se déconnecter</button>
-      <button id="deleteBtn" onclick="deleteMyGhosts()" style="width:100%;padding:12px;background:transparent;border:1px solid rgba(255,100,100,.2);border-radius:13px;color:rgba(255,100,100,.5);font-family:'Instrument Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;margin-top:8px;">🗑 Vider mes fantômes &amp; réponses</button>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
+        <button class="theme-toggle" onclick="showScreen('screenOnboard')" aria-label="Revoir l'introduction à l'application">👻 Revoir l'intro</button>
+        <button class="theme-toggle" onclick="logout()" style="color:rgba(255,100,100,.6);border-color:rgba(255,100,100,.25);" id="logoutBtn">🚪 Déconnexion</button>
+        <button class="theme-toggle" id="deleteBtn" onclick="deleteMyGhosts()" style="color:rgba(255,100,100,.5);border-color:rgba(255,100,100,.18);">🗑 Vider mes fantômes</button>
+      </div>
       <button class="btn-secondary" id="notifBtn" onclick="enableNotifications()" style="margin-top:8px;font-size:13px;padding:11px;">🔔 Activer les notifications</button>
     </div>
   </div>
