@@ -1659,7 +1659,7 @@ window.sendReply = async () => {
   Analytics.track('reply_sent');
 };
 
-window.openEnvelope = () => {
+function _doOpenEnvelope() {
   const sealed = document.getElementById('envelopeSealed');
   const revealed = document.getElementById('envelopeContent');
   sealed.classList.add('opening');
@@ -1669,12 +1669,76 @@ window.openEnvelope = () => {
       sealed.style.display = 'none';
       revealed.style.display = 'block';
       revealed.classList.add('envelope-reveal');
-      // Focus sur le contenu pour accessibilité
       const firstFocusable = revealed.querySelector('button, [tabindex]');
       if (firstFocusable) firstFocusable.focus();
     }, 350);
   }, 600);
   Analytics.track('envelope_opened');
+}
+
+function showDistanceError(dist) {
+  const btn = document.getElementById('envelopeOpenBtn');
+  const hint = document.getElementById('sealedHint');
+  // Vibration d'erreur
+  if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+  // Animation shake sur le bouton
+  btn.classList.add('btn-shake');
+  setTimeout(() => btn.classList.remove('btn-shake'), 600);
+  // Message de distance
+  const meters = Math.round(dist);
+  hint.innerHTML = `<span style="color:rgba(255,120,80,.9);font-size:13px;">📍 Tu n'es pas exactement au bon endroit<br><span style="font-size:11px;opacity:.7;">encore ${meters}m à parcourir</span></span>`;
+  // Reset après 4s
+  setTimeout(() => {
+    hint.textContent = 'Appuyez pour l'ouvrir';
+    hint.style.color = '';
+  }, 4000);
+}
+
+window.openEnvelope = () => {
+  if (!selectedGhost) return;
+  // Vérifier si déjà ouvert (pas de vérif distance pour relecture)
+  const revealed = document.getElementById('envelopeContent');
+  if (revealed && revealed.style.display !== 'none') { _doOpenEnvelope(); return; }
+
+  const btn = document.getElementById('envelopeOpenBtn');
+  const hint = document.getElementById('sealedHint');
+  const origHint = hint.textContent;
+
+  // Indiquer qu'on vérifie la position
+  btn.disabled = true;
+  hint.textContent = '📡 Vérification de votre position…';
+
+  if (!navigator.geolocation) {
+    btn.disabled = false;
+    hint.textContent = origHint;
+    _doOpenEnvelope(); // Pas de géoloc dispo → on laisse ouvrir
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      btn.disabled = false;
+      const dist = distanceMeters(
+        pos.coords.latitude, pos.coords.longitude,
+        selectedGhost.lat, selectedGhost.lng
+      );
+      if (dist <= 2) {
+        // ✅ Assez proche
+        hint.textContent = origHint;
+        _doOpenEnvelope();
+      } else {
+        // ❌ Trop loin
+        showDistanceError(dist);
+      }
+    },
+    () => {
+      // Géoloc refusée → on laisse ouvrir (dégradé gracieux)
+      btn.disabled = false;
+      hint.textContent = origHint;
+      _doOpenEnvelope();
+    },
+    { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+  );
 };
 
 // ── HISTORIQUE NAVIGATION ──────────────────────────────
@@ -3165,6 +3229,25 @@ button:focus-visible,[role="button"]:focus-visible{outline:2px solid var(--spiri
   position: relative;
 }
 
+
+/* ── DISTANCE ERROR ─────────────────────────────────────── */
+@keyframes btnShake {
+  0%,100% { transform: translateX(0); }
+  15%     { transform: translateX(-6px) rotate(-1deg); }
+  30%     { transform: translateX(6px)  rotate(1deg); }
+  45%     { transform: translateX(-5px); }
+  60%     { transform: translateX(5px); }
+  75%     { transform: translateX(-3px); }
+  90%     { transform: translateX(3px); }
+}
+.btn-shake { animation: btnShake .55s cubic-bezier(.36,.07,.19,.97) !important; }
+.envelope-open-btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+#sealedHint { transition: color .2s; min-height: 36px; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+
 </style>
 </head>
 <body>
@@ -3369,7 +3452,7 @@ button:focus-visible,[role="button"]:focus-visible{outline:2px solid var(--spiri
             <div class="envelope-sealed-hint" id="sealedHint">Appuyez pour l'ouvrir</div>
           </div>
         </div>
-        <button class="envelope-open-btn" onclick="openEnvelope()" aria-label="Ouvrir le fantôme et révéler le message">
+        <button class="envelope-open-btn" id="envelopeOpenBtn" onclick="openEnvelope()" aria-label="Ouvrir le fantôme et révéler le message">
           <span>✉ Ouvrir l'enveloppe</span>
         </button>
       </div>
