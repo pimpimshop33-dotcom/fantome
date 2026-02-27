@@ -236,22 +236,10 @@ function buildLeafletMap(centerLat, centerLng, h) {
   nearbyGhosts.forEach((g, i) => {
     if (!g.lat || !g.lng) return;
     const emoji = escapeHTML(g.emoji || '👻');
-    const isSecret = !!g.secret;
-    const dist = g.distance ? formatDistance(g.distance) : '';
-    const loc  = escapeHTML((g.location || '').substring(0, 18));
-    const delay = (i * 0.22).toFixed(2);
+    const delay = (i * 0.3).toFixed(2);
     const ghostIcon = L.divIcon({
-      html: `
-        <div class="ghost-map-marker${isSecret ? ' secret' : ''}" style="animation-delay:${delay}s">
-          <div class="ghost-map-ring"></div>
-          <div class="ghost-map-ring2"></div>
-          <div class="ghost-map-bubble" style="animation-delay:${delay}s">${emoji}</div>
-          <div class="ghost-map-tail" style="animation-delay:${delay}s"></div>
-          ${loc ? `<div class="ghost-map-label">${loc}</div>` : ''}
-        </div>`,
-      iconSize:   [44, 60],
-      iconAnchor: [22, 46],
-      className: ''
+      html: `<div style="font-size:28px;animation:ghostFloat 2.8s ease-in-out infinite;animation-delay:${delay}s;filter:drop-shadow(0 0 8px rgba(168,180,255,0.85));cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;">${emoji}</div>`,
+      iconSize: [36, 36], iconAnchor: [18, 18], className: ''
     });
     L.marker([g.lat, g.lng], { icon: ghostIcon })
       .addTo(map)
