@@ -1721,7 +1721,7 @@ function showDistanceError(dist) {
   hint.innerHTML = `<span style="color:rgba(255,120,80,.9);font-size:13px;">📍 Tu n'es pas exactement au bon endroit<br><span style="font-size:11px;opacity:.7;">encore ${meters}m à parcourir</span></span>`;
   // Reset après 4s
   setTimeout(() => {
-    hint.textContent = 'Appuyez pour l'ouvrir';
+    hint.textContent = "Appuyez pour l'ouvrir";
     hint.style.color = '';
   }, 4000);
 }
@@ -1742,16 +1742,16 @@ function showOpenLimitWarning(remaining, onConfirm) {
 
   if (remaining === 0) {
     icon.textContent = '🚫';
-    document.getElementById('openLimitTitle').textContent = 'Limite atteinte pour aujourd'hui';
+    document.getElementById('openLimitTitle').textContent = "Limite atteinte pour aujourd'hui";
     sub.innerHTML = `Tu as déjà ouvert <strong>${DAILY_OPEN_LIMIT} fantômes</strong> aujourd'hui.<br>Reviens demain ou passe en Premium.`;
     okBtn.style.display = 'none';
     premium.style.display = 'block';
   } else {
     icon.textContent = remaining === 1 ? '⚠️' : '👻';
-    document.getElementById('openLimitTitle').textContent = remaining === 1 ? 'Dernier fantôme du jour !' : `Il te reste ${remaining} ouverture${remaining > 1 ? 's' : ''} aujourd'hui`;
+    document.getElementById('openLimitTitle').textContent = remaining === 1 ? 'Dernier fantôme du jour !' : `Il te reste ${remaining} ouverture${remaining > 1 ? "s" : ""} aujourd’hui`;
     sub.innerHTML = remaining === 1
-      ? `C'est ta <strong>dernière ouverture</strong> gratuite d'aujourd'hui.<br>Demain le compteur se remet à zéro.`
-      : `Tu peux encore ouvrir <strong>${remaining} fantôme${remaining > 1 ? 's' : ''}</strong> gratuitement aujourd'hui.`;
+      ? "C’est ta <strong>dernière ouverture</strong> gratuite d’aujourd’hui.<br>Demain le compteur se remet à zéro."
+      : `Tu peux encore ouvrir <strong>${remaining} fantôme${remaining > 1 ? "s" : ""}</strong> gratuitement aujourd’hui.`;
     okBtn.style.display = '';
     okBtn.textContent = remaining === 1 ? '✉ Utiliser ma dernière ouverture' : '✉ Ouvrir ce fantôme';
     premium.style.display = remaining <= 1 ? 'block' : 'none';
