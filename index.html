@@ -217,6 +217,26 @@ window.renderStaticMap = () => {
   }
 };
 
+// ── MODE CHASSE ─────────────────────────────────────────
+let huntMode = false;
+window.toggleHuntMode = () => {
+  huntMode = !huntMode;
+  const btn = document.getElementById('huntModeBtn');
+  if (huntMode) {
+    btn.style.background = 'rgba(168,180,255,.25)';
+    btn.style.color = 'rgba(200,210,255,1)';
+    btn.style.borderColor = 'rgba(168,180,255,.7)';
+    btn.textContent = '🎯 Chasse ON';
+    showToast('info', '🎯 Mode chasse activé — approche-toi pour ouvrir !');
+  } else {
+    btn.style.background = 'rgba(168,180,255,.08)';
+    btn.style.color = 'rgba(168,180,255,.7)';
+    btn.style.borderColor = 'rgba(168,180,255,.25)';
+    btn.textContent = '🎯 Chasse';
+  }
+  if (window.map) renderStaticMap();
+};
+
 function buildLeafletMap(centerLat, centerLng, h) {
   const container = document.getElementById('mapContainer');
   container.innerHTML = `<div id="leafletMap" style="width:100%;height:${h}px;"></div>`;
@@ -236,25 +256,86 @@ function buildLeafletMap(centerLat, centerLng, h) {
   });
   L.marker([centerLat, centerLng], { icon: userIcon }).addTo(map).bindPopup('📍 Vous êtes ici');
 
+  // En mode chasse : cercle de détection autour de l'utilisateur
+  if (huntMode) {
+    L.circle([centerLat, centerLng], {
+      radius: 50,
+      color: 'rgba(168,180,255,0.6)',
+      fillColor: 'rgba(168,180,255,0.08)',
+      fillOpacity: 1,
+      weight: 1.5,
+      dashArray: '4 4'
+    }).addTo(map);
+  }
+
   nearbyGhosts.forEach((g, i) => {
     if (!g.lat || !g.lng) return;
     const emoji = escapeHTML(g.emoji || '👻');
     const delay = (i * 0.3).toFixed(2);
-    const ghostIcon = L.divIcon({
-      html: `<div style="font-size:28px;animation:ghostFloat 2.8s ease-in-out infinite;animation-delay:${delay}s;filter:drop-shadow(0 0 8px rgba(168,180,255,0.85));cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;">${emoji}</div>`,
-      iconSize: [36, 36], iconAnchor: [18, 18], className: ''
-    });
-    L.marker([g.lat, g.lng], { icon: ghostIcon })
-      .addTo(map)
-      .on('click', () => {
-        openGhost(g.id);
-        showScreen('screenDetail');
-        setNav('nav-radar');
+    const ghostRadius = Math.max(20, parseInt(g.radius || '50') || 50);
+    const dist = distanceMeters(centerLat, centerLng, g.lat, g.lng);
+    const isInRange = dist <= ghostRadius;
+    const alreadyOpened = getDiscoveredIds().includes(g.id);
+
+    if (huntMode) {
+      // Mode chasse : icône différente selon proximité
+      const huntIcon = L.divIcon({
+        html: alreadyOpened
+          ? `<div style="font-size:26px;opacity:0.5;display:flex;align-items:center;justify-content:center;width:40px;height:40px;">${emoji}</div>`
+          : isInRange
+          ? `<div style="font-size:28px;animation:ghostFloat 2.8s ease-in-out infinite;animation-delay:${delay}s;filter:drop-shadow(0 0 10px rgba(100,255,180,0.9));cursor:pointer;display:flex;align-items:center;justify-content:center;width:40px;height:40px;">${emoji}</div>`
+          : `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;cursor:pointer;">
+               <div style="font-size:26px;filter:blur(1px) grayscale(0.5);opacity:0.7;animation:ghostFloat 2.8s ease-in-out infinite;animation-delay:${delay}s;">${emoji}</div>
+               <div style="position:absolute;bottom:-2px;right:-2px;background:rgba(30,20,50,0.9);border:1px solid rgba(168,180,255,.4);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;">🔒</div>
+             </div>`,
+        iconSize: [44, 44], iconAnchor: [22, 22], className: ''
       });
+
+      // Cercle de rayon autour du fantôme
+      if (!alreadyOpened) {
+        L.circle([g.lat, g.lng], {
+          radius: ghostRadius,
+          color: isInRange ? 'rgba(100,255,180,0.5)' : 'rgba(168,180,255,0.2)',
+          fillColor: isInRange ? 'rgba(100,255,180,0.05)' : 'transparent',
+          fillOpacity: 1,
+          weight: 1,
+          dashArray: isInRange ? '' : '3 5'
+        }).addTo(map);
+      }
+
+      L.marker([g.lat, g.lng], { icon: huntIcon })
+        .addTo(map)
+        .on('click', () => {
+          if (alreadyOpened) {
+            showToast('info', '✓ Déjà découvert');
+          } else if (isInRange) {
+            openGhost(g.id);
+            showScreen('screenDetail');
+            setNav('nav-radar');
+          } else {
+            const distText = dist >= 1000 ? (dist/1000).toFixed(1)+'km' : Math.round(dist)+'m';
+            showToast('warning', `🔒 Encore ${distText} à parcourir pour l'ouvrir`);
+            if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
+          }
+        });
+    } else {
+      // Mode normal
+      const ghostIcon = L.divIcon({
+        html: `<div style="font-size:28px;animation:ghostFloat 2.8s ease-in-out infinite;animation-delay:${delay}s;filter:drop-shadow(0 0 8px rgba(168,180,255,0.85));cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;">${emoji}</div>`,
+        iconSize: [36, 36], iconAnchor: [18, 18], className: ''
+      });
+      L.marker([g.lat, g.lng], { icon: ghostIcon })
+        .addTo(map)
+        .on('click', () => {
+          openGhost(g.id);
+          showScreen('screenDetail');
+          setNav('nav-radar');
+        });
+    }
   });
 
   setTimeout(() => map.invalidateSize(), 300);
-  Analytics.track('map_opened', { ghost_count: nearbyGhosts.length });
+  Analytics.track('map_opened', { ghost_count: nearbyGhosts.length, hunt_mode: huntMode });
 }
 
 function getLocation() {
@@ -478,6 +559,15 @@ registerServiceWorker().then(reg => {
     setInterval(checkNewGhosts, 5 * 60 * 1000);
     setInterval(checkResonances, 10 * 60 * 1000);
     setInterval(checkDiscoveries, 3 * 60 * 1000);
+    // Vérifier aussi au retour dans l'appli (visibilité + focus)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        setTimeout(() => { checkNewGhosts(); checkDiscoveries(); }, 1000);
+      }
+    });
+    window.addEventListener('focus', () => {
+      setTimeout(() => { checkNewGhosts(); checkDiscoveries(); }, 1000);
+    });
     const btn = document.getElementById('notifBtn');
     if (btn) {
       btn.textContent = '🔔 Notifications activées';
@@ -679,6 +769,35 @@ async function refreshProfileStats() {
   } catch(e) {}
 }
 
+window.toggleDiscoveryHistory = async () => {
+  const panel = document.getElementById('discoveryHistory');
+  const list = document.getElementById('discoveryHistoryList');
+  if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  const ids = getDiscoveredIds();
+  if (ids.length === 0) { list.innerHTML = '<div style="opacity:.5;font-style:italic;">Aucune découverte encore…</div>'; return; }
+  list.innerHTML = '<div style="opacity:.5;">Chargement…</div>';
+  try {
+    const results = [];
+    for (const id of ids.slice(-20).reverse()) { // 20 dernières
+      try {
+        const d = await getDoc(doc(db, 'ghosts', id));
+        if (d.exists()) {
+          const g = d.data();
+          results.push(`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:20px;">${escapeHTML(g.emoji||'👻')}</span>
+            <div>
+              <div style="font-size:12px;color:var(--ether);">${escapeHTML(g.location||'Lieu inconnu')}</div>
+              <div style="font-size:11px;opacity:.5;">${g.createdAt ? new Date(g.createdAt.seconds*1000).toLocaleDateString('fr-FR') : ''}</div>
+            </div>
+          </div>`);
+        }
+      } catch(e) {}
+    }
+    list.innerHTML = results.length ? results.join('') : '<div style="opacity:.5;font-style:italic;">Données indisponibles</div>';
+  } catch(e) { list.innerHTML = '<div style="opacity:.5;">Erreur de chargement</div>'; }
+};
+
 function updatePremiumUI() {
   const planEl = document.getElementById('planInfo');
   const codeSection = document.getElementById('codeSection');
@@ -857,8 +976,21 @@ function buildShareLink(ghost) {
 function openShareModal() {
   if (!selectedGhost) return;
   const link = buildShareLink(selectedGhost);
-  document.getElementById('shareLinkBox').textContent = link;
-  openModal('shareModal', null);
+  // Sur mobile : partage natif direct si disponible
+  if (navigator.share) {
+    navigator.share({
+      title: '👻 Fantôme à ' + (selectedGhost.location || 'cet endroit'),
+      text: "Un fantôme t'attend ici — approche-toi pour le découvrir.",
+      url: link
+    }).then(() => Analytics.track('share_native')).catch(() => {
+      // Fallback : modal copier
+      document.getElementById('shareLinkBox').textContent = link;
+      openModal('shareModal', null);
+    });
+  } else {
+    document.getElementById('shareLinkBox').textContent = link;
+    openModal('shareModal', null);
+  }
   Analytics.track('share_opened');
 }
 window.openShareModal = openShareModal;
@@ -3793,7 +3925,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
           <span id="resonanceCount">✦ Résonner</span>
         </button>
         <button class="btn-secondary" id="secretBtn" onclick="toggleSecret()" aria-label="Passer ce fantôme en mode secret" style="display:none;margin-bottom:8px;font-size:13px;padding:11px;">🔮 Passer en secret</button>
-        <button class="share-btn" onclick="openShareModal()" aria-label="Partager la position de ce fantôme">↗ Partager la position</button>
+        <button class="share-btn" onclick="openShareModal()" aria-label="Partager la position de ce fantôme" style="background:linear-gradient(135deg,rgba(168,180,255,.18),rgba(168,180,255,.08));border:1px solid rgba(168,180,255,.4);color:rgba(168,180,255,.95);font-size:14px;padding:13px;border-radius:14px;width:100%;cursor:pointer;margin-bottom:8px;letter-spacing:0.02em;">↗ Partager ce fantôme</button>
         <button class="btn-secondary" onclick="showScreen('screenReply')" style="margin-bottom:8px;">↩ Laisser une réponse ici</button>
         <button class="report-btn" id="reportBtn" onclick="openReportModal()">⚑ Signaler ce fantôme</button>
         <div class="section-label">Réponses dans ce lieu</div>
@@ -4030,7 +4162,10 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
     <div class="map-screen-wrap">
       <div class="map-header">
         <div class="map-title">Carte des fantômes</div>
-        <div class="map-count" id="mapCount" aria-live="polite">0 fantôme(s)</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="map-count" id="mapCount" aria-live="polite">0 fantôme(s)</div>
+          <button id="huntModeBtn" onclick="toggleHuntMode()" aria-label="Activer le mode chasse" style="background:rgba(168,180,255,.08);border:1px solid rgba(168,180,255,.25);color:rgba(168,180,255,.7);border-radius:20px;padding:4px 10px;font-size:11px;cursor:pointer;white-space:nowrap;transition:all .2s;">🎯 Chasse</button>
+        </div>
       </div>
       <div id="mapContainer" role="region" aria-label="Carte interactive des fantômes proches"></div>
     </div>
@@ -4044,9 +4179,9 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <div class="profile-name-big" id="profileName">…</div>
       </div>
       <div class="stats-grid" role="list" aria-label="Mes statistiques">
-        <div class="stat-card" role="listitem">
+        <div class="stat-card" role="listitem" onclick="toggleDiscoveryHistory()" style="cursor:pointer;" aria-label="Voir les fantômes découverts">
           <div class="stat-num" id="statDiscovered" aria-label="Fantômes découverts">0</div>
-          <div class="stat-label">Découverts</div>
+          <div class="stat-label">Découverts 👁</div>
         </div>
         <div class="stat-card" role="listitem">
           <div class="stat-num" id="statDeposited" aria-label="Fantômes déposés">0</div>
@@ -4060,6 +4195,11 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
           <div class="stat-num" id="statRank" aria-label="Mon rang">—</div>
           <div class="stat-label">Rang</div>
         </div>
+      </div>
+      <!-- Historique des découvertes -->
+      <div id="discoveryHistory" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:10px;">Mes découvertes</div>
+        <div id="discoveryHistoryList" style="font-size:13px;color:var(--warm-dim);"></div>
       </div>
       <div class="section-label" style="margin-bottom:8px;">Mon compte</div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;">
