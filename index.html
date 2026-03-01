@@ -1092,6 +1092,15 @@ window.loadNearbyGhosts = async () => {
   });
   nearbyGhosts.sort((a,b) => a.distance - b.distance);
 
+  // Étape 5 — Sync cycle de vie en background
+  nearbyGhosts.forEach(g => {
+    const { state } = WorldService.computeLifetime(g);
+    if (state !== g.state) {
+      WorldService.syncLifecycleState(g.id, state, g.state).catch(() => {});
+      g.state = state;
+    }
+  });
+
   for (const g of nearbyGhosts) {
     if (g.secret) {
       const key = 'secret_revealed_' + g.id;
@@ -1656,40 +1665,30 @@ window.depositGhost = async () => {
     const openCondition = getSelectedCond();
     const openHour = openCondition === 'hour' ? document.getElementById('condHourInput').value : null;
     const openAfterGhostId = (openCondition === 'after' && isPremium) ? document.getElementById('condAfterInput').value.trim() : null;
-    await addDoc(collection(db, 'ghosts'), {
+    // ── ÉTAPE 3 : Création via WorldService.createGhost() ───────────────
+    const ghostData = {
       message,
       location: location || 'Lieu sans nom',
-      emoji: secret ? '🔮' : (chainHint || chainNext ? '🔗' : emoji),
+      emoji,
       duration,
-      radius: secret ? '3m' : radius,
+      radius,
       anonymous: anon,
       secret: secret || false,
-      author: currentUser.displayName || currentUser.email,
-      authorUid: currentUser.uid,
-      lat: userLat,
-      lng: userLng,
-      resonances: 0,
       audioUrl: audioUrl || null,
       photoUrl: photoUrl || null,
-      chainHint: chainHint || null,
+      chainHint: (isPremium && chainHint) || null,
       chainLat: chainNext ? chainNext.lat : null,
       chainLng: chainNext ? chainNext.lng : null,
       openCondition: openCondition || 'always',
       openHour: openHour || null,
       openAfterGhostId: openAfterGhostId || null,
-      // P2 — Activite initiale
-      activityScore: 0,
-      discoveriesCount: 0,
-      lastPresenceAt: serverTimestamp(),
-      // P3 — Geohash pour requetes locales
-      geohash: encodeGeohash(userLat, userLng, 5),
-      geohash4: encodeGeohash(userLat, userLng, 4),
-      // P5 — Etat initial du cycle de vie
-      state: 'fresh',
-      createdAt: serverTimestamp()
-    });
-    // P4 — Enregistrer la date du dernier depot
-    await setDoc(doc(db, 'users', currentUser.uid), { lastGhostCreatedAt: serverTimestamp() }, { merge: true });
+    };
+    await WorldService.createGhost(
+      ghostData, userLat, userLng,
+      { uid: currentUser.uid, displayName: currentUser.displayName, email: currentUser.email }
+    );
+    // Enregistrer le timestamp du dernier dépôt (P4)
+    await WorldService.recordDepositTimestamp(currentUser.uid);
     document.getElementById('depositMsg').value = '';
     document.getElementById('depositLocation').value = '';
     document.getElementById('chainHint').value = '';
