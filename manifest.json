@@ -1,7 +1,7 @@
 {
-  "name": "Fantome",
-  "short_name": "Fantome",
-  "description": "Des messages invisibles ancres dans les lieux reels.",
+  "name": "Fantôme",
+  "short_name": "Fantôme",
+  "description": "Des messages invisibles ancrés dans les lieux réels.",
   "start_url": "/fantome/",
   "scope": "/fantome/",
   "display": "standalone",
