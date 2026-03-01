@@ -18,7 +18,7 @@
   font-src https://fonts.gstatic.com;
   img-src 'self' data: blob: https://res.cloudinary.com https://*.tile.openstreetmap.fr https://*.openstreetmap.org https://raw.githubusercontent.com;
   media-src blob: https://res.cloudinary.com;
-  connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://api.cloudinary.com https://www.gstatic.com wss://*.firebaseio.com;
+  connect-src https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://api.cloudinary.com wss://*.firebaseio.com;
   worker-src 'self' blob:;
 ">
 <title>👻 Fantôme</title>
@@ -54,7 +54,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-
 const CLOUDINARY_CLOUD = 'dcarogsye';
 const CLOUDINARY_UPLOAD_PRESET = 'fantome_unsigned';
 
@@ -73,12 +72,6 @@ let recordingInterval = null;
 // ── ANALYTICS LÉGER ─────────────────────────────────────
 // Stocke les événements localement + log console (extensible vers Firebase Analytics)
 const Analytics = {
-
-  // ── INIT WORLD SERVICE (après Analytics) ────────────────────────────
-WorldService.init(db, {
-  collection, addDoc, getDocs, query, where, orderBy, limit,
-  doc, getDoc, setDoc, updateDoc, deleteDoc, increment, serverTimestamp
-}, Analytics);
   events: JSON.parse(localStorage.getItem('fantome_analytics') || '[]'),
   track(event, params = {}) {
     const entry = { event, params, ts: Date.now() };
@@ -95,6 +88,11 @@ WorldService.init(db, {
   }
 };
 
+// ── INIT WORLD SERVICE ──────────────────────────────────────────────
+WorldService.init(db, {
+  collection, addDoc, getDocs, query, where, orderBy, limit,
+  doc, getDoc, setDoc, updateDoc, deleteDoc, increment, serverTimestamp
+}, Analytics);
 
 // ── UTILS ────────────────────────────────────────────────
 // Escaper le HTML pour éviter XSS lors de l'affichage du contenu utilisateur
@@ -401,7 +399,7 @@ function showNotif(title, body) {
 let notifCheckedGhosts = new Set();
 async function checkNewGhosts() {
   if (!currentUser || !userLat) return;
-  const snap = await getDocs(collection(db, 'ghosts'));
+  const snap = await WorldService.getVisibleGhosts(userLat, userLng);
   snap.forEach(d => {
     const g = { id: d.id, ...d.data() };
     if (notifCheckedGhosts.has(g.id)) return;
@@ -1070,7 +1068,7 @@ window.loadNearbyGhosts = async () => {
 
   let snap;
   try {
-    snap = await WorldService.getVisibleGhosts(userLat, userLng);
+    snap = await getDocs(collection(db, 'ghosts'));
   } catch(firestoreErr) {
     console.error('Firestore error:', firestoreErr);
     document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:12px;color:rgba(255,100,100,.6)">Impossible de charger les fantômes — vérifiez votre connexion.</span>';
@@ -1092,15 +1090,6 @@ window.loadNearbyGhosts = async () => {
     }
   });
   nearbyGhosts.sort((a,b) => a.distance - b.distance);
-
-  // Étape 5 — Sync cycle de vie en background
-  nearbyGhosts.forEach(g => {
-    const { state } = WorldService.computeLifetime(g);
-    if (state !== g.state) {
-      WorldService.syncLifecycleState(g.id, state, g.state).catch(() => {});
-      g.state = state;
-    }
-  });
 
   for (const g of nearbyGhosts) {
     if (g.secret) {
@@ -1217,8 +1206,6 @@ function renderGhostList() {
         <div class="envelope-tag">${g.anonymous ? '👻 anonyme' : escapeHTML(g.author || '')}</div>
         <div class="envelope-tag">⏳ ${escapeHTML(timeRemaining(g))}</div>
         <div class="envelope-tag">${timeAgo(g.createdAt)}</div>
-        ${(()=>{ const a=WorldService.getActivityLevel(g); return a.label!=='calme' ? '<div class=\"envelope-tag ghost-activity\" style=\"color:'+a.color+';\">⚡ '+escapeHTML(a.label)+'</div>' : ''; })()}
-        ${(()=>{ const l=WorldService.computeLifetime(g); if(l.state==='fresh') return '<div class=\"envelope-tag ghost-state-fresh\">✦ nouveau</div>'; if(l.state==='weak') return '<div class=\"envelope-tag ghost-state-weak\">· s\'evanouit</div>'; return ''; })()}
       </div>
     </div>`;
   }).join('');
@@ -1649,10 +1636,8 @@ window.depositGhost = async () => {
   if (!navigator.onLine) { err.textContent = 'Vous êtes hors ligne — reconnectez-vous pour déposer.'; return; }
 
   err.textContent = '';
-  // P4 — Verifier cooldown et limite active
-  const cooldownCheck = await WorldService.checkDepositCooldown(currentUser.uid);
+  const cooldownCheck = await WorldService.checkDepositCooldown(currentUser.uid, isExpired);
   if (!cooldownCheck.ok) { err.textContent = cooldownCheck.reason; return; }
-
   const depositBtn = document.getElementById('depositBtn');
   const hasMedia = !!(window._pendingAudioBlob || window._pendingPhotoFile);
   setLoading(depositBtn, true);
@@ -1666,17 +1651,11 @@ window.depositGhost = async () => {
     const openCondition = getSelectedCond();
     const openHour = openCondition === 'hour' ? document.getElementById('condHourInput').value : null;
     const openAfterGhostId = (openCondition === 'after' && isPremium) ? document.getElementById('condAfterInput').value.trim() : null;
-    // ── ÉTAPE 3 : Création via WorldService.createGhost() ───────────────
+    // ── Dépôt via WorldService.createGhost() ────────────────────────────
     const ghostData = {
-      message,
-      location: location || 'Lieu sans nom',
-      emoji,
-      duration,
-      radius,
-      anonymous: anon,
-      secret: secret || false,
-      audioUrl: audioUrl || null,
-      photoUrl: photoUrl || null,
+      message, location: location || 'Lieu sans nom', emoji, duration, radius,
+      anonymous: anon, secret: secret || false,
+      audioUrl: audioUrl || null, photoUrl: photoUrl || null,
       chainHint: (isPremium && chainHint) || null,
       chainLat: chainNext ? chainNext.lat : null,
       chainLng: chainNext ? chainNext.lng : null,
@@ -1684,12 +1663,10 @@ window.depositGhost = async () => {
       openHour: openHour || null,
       openAfterGhostId: openAfterGhostId || null,
     };
-    await WorldService.createGhost(
-      ghostData, userLat, userLng,
+    await WorldService.createGhost(ghostData, userLat, userLng,
       { uid: currentUser.uid, displayName: currentUser.displayName, email: currentUser.email }
     );
-    // Enregistrer le timestamp du dernier dépôt (P4)
-    await WorldService.recordDepositTimestamp(currentUser.uid);
+    await WorldService.recordDepositTimestamp(currentUser.uid);;
     document.getElementById('depositMsg').value = '';
     document.getElementById('depositLocation').value = '';
     document.getElementById('chainHint').value = '';
@@ -1700,8 +1677,8 @@ window.depositGhost = async () => {
     depositBtn.disabled = false;
     clearAudio(); clearPhoto();
     document.getElementById('depositSuccess').classList.add('show');
-    Analytics.track('ghost_created', { secret, anonymous: anon, hasAudio: !!audioUrl, hasPhoto: !!photoUrl });
-    showToast('success', '✶ Quelque chose reste ici maintenant.');
+    showToast('success', '👻 Fantôme déposé avec succès !');
+    Analytics.track('ghost_deposited', { anonymous: anon, secret, hasAudio: !!audioUrl, hasPhoto: !!photoUrl });
     setTimeout(async () => {
       document.getElementById('depositSuccess').classList.remove('show');
       showScreen('screenRadar');
@@ -3586,41 +3563,11 @@ button:focus-visible,[role="button"]:focus-visible{outline:2px solid var(--spiri
 body.light-theme .cond-btn{background:var(--surface);border-color:var(--border);}
 body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba(74,59,181,.08);}
 
-/* ─────────────────────────────────────────────────────────────────────
-   P2 — ACTIVITE DES FANTOMES
-   P5 — CYCLE DE VIE : fresh / stable / weak
-   ───────────────────────────────────────────────────────────────────── */
-.ghost-state-fresh {
-  color: rgba(100,220,160,.9) !important;
-  border-color: rgba(100,220,160,.25) !important;
-  background: rgba(100,220,160,.06) !important;
-}
-.ghost-state-weak {
-  color: rgba(200,150,255,.65) !important;
-  border-color: rgba(200,150,255,.18) !important;
-  background: rgba(200,150,255,.04) !important;
-  animation: weakPulse 3s ease-in-out infinite;
-}
+/* P2/P5 — BADGES ACTIVITÉ ET CYCLE DE VIE */
+.ghost-state-fresh { color: rgba(100,220,160,.9) !important; }
+.ghost-state-weak  { color: rgba(200,150,255,.65) !important; animation: weakPulse 3s ease-in-out infinite; }
 @keyframes weakPulse { 0%,100%{opacity:.75} 50%{opacity:.4} }
-.ghost-activity {
-  border-width: 1px;
-  border-style: solid;
-  border-radius: 20px;
-  padding: 2px 8px;
-  font-size: 9px;
-  letter-spacing: .4px;
-}
-/* P6 — Feedback depot plus solennel */
-.deposit-success { transition: opacity 1s cubic-bezier(.4,0,.2,1); }
-.deposit-success .success-ghost {
-  filter: drop-shadow(0 0 40px rgba(168,180,255,.7));
-  animation: floatG 6s ease-in-out infinite;
-}
-.deposit-success .success-title {
-  font-size: 22px;
-  font-weight: 300;
-  letter-spacing: .5px;
-}
+.ghost-activity    { border: 1px solid; border-radius: 20px; padding: 2px 8px; font-size: 9px; }
 
 </style>
 </head>
@@ -3645,8 +3592,8 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
 
   <div class="deposit-success" id="depositSuccess" role="status" aria-live="polite">
     <div class="success-ghost" aria-hidden="true">👻</div>
-    <div class="success-title">Quelque chose reste ici maintenant.</div>
-    <div class="success-sub">Votre message est ancré dans ce lieu.<br>Il attend, invisible, que quelqu'un passe.</div>
+    <div class="success-title">Fantôme déposé</div>
+    <div class="success-sub">Votre message attend dans ce lieu.<br>Quelqu'un le trouvera… peut-être.</div>
   </div>
 
   <div class="notch" aria-hidden="true"></div>
@@ -4238,5 +4185,3 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
 </div>
 </body>
 </html>
-
-
