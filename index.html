@@ -40,6 +40,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, increment, serverTimestamp, GeoPoint } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import WorldService, { buildGeohashFields, encodeGeohash } from './services/world.service.js';
+import GhostService from './services/ghost.service.js';
+import LocationService from './services/location.service.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDtxsiaZgs2iycJRBK3SCvNuOarW7wEWaI",
@@ -106,13 +108,7 @@ function escapeHTML(str) {
     .replace(/'/g, '&#39;');
 }
 
-function distanceMeters(lat1, lng1, lat2, lng2) {
-  const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
+const distanceMeters = (lat1, lng1, lat2, lng2) => LocationService.distanceMeters(lat1, lng1, lat2, lng2);
 
 function formatDistance(m) {
   return m < 1000 ? Math.round(m) + 'm' : (m/1000).toFixed(1) + 'km';
@@ -287,6 +283,15 @@ onAuthStateChanged(auth, async user => {
     updatePremiumUI();
     showScreen('screenRadar');
     setNav('nav-radar');
+    // ── Présence passive — GPS watch ─────────────────────────────────
+    LocationService.startWatch();
+    LocationService.onPositionUpdate(({ lat, lng }) => {
+      const toUpdate = LocationService.detectNearbyPresence(lat, lng, nearbyGhosts);
+      toUpdate.forEach(ghostId => {
+        LocationService.markPresenceRecorded(ghostId);
+        WorldService.registerPresence(ghostId, false).catch(() => {});
+      });
+    });
     document.getElementById('bottomNav').style.display = 'flex';
     await loadNearbyGhosts();
   } else {
@@ -1027,27 +1032,9 @@ window.deleteMyGhosts = async () => {
   }
 };
 
-function isExpired(g) {
-  if (!g.createdAt) return false;
-  if (!g.duration || g.duration === '♾ Éternel') return false;
-  const durations = { '24h': 86400000, '7 jours': 604800000, '1 mois': 2592000000 };
-  const maxAge = durations[g.duration];
-  if (!maxAge) return false;
-  return Date.now() - g.createdAt.seconds * 1000 > maxAge;
-}
+const isExpired = g => GhostService.isExpired(g);
 
-function timeRemaining(g) {
-  if (!g.createdAt || !g.duration || g.duration === '♾ Éternel') return '♾ Éternel';
-  const durations = { '24h': 86400000, '7 jours': 604800000, '1 mois': 2592000000 };
-  const maxAge = durations[g.duration];
-  if (!maxAge) return '♾ Éternel';
-  const remaining = maxAge - (Date.now() - g.createdAt.seconds * 1000);
-  if (remaining <= 0) return 'Expiré';
-  const h = Math.floor(remaining / 3600000);
-  const d = Math.floor(h / 24);
-  if (d > 0) return 'expire dans ' + d + 'j';
-  return 'expire dans ' + h + 'h';
-}
+const timeRemaining = g => GhostService.timeRemaining(g);
 
 window.loadNearbyGhosts = async () => {
   // Vérification offline
