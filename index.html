@@ -355,6 +355,16 @@ onAuthStateChanged(auth, async user => {
     watchMyGhostResonances();
     Analytics.track('session_start', { uid_hash: btoa(user.uid).slice(0,8) });
     Analytics.track('app_open');
+    // FIX: Migrer les découvertes anonymes vers le compte utilisateur
+    const anonKey = 'discoveries_anon';
+    const anonIds = JSON.parse(localStorage.getItem(anonKey) || '[]');
+    if (anonIds.length > 0) {
+      const userKey = 'discoveries_' + user.uid;
+      const userIds = JSON.parse(localStorage.getItem(userKey) || '[]');
+      const merged = [...new Set([...userIds, ...anonIds])];
+      localStorage.setItem(userKey, JSON.stringify(merged));
+      localStorage.removeItem(anonKey);
+    }
     const pending = sessionStorage.getItem('pendingGhost');
     if (pending) { sessionStorage.removeItem('pendingGhost'); setTimeout(() => openGhost(pending), 800); }
     document.getElementById('profileName').textContent = escapeHTML(user.displayName || user.email);
@@ -484,35 +494,52 @@ function showNotif(title, body) {
 }
 
 let notifCheckedGhosts = new Set();
+let _checkNewGhostsTimer = null;
 async function checkNewGhosts() {
   if (!currentUser || !userLat) return;
-  const snap = await WorldService.getVisibleGhosts(userLat, userLng);
-  snap.forEach(d => {
-    const g = { id: d.id, ...d.data() };
-    if (notifCheckedGhosts.has(g.id)) return;
-    if (isExpired(g)) return;
-    if (!g.lat || !g.lng) return;
-    const dist = distanceMeters(userLat, userLng, g.lat, g.lng);
-    if (dist <= 5000) {
-      notifCheckedGhosts.add(g.id);
-      if (g.createdAt && (Date.now() - g.createdAt.seconds * 1000) < 600000) {
-        showNotif('👻 Nouveau fantôme proche !', `À ${formatDistance(dist)} de vous — ${escapeHTML(g.location || 'Lieu inconnu')}`);
+  // FIX: Debounce — ne pas appeler plus d'une fois par minute
+  if (_checkNewGhostsTimer) return;
+  _checkNewGhostsTimer = setTimeout(() => { _checkNewGhostsTimer = null; }, 60000);
+  try {
+    const snap = await WorldService.getVisibleGhosts(userLat, userLng);
+    snap.forEach(d => {
+      const g = { id: d.id, ...d.data() };
+      if (notifCheckedGhosts.has(g.id)) return;
+      if (isExpired(g)) return;
+      if (!g.lat || !g.lng) return;
+      const dist = distanceMeters(userLat, userLng, g.lat, g.lng);
+      if (dist <= 5000) {
+        notifCheckedGhosts.add(g.id);
+        if (g.createdAt && (Date.now() - g.createdAt.seconds * 1000) < 600000) {
+          showNotif('👻 Nouveau fantôme proche !', `À ${formatDistance(dist)} de vous — ${escapeHTML(g.location || 'Lieu inconnu')}`);
+        }
       }
-    }
-  });
+    });
+  } catch(e) {
+    console.warn('checkNewGhosts error:', e);
+  }
 }
 
+// FIX: Guard contre les appels concurrents
+let _checkResonancesRunning = false;
 async function checkResonances() {
-  if (!currentUser) return;
-  const myGhosts = await getDocs(query(collection(db, 'ghosts'), where('authorUid', '==', currentUser.uid)));
-  myGhosts.forEach(d => {
-    const g = d.data();
-    const prev = parseInt(localStorage.getItem('prev_reso_' + d.id) || '0');
-    if ((g.resonances || 0) > prev) {
-      showNotif('✦ Résonance reçue !', `Votre fantôme "${escapeHTML(g.location || 'Lieu inconnu')}" a résonné`);
-      localStorage.setItem('prev_reso_' + d.id, g.resonances);
-    }
-  });
+  if (!currentUser || _checkResonancesRunning) return;
+  _checkResonancesRunning = true;
+  try {
+    const myGhosts = await getDocs(query(collection(db, 'ghosts'), where('authorUid', '==', currentUser.uid), limit(50)));
+    myGhosts.forEach(d => {
+      const g = d.data();
+      const prev = parseInt(localStorage.getItem('prev_reso_' + d.id) || '0');
+      if ((g.resonances || 0) > prev) {
+        showNotif('✦ Résonance reçue !', `Votre fantôme "${escapeHTML(g.location || 'Lieu inconnu')}" a résonné`);
+        localStorage.setItem('prev_reso_' + d.id, g.resonances);
+      }
+    });
+  } catch(e) {
+    console.warn('checkResonances error:', e);
+  } finally {
+    _checkResonancesRunning = false;
+  }
 }
 
 async function checkDiscoveries() {
@@ -534,6 +561,27 @@ async function checkDiscoveries() {
   } catch(e) {}
 }
 
+// FIX: Guard contre les setInterval doublons
+let _notifIntervalsStarted = false;
+let _visibilityListenerAdded = false;
+
+function _startNotifIntervals() {
+  if (_notifIntervalsStarted) return; // déjà démarrés, pas de doublon
+  _notifIntervalsStarted = true;
+  setInterval(checkNewGhosts, 5 * 60 * 1000);
+  setInterval(checkResonances, 10 * 60 * 1000);
+  setInterval(checkDiscoveries, 3 * 60 * 1000);
+  // Vérifier au retour dans l'appli — un seul listener
+  if (!_visibilityListenerAdded) {
+    _visibilityListenerAdded = true;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        setTimeout(() => { checkNewGhosts(); checkDiscoveries(); }, 1000);
+      }
+    });
+  }
+}
+
 window.enableNotifications = async () => {
   const btn = document.getElementById('notifBtn');
   const granted = await requestNotifPermission();
@@ -543,9 +591,7 @@ window.enableNotifications = async () => {
     btn.style.color = 'rgba(100,220,160,.9)';
     localStorage.setItem('notif_enabled', '1');
     showNotif('👻 Fantôme', 'Notifications activées — vous serez alerté des fantômes proches !');
-    setInterval(checkNewGhosts, 5 * 60 * 1000);
-    setInterval(checkResonances, 10 * 60 * 1000);
-    setInterval(checkDiscoveries, 3 * 60 * 1000);
+    _startNotifIntervals();
     checkDiscoveries();
   } else {
     btn.textContent = '🔕 Notifications refusées';
@@ -556,18 +602,7 @@ window.enableNotifications = async () => {
 
 registerServiceWorker().then(reg => {
   if (reg && localStorage.getItem('notif_enabled') === '1' && Notification.permission === 'granted') {
-    setInterval(checkNewGhosts, 5 * 60 * 1000);
-    setInterval(checkResonances, 10 * 60 * 1000);
-    setInterval(checkDiscoveries, 3 * 60 * 1000);
-    // Vérifier aussi au retour dans l'appli (visibilité + focus)
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        setTimeout(() => { checkNewGhosts(); checkDiscoveries(); }, 1000);
-      }
-    });
-    window.addEventListener('focus', () => {
-      setTimeout(() => { checkNewGhosts(); checkDiscoveries(); }, 1000);
-    });
+    _startNotifIntervals();
     const btn = document.getElementById('notifBtn');
     if (btn) {
       btn.textContent = '🔔 Notifications activées';
@@ -624,7 +659,12 @@ function stopRecording() {
 }
 
 function showAudioPreview(blob) {
+  // FIX: Révoquer l'ancien blob URL s'il existe
+  if (window._pendingAudioBlobUrl) {
+    URL.revokeObjectURL(window._pendingAudioBlobUrl);
+  }
   const url = URL.createObjectURL(blob);
+  window._pendingAudioBlobUrl = url;
   const preview = document.getElementById('audioPreview');
   preview.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;background:linear-gradient(145deg,rgba(168,180,255,.08),rgba(168,180,255,.03));border:1px solid rgba(168,180,255,.2);border-radius:14px;padding:10px 12px;margin-top:8px;">
@@ -637,6 +677,11 @@ function showAudioPreview(blob) {
 }
 
 window.clearAudio = () => {
+  // FIX: Révoquer le blob URL
+  if (window._pendingAudioBlobUrl) {
+    URL.revokeObjectURL(window._pendingAudioBlobUrl);
+    window._pendingAudioBlobUrl = null;
+  }
   document.getElementById('audioPreview').innerHTML = '';
   window._pendingAudioBlob = null;
 };
@@ -655,7 +700,12 @@ window.handlePhoto = (input) => {
     document.getElementById('depositError').textContent = 'Fichier non valide — images uniquement.';
     return;
   }
+  // FIX: Révoquer l'ancien blob URL
+  if (window._pendingPhotoBlobUrl) {
+    URL.revokeObjectURL(window._pendingPhotoBlobUrl);
+  }
   const url = URL.createObjectURL(file);
+  window._pendingPhotoBlobUrl = url;
   const preview = document.getElementById('photoPreview');
   preview.innerHTML = `
     <div style="position:relative;margin-top:8px;">
@@ -666,31 +716,50 @@ window.handlePhoto = (input) => {
 };
 
 window.clearPhoto = () => {
+  // FIX: Révoquer le blob URL
+  if (window._pendingPhotoBlobUrl) {
+    URL.revokeObjectURL(window._pendingPhotoBlobUrl);
+    window._pendingPhotoBlobUrl = null;
+  }
   document.getElementById('photoPreview').innerHTML = '';
   document.getElementById('photoInput').value = '';
   window._pendingPhotoFile = null;
 };
 
+
 async function uploadMedia(uid) {
   let audioUrl = null;
   let photoUrl = null;
+
+  // FIX: Helper avec retry x2 sur erreur réseau
+  async function uploadToCloudinary(fd, resourceType) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${resourceType}/upload`, { method:'POST', body: fd });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message);
+        return data.secure_url || null;
+      } catch(e) {
+        if (attempt === 1) throw e; // dernier essai échoué
+        await new Promise(r => setTimeout(r, 1000)); // attendre 1s avant retry
+      }
+    }
+  }
+
   if (window._pendingAudioBlob) {
     const fd = new FormData();
     fd.append('file', window._pendingAudioBlob, 'audio.webm');
     fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
     fd.append('folder', 'fantome/audio');
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`, { method:'POST', body: fd });
-    const data = await res.json();
-    audioUrl = data.secure_url || null;
+    audioUrl = await uploadToCloudinary(fd, 'video');
   }
   if (window._pendingPhotoFile) {
     const fd = new FormData();
     fd.append('file', window._pendingPhotoFile);
     fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
     fd.append('folder', 'fantome/photos');
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method:'POST', body: fd });
-    const data = await res.json();
-    photoUrl = data.secure_url || null;
+    photoUrl = await uploadToCloudinary(fd, 'image');
   }
   return { audioUrl, photoUrl };
 }
@@ -1140,19 +1209,33 @@ window.logout = async () => {
 
 window.deleteMyGhosts = async () => {
   if (!currentUser) return;
-  // Confirmation modale custom
   const confirmed = await showConfirm('Supprimer tous mes fantômes ?', 'Cette action est irréversible — tous vos messages et réponses seront effacés.');
   if (!confirmed) return;
   const btn = document.getElementById('deleteBtn');
   btn.textContent = '⏳ Suppression…';
   btn.disabled = true;
   try {
+    // Récupérer mes fantômes
     const snap = await getDocs(query(collection(db, 'ghosts'), where('authorUid', '==', currentUser.uid)));
+    const ghostIds = snap.docs.map(d => d.id);
     const dels = snap.docs.map(d => deleteDoc(doc(db, 'ghosts', d.id)));
-    const rSnap = await getDocs(query(collection(db, 'replies'), where('authorUid', '==', currentUser.uid)));
-    const rDels = rSnap.docs.map(d => deleteDoc(doc(db, 'replies', d.id)));
-    await Promise.all([...dels, ...rDels]);
-    btn.textContent = '✓ ' + (snap.size + rSnap.size) + ' supprimés';
+
+    // FIX: Supprimer mes réponses ET toutes les réponses sur mes fantômes
+    const myReplies = await getDocs(query(collection(db, 'replies'), where('authorUid', '==', currentUser.uid)));
+    const rDels = myReplies.docs.map(d => deleteDoc(doc(db, 'replies', d.id)));
+
+    // Supprimer aussi les réponses d'autres utilisateurs sur mes fantômes
+    const replyDelsOnMyGhosts = [];
+    for (const gid of ghostIds.slice(0, 20)) { // limiter à 20 pour éviter trop d'appels
+      try {
+        const r = await getDocs(query(collection(db, 'replies'), where('ghostId', '==', gid)));
+        r.docs.forEach(d => replyDelsOnMyGhosts.push(deleteDoc(doc(db, 'replies', d.id))));
+      } catch(e) {}
+    }
+
+    await Promise.all([...dels, ...rDels, ...replyDelsOnMyGhosts]);
+    const totalDel = snap.size + myReplies.size + replyDelsOnMyGhosts.length;
+    btn.textContent = '✓ ' + snap.size + ' fantômes supprimés';
     btn.style.borderColor = 'rgba(100,220,160,.4)';
     btn.style.color = 'rgba(100,220,160,.9)';
     nearbyGhosts = [];
@@ -1188,13 +1271,19 @@ window.loadNearbyGhosts = async () => {
 
   let snap;
   try {
-    snap = await getDocs(collection(db, 'ghosts'));
+    // FIX: Limiter à 200 fantômes max pour la performance — filtrer côté serveur si possible
+    snap = await getDocs(query(collection(db, 'ghosts'), where('expired', '!=', true), limit(200)));
   } catch(firestoreErr) {
-    console.error('Firestore error:', firestoreErr);
-    document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:12px;color:rgba(255,100,100,.6)">Impossible de charger les fantômes — vérifiez votre connexion.</span>';
-    renderGhostList();
-    renderRadarDots();
-    return;
+    // Fallback sans filtre si l'index n'existe pas encore
+    try {
+      snap = await getDocs(query(collection(db, 'ghosts'), limit(200)));
+    } catch(e2) {
+      console.error('Firestore error:', firestoreErr);
+      document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:12px;color:rgba(255,100,100,.6)">Impossible de charger les fantômes — vérifiez votre connexion.</span>';
+      renderGhostList();
+      renderRadarDots();
+      return;
+    }
   }
   nearbyGhosts = [];
   snap.forEach(d => {
@@ -1430,10 +1519,9 @@ window.openGhost = async (id) => {
   const idx = nearbyGhosts.findIndex(g => g.id === id);
   if (idx !== -1) currentGhostIndex = idx;
   selectedGhost = nearbyGhosts.find(g => g.id === id);
-  const isNewDisc = addDiscovery(id);
-  WorldService.registerPresence(id, isNewDisc).catch(() => {});
-  const discCount = getDiscoveryCount();
-  showDiscoveryToast(discCount, isNewDisc);
+  // FIX: Ne PAS appeler addDiscovery ici — seulement quand l'enveloppe est RÉELLEMENT ouverte
+  // (déplacé dans _doOpenEnvelope)
+  WorldService.registerPresence(id, false).catch(() => {});
 
   if (!selectedGhost) {
     try {
@@ -1445,13 +1533,23 @@ window.openGhost = async (id) => {
 
   document.getElementById('detailLocation').textContent = '📍 ' + escapeHTML(selectedGhost.location || 'Lieu inconnu');
   document.getElementById('sealedEmoji').textContent = selectedGhost.secret ? '🔮' : (selectedGhost.emoji || '👻');
-  document.getElementById('sealedHint').textContent = selectedGhost.anonymous
-    ? 'De 👻 Anonyme · ' + formatDistance(selectedGhost.distance)
-    : 'De ' + escapeHTML(selectedGhost.author || '') + ' · ' + formatDistance(selectedGhost.distance);
-  document.getElementById('detailDistance').textContent = formatDistance(selectedGhost.distance) + ' de vous';
 
-  const isOwner = currentUser && selectedGhost.authorUid === currentUser.uid;
-  const isLocked = selectedGhost.secret && selectedGhost.distance > 3 && !isOwner;
+  // FIX: Guard contre lat/lng manquants
+  const ghostDist = (selectedGhost.distance != null) ? selectedGhost.distance :
+    (selectedGhost.lat && selectedGhost.lng && userLat ?
+      distanceMeters(userLat, userLng, selectedGhost.lat, selectedGhost.lng) : 0);
+
+  document.getElementById('sealedHint').textContent = selectedGhost.anonymous
+    ? 'De 👻 Anonyme · ' + formatDistance(ghostDist)
+    : 'De ' + escapeHTML(selectedGhost.author || '') + ' · ' + formatDistance(ghostDist);
+  document.getElementById('detailDistance').textContent = formatDistance(ghostDist) + ' de vous';
+
+  const isOwner = currentUser && selectedGhost && (
+    selectedGhost.authorUid === currentUser.uid ||
+    selectedGhost.authorEmail === currentUser.email  // fallback
+  );
+  // FIX: isLocked vérifie la distance calculée (ghostDist)
+  const isLocked = selectedGhost.secret && ghostDist > 3 && !isOwner;
 
   // ── Vérifier la condition d'ouverture (sauf pour le propriétaire) ──
   resetBlockedOverlay();
@@ -1738,7 +1836,9 @@ window.toggleSecret = async () => {
 window.depositGhost = async () => {
   const message  = document.getElementById('depositMsg').value.trim();
   const location = document.getElementById('depositLocation').value.trim();
-  const emoji    = document.getElementById('depositEmoji').value || '👻';
+  const rawEmoji  = document.getElementById('depositEmoji').value || '👻';
+  // FIX: Limiter l'emoji à 2 caractères max pour éviter injection de HTML
+  const emoji = [...rawEmoji].slice(0, 2).join('');
   const duration = document.querySelector('.dur-btn.active')?.textContent || '7 jours';
   const radius   = document.querySelector('.radius-btn.active')?.textContent || '10m';
   const typeBtns = document.querySelectorAll('#screenDeposit .type-selector');
@@ -1813,28 +1913,52 @@ window.depositGhost = async () => {
 };
 
 window.sendReply = async () => {
-  const msg  = document.getElementById('replyMsg').value.trim();
+  const msgEl = document.getElementById('replyMsg');
+  const msg  = msgEl.value.trim();
   const anon = document.querySelector('#screenReply .type-btn.active')?.dataset.val === 'anon';
-  if (!msg || !selectedGhost) return;
-  if (msg.length > 280) { return; }
-  await addDoc(collection(db, 'replies'), {
-    ghostId: selectedGhost.id,
-    message: msg,
-    anonymous: anon,
-    author: currentUser.displayName || currentUser.email,
-    authorUid: currentUser.uid,
-    createdAt: serverTimestamp()
-  });
-  document.getElementById('replyMsg').value = '';
-  updateReplyCount(document.getElementById('replyMsg'));
-  showToast('success', '↩ Réponse déposée');
-  openGhost(selectedGhost.id);
-  Analytics.track('reply_sent');
+  if (!msg || !selectedGhost) {
+    if (!msg) { msgEl.style.borderColor = 'rgba(255,100,100,.5)'; setTimeout(() => msgEl.style.borderColor = '', 1500); }
+    return;
+  }
+  if (msg.length > 280) {
+    showToast('warning', 'Message trop long (280 caractères max).');
+    return;
+  }
+  const btn = document.querySelector('#screenReply .btn-primary');
+  if (btn) setLoading(btn, true);
+  try {
+    await addDoc(collection(db, 'replies'), {
+      ghostId: selectedGhost.id,
+      message: msg,
+      anonymous: anon,
+      author: currentUser.displayName || currentUser.email,
+      authorUid: currentUser.uid,
+      createdAt: serverTimestamp()
+    });
+    msgEl.value = '';
+    updateReplyCount(msgEl);
+    showToast('success', '↩ Réponse déposée');
+    openGhost(selectedGhost.id);
+    Analytics.track('reply_sent');
+  } catch(e) {
+    showToast('error', 'Erreur — réessayez.');
+  } finally {
+    if (btn) setLoading(btn, false, '↩ Laisser une réponse');
+  }
 };
 
 function _doOpenEnvelope() {
   // Incrémenter le compteur journalier
   if (!isPremium) incrementDailyOpenCount();
+  // FIX: Enregistrer la découverte ICI, seulement quand l'enveloppe est vraiment ouverte
+  if (selectedGhost) {
+    const isNewDisc = addDiscovery(selectedGhost.id);
+    const discCount = getDiscoveryCount();
+    showDiscoveryToast(discCount, isNewDisc);
+    if (isNewDisc) {
+      WorldService.registerPresence(selectedGhost.id, true).catch(() => {});
+    }
+  }
   const sealed = document.getElementById('envelopeSealed');
   const revealed = document.getElementById('envelopeContent');
   sealed.classList.add('opening');
@@ -1941,43 +2065,47 @@ function _checkDistanceThenOpen() {
   const hint = document.getElementById('sealedHint');
   const origHint = hint.textContent;
 
-  // Indiquer qu'on vérifie la position
   btn.disabled = true;
   hint.textContent = '📡 Vérification de votre position…';
-
-  if (!navigator.geolocation) {
+  // FIX: Timeout de sécurité si géoloc bloque trop longtemps
+  const fallbackTimer = setTimeout(() => {
     btn.disabled = false;
     hint.textContent = origHint;
-    _doOpenEnvelope(); // Pas de géoloc dispo → on laisse ouvrir
+    _doOpenEnvelope(); // On laisse ouvrir après 8s de blocage
+  }, 8000);
+
+  if (!navigator.geolocation) {
+    clearTimeout(fallbackTimer);
+    btn.disabled = false;
+    hint.textContent = origHint;
+    _doOpenEnvelope();
     return;
   }
 
   navigator.geolocation.getCurrentPosition(
     (pos) => {
+      clearTimeout(fallbackTimer);
       btn.disabled = false;
       const dist = distanceMeters(
         pos.coords.latitude, pos.coords.longitude,
         selectedGhost.lat, selectedGhost.lng
       );
-      // Extraire le rayon numérique du ghost (ex: "10m" → 10, "3m" → 3)
       const ghostRadiusStr = selectedGhost.radius || '50m';
       const ghostRadius = Math.max(20, parseInt(ghostRadiusStr) || 50);
       if (dist <= ghostRadius) {
-        // ✅ Assez proche
         hint.textContent = origHint;
         _doOpenEnvelope();
       } else {
-        // ❌ Trop loin
         showDistanceError(dist);
       }
     },
     () => {
-      // Géoloc refusée → on laisse ouvrir (dégradé gracieux)
+      clearTimeout(fallbackTimer);
       btn.disabled = false;
       hint.textContent = origHint;
       _doOpenEnvelope();
     },
-    { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+    { enableHighAccuracy: true, timeout: 7000, maximumAge: 5000 }
   );
 };
 
