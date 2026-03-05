@@ -849,6 +849,7 @@ async function refreshProfileStats() {
   const rank  = getRank(count);
   animateStatNumber('statDiscovered', count);
   document.getElementById('statRank').textContent = rank.icon + ' ' + rank.label;
+  updateFavoritesCount();
   try {
     const snap = await getDocs(query(collection(db, 'ghosts'), where('authorUid','==', currentUser.uid)));
     animateStatNumber('statDeposited', snap.size);
@@ -1515,6 +1516,81 @@ function skeletonGhostList() {
     </div>`).join('');
 }
 
+// ── FAVORIS ──────────────────────────────────────────────
+function getFavKey() { return currentUser ? 'favorites_' + currentUser.uid : 'favorites_anon'; }
+function getFavorites() { try { return JSON.parse(localStorage.getItem(getFavKey()) || '[]'); } catch(e) { return []; } }
+function isFavorite(ghostId) { return getFavorites().some(f => f.id === ghostId); }
+
+function saveFavorites(favs) { localStorage.setItem(getFavKey(), JSON.stringify(favs)); }
+
+window.toggleFavorite = () => {
+  if (!selectedGhost) return;
+  const favs = getFavorites();
+  const idx = favs.findIndex(f => f.id === selectedGhost.id);
+  if (idx >= 0) {
+    favs.splice(idx, 1);
+    showToast('info', '★ Retiré des favoris');
+  } else {
+    favs.unshift({
+      id: selectedGhost.id,
+      emoji: selectedGhost.emoji || '👻',
+      location: selectedGhost.location || 'Lieu inconnu',
+      message: (selectedGhost.message || '').substring(0, 60),
+      savedAt: Date.now()
+    });
+    showToast('success', '★ Ajouté aux favoris');
+  }
+  saveFavorites(favs);
+  updateFavoriteBtn();
+  updateFavoritesCount();
+};
+
+function updateFavoriteBtn() {
+  const btn = document.getElementById('favoriteBtn');
+  if (!btn || !selectedGhost) return;
+  const fav = isFavorite(selectedGhost.id);
+  btn.textContent = fav ? '★ Dans vos favoris' : '★ Ajouter aux favoris';
+  btn.style.color = fav ? 'rgba(255,200,80,.9)' : 'rgba(255,200,80,.5)';
+  btn.style.borderColor = fav ? 'rgba(255,200,80,.5)' : 'rgba(255,200,80,.2)';
+  btn.style.background = fav ? 'rgba(255,200,80,.1)' : 'rgba(255,200,80,.05)';
+}
+
+function updateFavoritesCount() {
+  const el = document.getElementById('statFavorites');
+  if (el) el.textContent = getFavorites().length;
+}
+
+window.toggleFavoritesList = async () => {
+  const panel = document.getElementById('favoritesList');
+  const content = document.getElementById('favoritesListContent');
+  if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+  document.getElementById('discoveryHistory').style.display = 'none';
+  document.getElementById('depositedList').style.display = 'none';
+  panel.style.display = 'block';
+  const favs = getFavorites();
+  if (favs.length === 0) {
+    content.innerHTML = '<div style="opacity:.5;font-style:italic;">Aucun favori encore — appuyez sur ★ dans un fantôme.</div>';
+    return;
+  }
+  content.innerHTML = favs.map(f => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:22px;flex-shrink:0;">${escapeHTML(f.emoji)}</span>
+      <div style="flex:1;min-width:0;" onclick="openGhost('${escapeHTML(f.id)}')" style="cursor:pointer;">
+        <div style="font-size:13px;color:var(--ether);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHTML(f.location)}</div>
+        <div style="font-size:11px;color:var(--spirit-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">"${escapeHTML(f.message)}"</div>
+      </div>
+      <button onclick="removeFavorite('${escapeHTML(f.id)}')" aria-label="Retirer des favoris" style="background:none;border:none;color:rgba(255,200,80,.5);font-size:18px;cursor:pointer;flex-shrink:0;padding:4px;">★</button>
+    </div>`).join('');
+};
+
+window.removeFavorite = (ghostId) => {
+  const favs = getFavorites().filter(f => f.id !== ghostId);
+  saveFavorites(favs);
+  updateFavoritesCount();
+  toggleFavoritesList();
+  toggleFavoritesList();
+};
+
 // ── CLASSEMENT PUBLIC ────────────────────────────────────
 window.loadLeaderboard = async () => {
   const el = document.getElementById('leaderboardContent');
@@ -1903,6 +1979,7 @@ window.openGhost = async (id) => {
 
   updateSwipeUI();
   updateReportBtn(id);
+  updateFavoriteBtn();
   showScreen('screenDetail');
   setNav('');
 };
@@ -4380,6 +4457,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <button class="btn-secondary" id="secretBtn" onclick="toggleSecret()" aria-label="Passer ce fantôme en mode secret" style="display:none;margin-bottom:8px;font-size:13px;padding:11px;">🔮 Passer en secret</button>
         <button class="share-btn" onclick="openShareModal()" aria-label="Partager la position de ce fantôme" style="background:linear-gradient(135deg,rgba(168,180,255,.18),rgba(168,180,255,.08));border:1px solid rgba(168,180,255,.4);color:rgba(168,180,255,.95);font-size:14px;padding:13px;border-radius:14px;width:100%;cursor:pointer;margin-bottom:8px;letter-spacing:0.02em;">↗ Partager ce fantôme</button>
         <button class="btn-secondary" onclick="showScreen('screenReply')" style="margin-bottom:8px;">↩ Laisser une réponse ici</button>
+        <button id="favoriteBtn" onclick="toggleFavorite()" aria-label="Ajouter aux favoris" style="width:100%;padding:11px;background:rgba(255,200,80,.05);border:1px solid rgba(255,200,80,.2);border-radius:13px;color:rgba(255,200,80,.5);font-family:'Instrument Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;touch-action:manipulation;">★ Ajouter aux favoris</button>
         <button class="report-btn" id="reportBtn" onclick="openReportModal()">⚑ Signaler ce fantôme</button>
         <div class="section-label">Réponses dans ce lieu</div>
         <div id="repliesList"></div>
@@ -4644,6 +4722,10 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
           <div class="stat-num" id="statResonances" aria-label="Résonances reçues">0</div>
           <div class="stat-label">Résonances reçues</div>
         </div>
+        <div class="stat-card" role="listitem" onclick="toggleFavoritesList()" style="cursor:pointer;" aria-label="Voir mes favoris">
+          <div class="stat-num" id="statFavorites" aria-label="Favoris">0</div>
+          <div class="stat-label">Favoris ★</div>
+        </div>
         <div class="stat-card" role="listitem">
           <div class="stat-num" id="statRank" aria-label="Mon rang">—</div>
           <div class="stat-label">Rang</div>
@@ -4658,6 +4740,11 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
       <div id="depositedList" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;">
         <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:10px;">Mes fantômes déposés</div>
         <div id="depositedListContent" style="font-size:13px;color:var(--warm-dim);"></div>
+      </div>
+      <!-- Favoris -->
+      <div id="favoritesList" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:10px;">★ Mes favoris</div>
+        <div id="favoritesListContent" style="font-size:13px;color:var(--warm-dim);"></div>
       </div>
       <!-- Classement public -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;">
