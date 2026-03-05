@@ -385,6 +385,8 @@ onAuthStateChanged(auth, async user => {
     });
     document.getElementById('bottomNav').style.display = 'flex';
     await loadNearbyGhosts();
+    // Vérifier les notifications de réponses au démarrage
+    setTimeout(() => checkReplyNotifications(), 2000);
   } else {
     currentUser = null;
     document.getElementById('bottomNav').style.display = 'none';
@@ -561,6 +563,29 @@ async function checkDiscoveries() {
   } catch(e) {}
 }
 
+async function checkReplyNotifications() {
+  if (!currentUser) return;
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'notifications'),
+      where('toUid', '==', currentUser.uid),
+      where('notified', '==', false),
+      where('type', '==', 'reply'),
+      limit(10)
+    ));
+    for (const d of snap.docs) {
+      const n = d.data();
+      showNotif(
+        '↩ Nouvelle réponse à votre fantôme !',
+        `${escapeHTML(n.fromAuthor)} a répondu à votre fantôme à "${escapeHTML(n.ghostLocation)}"`
+      );
+      // Afficher aussi un toast si l'app est ouverte
+      showToast('info', `↩ <b>${escapeHTML(n.fromAuthor)}</b> a répondu à votre fantôme à <b>${escapeHTML(n.ghostLocation)}</b>`);
+      updateDoc(doc(db, 'notifications', d.id), { notified: true }).catch(() => {});
+    }
+  } catch(e) {}
+}
+
 // FIX: Guard contre les setInterval doublons
 let _notifIntervalsStarted = false;
 let _visibilityListenerAdded = false;
@@ -571,12 +596,17 @@ function _startNotifIntervals() {
   setInterval(checkNewGhosts, 5 * 60 * 1000);
   setInterval(checkResonances, 10 * 60 * 1000);
   setInterval(checkDiscoveries, 3 * 60 * 1000);
+  setInterval(checkReplyNotifications, 2 * 60 * 1000);
   // Vérifier au retour dans l'appli — un seul listener
   if (!_visibilityListenerAdded) {
     _visibilityListenerAdded = true;
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        setTimeout(() => { checkNewGhosts(); checkDiscoveries(); }, 1000);
+        setTimeout(() => {
+          checkNewGhosts();
+          checkDiscoveries();
+          checkReplyNotifications();
+        }, 1000);
       }
     });
   }
@@ -2022,6 +2052,18 @@ window.sendReply = async () => {
       authorUid: currentUser.uid,
       createdAt: serverTimestamp()
     });
+    // Notifier l'auteur du fantôme si ce n'est pas soi-même
+    if (selectedGhost.authorUid && selectedGhost.authorUid !== currentUser.uid) {
+      addDoc(collection(db, 'notifications'), {
+        type: 'reply',
+        toUid: selectedGhost.authorUid,
+        ghostId: selectedGhost.id,
+        ghostLocation: selectedGhost.location || 'Lieu inconnu',
+        fromAuthor: anon ? '👻 Anonyme' : (currentUser.displayName || 'Quelqu\'un'),
+        notified: false,
+        createdAt: serverTimestamp()
+      }).catch(() => {});
+    }
     msgEl.value = '';
     updateReplyCount(msgEl);
     showToast('success', '↩ Réponse déposée');
