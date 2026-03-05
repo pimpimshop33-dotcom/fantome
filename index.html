@@ -561,9 +561,13 @@ async function checkResonances() {
     myGhosts.forEach(d => {
       const g = d.data();
       const prev = parseInt(localStorage.getItem('prev_reso_' + d.id) || '0');
-      if ((g.resonances || 0) > prev) {
-        showNotif('✦ Résonance reçue !', `Votre fantôme "${escapeHTML(g.location || 'Lieu inconnu')}" a résonné`);
-        localStorage.setItem('prev_reso_' + d.id, g.resonances);
+      const curr = g.resonances || 0;
+      if (curr > prev) {
+        const lieu = escapeHTML(g.location || 'ce lieu');
+        const msg = _resoMessage(lieu, curr);
+        showNotif('✦ Votre trace a résonné', msg);
+        showToast('info', msg, 5000);
+        localStorage.setItem('prev_reso_' + d.id, curr);
       }
     });
   } catch(e) {
@@ -571,6 +575,18 @@ async function checkResonances() {
   } finally {
     _checkResonancesRunning = false;
   }
+}
+
+function _resoMessage(lieu, total) {
+  const messages = [
+    `Quelqu'un à <b>${lieu}</b> a été touché par ce que vous avez laissé là.`,
+    `Une âme est passée à <b>${lieu}</b> — votre trace a résonné en elle.`,
+    `À <b>${lieu}</b>, quelqu'un a senti que ce message existait.`,
+    `Votre fantôme de <b>${lieu}</b> n'est plus seul — quelqu'un l'a entendu.`,
+    `Un inconnu à <b>${lieu}</b> a résonné avec vos mots.`,
+  ];
+  // Déterministe selon le total pour varier les messages
+  return messages[total % messages.length];
 }
 
 async function checkDiscoveries() {
@@ -628,17 +644,27 @@ async function checkReplyNotifications() {
       collection(db, 'notifications'),
       where('toUid', '==', currentUser.uid),
       where('notified', '==', false),
-      where('type', '==', 'reply'),
       limit(10)
     ));
     for (const d of snap.docs) {
       const n = d.data();
-      showNotif(
-        '↩ Nouvelle réponse à votre fantôme !',
-        `${escapeHTML(n.fromAuthor)} a répondu à votre fantôme à "${escapeHTML(n.ghostLocation)}"`
-      );
-      // Afficher aussi un toast si l'app est ouverte
-      showToast('info', `↩ <b>${escapeHTML(n.fromAuthor)}</b> a répondu à votre fantôme à <b>${escapeHTML(n.ghostLocation)}</b>`);
+      const lieu = escapeHTML(n.ghostLocation || 'ce lieu');
+      let title, msg;
+      if (n.type === 'reply') {
+        title = '↩ Quelqu\'un vous a répondu';
+        msg = `${escapeHTML(n.fromAuthor || 'Un inconnu')} a laissé une réponse à votre fantôme de <b>${lieu}</b>.`;
+      } else if (n.type === 'open') {
+        const openMsgs = [
+          `Quelqu'un vient de briser le sceau de votre trace à <b>${lieu}</b>.`,
+          `Un inconnu a ouvert votre enveloppe à <b>${lieu}</b> — votre message existe.`,
+          `Votre fantôme de <b>${lieu}</b> a été découvert pour la première fois.`,
+        ];
+        const hash = (n.ghostId || '').length % openMsgs.length;
+        title = '✉ Votre trace a été découverte';
+        msg = openMsgs[hash];
+      } else continue;
+      showNotif(title, msg);
+      showToast('info', msg, 5000);
       updateDoc(doc(db, 'notifications', d.id), { notified: true }).catch(() => {});
     }
   } catch(e) {}
@@ -1322,8 +1348,10 @@ function watchMyGhostResonances() {
         const prev = parseInt(localStorage.getItem('prev_reso_' + id) || '0');
         const curr = g.resonances || 0;
         if (curr > prev) {
-          showNotif('✦ Résonance reçue !',
-            `Votre fantôme "${escapeHTML(g.location || 'Lieu inconnu')}" vient de résonner`);
+          const lieu = escapeHTML(g.location || 'ce lieu');
+          const msg = _resoMessage(lieu, curr);
+          showNotif('✦ Votre trace a résonné', msg);
+          showToast('info', msg, 5000);
           localStorage.setItem('prev_reso_' + id, curr);
           if (document.getElementById('screenProfile').classList.contains('active')) {
             refreshProfileStats();
@@ -2488,6 +2516,18 @@ async function _doOpenEnvelope() {
       WorldService.registerPresence(selectedGhost.id, true).catch(() => {});
       // Incrémenter le compteur d'ouvertures sur le fantôme
       updateDoc(doc(db, 'ghosts', selectedGhost.id), { openCount: increment(1) }).catch(() => {});
+      // Notifier l'auteur si ce n'est pas soi-même
+      if (selectedGhost.authorUid && selectedGhost.authorUid !== currentUser?.uid) {
+        const lieu = selectedGhost.location || 'ce lieu';
+        addDoc(collection(db, 'notifications'), {
+          type: 'open',
+          toUid: selectedGhost.authorUid,
+          ghostId: selectedGhost.id,
+          ghostLocation: lieu,
+          notified: false,
+          createdAt: serverTimestamp()
+        }).catch(() => {});
+      }
     }
   }
   const sealed = document.getElementById('envelopeSealed');
