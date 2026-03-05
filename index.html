@@ -935,6 +935,7 @@ window.toggleDepositedList = async () => {
             <div style="font-size:11px;color:var(--spirit-dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;">
               <span>${date}</span>
               <span>✦ ${resonances} résonance${resonances > 1 ? 's' : ''}</span>
+              <span>👁 ${g.openCount || 0} ouverture${(g.openCount || 0) > 1 ? 's' : ''}</span>
               ${expired ? '<span style="color:rgba(255,100,100,.6);">⏳ Expiré</span>' : ''}
               ${g.secret ? '<span style="color:rgba(168,100,255,.7);">🔮 Secret</span>' : ''}
             </div>
@@ -1492,10 +1493,101 @@ function skeletonGhostList() {
     </div>`).join('');
 }
 
+// ── CLASSEMENT PUBLIC ────────────────────────────────────
+window.loadLeaderboard = async () => {
+  const el = document.getElementById('leaderboardContent');
+  if (!el) return;
+  el.innerHTML = '<div style="font-size:12px;color:var(--spirit-dim);">Chargement…</div>';
+  try {
+    // Classement par nombre de découvertes (openCount total sur leurs fantômes)
+    const snap = await getDocs(query(
+      collection(db, 'ghosts'),
+      where('anonymous', '==', false),
+      limit(100)
+    ));
+    // Agréger par auteur
+    const scores = {};
+    snap.forEach(d => {
+      const g = d.data();
+      if (!g.author || !g.authorUid) return;
+      if (!scores[g.authorUid]) scores[g.authorUid] = { name: g.author, resonances: 0, ghosts: 0 };
+      scores[g.authorUid].resonances += g.resonances || 0;
+      scores[g.authorUid].ghosts += 1;
+    });
+    const sorted = Object.values(scores)
+      .sort((a, b) => b.resonances - a.resonances)
+      .slice(0, 10);
+    if (sorted.length === 0) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--spirit-dim);font-style:italic;">Aucun chasseur encore…</div>';
+      return;
+    }
+    const medals = ['🥇','🥈','🥉'];
+    el.innerHTML = sorted.map((s, i) => {
+      const isMe = currentUser && s.name === (currentUser.displayName || currentUser.email);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);${isMe ? 'background:rgba(168,180,255,.05);border-radius:8px;padding:7px 8px;margin:0 -8px;' : ''}">
+        <span style="font-size:16px;width:22px;text-align:center;flex-shrink:0;">${medals[i] || (i+1)+'.'}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;color:${isMe ? 'var(--ether)' : 'var(--warm-dim)'};font-weight:${isMe ? '600' : '400'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHTML(s.name)}${isMe ? ' (vous)' : ''}</div>
+          <div style="font-size:11px;color:var(--spirit-dim);">${s.ghosts} fantôme${s.ghosts > 1 ? 's' : ''}</div>
+        </div>
+        <div style="font-size:13px;color:rgba(168,180,255,.7);flex-shrink:0;">✦ ${s.resonances}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--spirit-dim);">Impossible de charger le classement.</div>';
+  }
+};
+
+// ── FILTRES RADAR ────────────────────────────────────────
+let activeFilter = 'all';
+
+window.setFilter = (filter, btn) => {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGhostList();
+  Analytics.track('filter_used', { filter });
+};
+
+function getFilteredGhosts() {
+  switch (activeFilter) {
+    case 'recent':
+      return [...nearbyGhosts].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    case 'photo':
+      return nearbyGhosts.filter(g => g.photoUrl);
+    case 'audio':
+      return nearbyGhosts.filter(g => g.audioUrl);
+    default:
+      return nearbyGhosts; // 'all' = tri par distance
+  }
+}
+
 function renderGhostList() {
   const list = document.getElementById('ghostList');
+  const filtered = getFilteredGhosts();
   if (nearbyGhosts.length === 0) {
-    list.innerHTML = `
+    const isFirstTime = getDiscoveryCount() === 0;
+    list.innerHTML = isFirstTime ? `
+      <div style="text-align:center;padding:32px 16px 20px;">
+        <div style="font-size:52px;margin-bottom:14px;animation:ghostFloat 2.8s ease-in-out infinite;">👻</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ether);margin-bottom:8px;">Bienvenue dans Fantôme</div>
+        <div style="font-size:13px;color:var(--warm-dim);line-height:1.65;margin-bottom:20px;">Aucun message caché ici pour l'instant.<br>Vous pouvez en laisser un — quelqu'un passera peut-être.</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:16px;text-align:left;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:10px;">Comment ça marche</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--warm-dim);">
+              <span style="font-size:18px;">📍</span><span>Déposez un message ancré à ce lieu</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--warm-dim);">
+              <span style="font-size:18px;">🌫️</span><span>Le radar détecte les fantômes proches</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--warm-dim);">
+              <span style="font-size:18px;">✉</span><span>Approchez-vous pour ouvrir l'enveloppe</span>
+            </div>
+          </div>
+        </div>
+        <button onclick="showScreen('screenDeposit');setNav('nav-deposit')" style="padding:12px 24px;background:linear-gradient(135deg,rgba(168,180,255,.2),rgba(168,180,255,.08));border:1px solid var(--border-bright);border-radius:20px;color:var(--ether);font-family:'Instrument Sans',sans-serif;font-size:14px;cursor:pointer;touch-action:manipulation;">👻 Déposer mon premier fantôme</button>
+      </div>` : `
       <div style="text-align:center;padding:40px 0 20px;">
         <div style="font-size:48px;margin-bottom:12px;opacity:.4;filter:blur(1px);">👻</div>
         <div style="font-size:14px;color:var(--ether);font-family:'Cormorant Garamond',serif;font-style:italic;margin-bottom:6px;">Aucun fantôme dans ce lieu</div>
@@ -1504,7 +1596,11 @@ function renderGhostList() {
       </div>`;
     return;
   }
-  list.innerHTML = nearbyGhosts.map(g => {
+  if (filtered.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:30px 0;font-size:13px;color:var(--spirit-dim);">Aucun fantôme dans ce filtre.</div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(g => {
     const emoji = g.secret ? '🔮' : escapeHTML(g.emoji || '👻');
     return `
     <div class="ghost-envelope${g.secret ? ' ghost-envelope-secret' : ''}" onclick="openGhost('${escapeHTML(g.id)}')" role="button" tabindex="0" aria-label="Fantôme à ${escapeHTML(g.location || 'Lieu inconnu')}, ${formatDistance(g.distance)}" onkeydown="if(event.key==='Enter'||event.key===' ')openGhost('${escapeHTML(g.id)}')">
@@ -2086,6 +2182,8 @@ function _doOpenEnvelope() {
     showDiscoveryToast(discCount, isNewDisc);
     if (isNewDisc) {
       WorldService.registerPresence(selectedGhost.id, true).catch(() => {});
+      // Incrémenter le compteur d'ouvertures sur le fantôme
+      updateDoc(doc(db, 'ghosts', selectedGhost.id), { openCount: increment(1) }).catch(() => {});
     }
   }
   const sealed = document.getElementById('envelopeSealed');
@@ -2263,7 +2361,7 @@ window.showScreen = (id, fromPopstate = false) => {
     history.pushState({ screen: id }, '', window.location.href.split('?')[0] + window.location.search);
   }
   if (id === 'screenMap') renderStaticMap();
-  if (id === 'screenProfile') refreshProfileStats();
+  if (id === 'screenProfile') { refreshProfileStats(); loadLeaderboard(); }
   if (id === 'screenOnboard') {
     const btn = document.getElementById('obBackBtn');
     if (btn) btn.style.display = currentUser ? 'flex' : 'none';
@@ -3948,6 +4046,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
 .ghost-state-weak  { color: rgba(200,150,255,.65) !important; animation: weakPulse 3s ease-in-out infinite; }
 @keyframes weakPulse { 0%,100%{opacity:.75} 50%{opacity:.4} }
 .ghost-activity    { border: 1px solid; border-radius: 20px; padding: 2px 8px; font-size: 9px; }
+.filter-btn.active { background:rgba(168,180,255,.18) !important; border-color:rgba(168,180,255,.5) !important; color:var(--ether) !important; }
 
 </style>
 </head>
@@ -4123,6 +4222,12 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
     <div class="ghost-count-line" aria-live="polite"><span id="ghostCount">0</span> fantôme(s) dans les alentours</div>
     <div class="scroll">
       <div class="section-label">Fantômes proches</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;" role="group" aria-label="Filtres">
+        <button class="filter-btn active" onclick="setFilter('all',this)" style="white-space:nowrap;padding:5px 12px;background:rgba(168,180,255,.12);border:1px solid rgba(168,180,255,.35);border-radius:20px;color:var(--ether);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0;">🌫️ Tous</button>
+        <button class="filter-btn" onclick="setFilter('recent',this)" style="white-space:nowrap;padding:5px 12px;background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.15);border-radius:20px;color:var(--spirit-dim);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0;">✨ Récents</button>
+        <button class="filter-btn" onclick="setFilter('photo',this)" style="white-space:nowrap;padding:5px 12px;background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.15);border-radius:20px;color:var(--spirit-dim);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0;">📷 Photo</button>
+        <button class="filter-btn" onclick="setFilter('audio',this)" style="white-space:nowrap;padding:5px 12px;background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.15);border-radius:20px;color:var(--spirit-dim);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0;">🎙 Audio</button>
+      </div>
       <div class="ghost-list" id="ghostList" aria-label="Liste des fantômes proches">
         <div style="text-align:center;color:var(--spirit-dim);padding:20px 0;font-size:13px;">Chargement…</div>
       </div>
@@ -4465,6 +4570,16 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
       <div id="depositedList" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;">
         <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:10px;">Mes fantômes déposés</div>
         <div id="depositedListContent" style="font-size:13px;color:var(--warm-dim);"></div>
+      </div>
+      <!-- Classement public -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);">🏆 Classement des chasseurs</div>
+          <button onclick="loadLeaderboard()" style="font-size:11px;color:rgba(168,180,255,.6);background:none;border:none;cursor:pointer;font-family:'Instrument Sans',sans-serif;padding:0;">↻ Rafraîchir</button>
+        </div>
+        <div id="leaderboardContent">
+          <div style="font-size:12px;color:var(--spirit-dim);font-style:italic;opacity:.6;">Appuyez sur Rafraîchir</div>
+        </div>
       </div>
       <div class="section-label" style="margin-bottom:8px;">Mon compte</div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;">
