@@ -841,6 +841,35 @@ window.clearPhoto = () => {
   window._pendingPhotoFile = null;
 };
 
+// ── VIDÉO (Premium) ──────────────────────────────────────
+window.triggerVideo = () => {
+  if (!isPremium) { showToast('info', '👑 La vidéo est réservée aux membres Premium.'); return; }
+  document.getElementById('videoInput').click();
+};
+
+window.handleVideo = (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 50 * 1024 * 1024) { showToast('warning', 'Vidéo trop lourde — 50 Mo maximum.'); input.value = ''; return; }
+  const url = URL.createObjectURL(file);
+  if (window._pendingVideoBlobUrl) URL.revokeObjectURL(window._pendingVideoBlobUrl);
+  window._pendingVideoBlobUrl = url;
+  window._pendingVideoFile = file;
+  const preview = document.getElementById('videoPreview');
+  preview.innerHTML = `
+    <div style="position:relative;margin-top:8px;border-radius:12px;overflow:hidden;border:1px solid rgba(168,180,255,.2);">
+      <video src="${url}" controls playsinline style="width:100%;max-height:200px;display:block;background:#000;"></video>
+      <button onclick="clearVideo()" aria-label="Supprimer la vidéo" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);color:white;border-radius:50%;width:32px;height:32px;min-width:32px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>`;
+  input.value = '';
+};
+
+window.clearVideo = () => {
+  if (window._pendingVideoBlobUrl) { URL.revokeObjectURL(window._pendingVideoBlobUrl); window._pendingVideoBlobUrl = null; }
+  window._pendingVideoFile = null;
+  document.getElementById('videoPreview').innerHTML = '';
+};
+
 
 async function uploadMedia(uid) {
   let audioUrl = null;
@@ -876,7 +905,15 @@ async function uploadMedia(uid) {
     fd.append('folder', 'fantome/photos');
     photoUrl = await uploadToCloudinary(fd, 'image');
   }
-  return { audioUrl, photoUrl };
+  if (window._pendingVideoFile) {
+    const fd = new FormData();
+    fd.append('file', window._pendingVideoFile);
+    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    fd.append('folder', 'fantome/videos');
+    const videoUrl = await uploadToCloudinary(fd, 'video');
+    return { audioUrl, photoUrl, videoUrl };
+  }
+  return { audioUrl, photoUrl, videoUrl: null };
 }
 
 // ── MILESTONES ──────────────────────────────────────────
@@ -1793,6 +1830,8 @@ function getFilteredGhosts() {
       return nearbyGhosts.filter(g => g.photoUrl);
     case 'audio':
       return nearbyGhosts.filter(g => g.audioUrl);
+    case 'video':
+      return nearbyGhosts.filter(g => g.videoUrl);
     default:
       return nearbyGhosts; // 'all' = tri par distance
   }
@@ -2111,7 +2150,16 @@ window.openGhost = async (id) => {
     } else { audioEl.innerHTML = ''; }
 
     const photoEl = document.getElementById('detailPhoto');
-    if (selectedGhost.photoUrl) {
+    if (selectedGhost.videoUrl) {
+      photoEl.innerHTML = `
+        <div style="margin-bottom:12px;position:relative;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:6px;">🎥 Vidéo</div>
+          <div style="position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--border);">
+            <video controls playsinline src="${escapeHTML(selectedGhost.videoUrl)}" style="width:100%;max-height:320px;display:block;background:#000;" aria-label="Vidéo du fantôme"></video>
+            <button onclick="openReportModal()" aria-label="Signaler cette vidéo" title="Signaler cette vidéo" style="position:absolute;top:8px;right:8px;background:rgba(10,8,20,.75);backdrop-filter:blur(6px);border:1px solid rgba(255,100,100,.35);border-radius:10px;color:rgba(255,120,100,.9);font-size:12px;padding:5px 9px;cursor:pointer;font-family:'Instrument Sans',sans-serif;display:flex;align-items:center;gap:5px;touch-action:manipulation;transition:all .2s;">⚑ Signaler</button>
+          </div>
+        </div>`;
+    } else if (selectedGhost.photoUrl) {
       photoEl.innerHTML = `
         <div style="margin-bottom:12px;position:relative;">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:6px;">📷 Photo</div>
@@ -2403,12 +2451,12 @@ window.depositGhost = async () => {
   const cooldownCheck = await WorldService.checkDepositCooldown(currentUser.uid, isExpired);
   if (!cooldownCheck.ok) { err.textContent = cooldownCheck.reason; return; }
   const depositBtn = document.getElementById('depositBtn');
-  const hasMedia = !!(window._pendingAudioBlob || window._pendingPhotoFile);
+  const hasMedia = !!(window._pendingAudioBlob || window._pendingPhotoFile || window._pendingVideoFile);
   setLoading(depositBtn, true);
   depositBtn.textContent = hasMedia ? '⬆ Upload…' : '';
 
   try {
-    const { audioUrl, photoUrl } = await uploadMedia(currentUser.uid + '_' + Date.now());
+    const { audioUrl, photoUrl, videoUrl } = await uploadMedia(currentUser.uid + '_' + Date.now());
     if (hasMedia) depositBtn.textContent = '✓ Upload · Sauvegarde…';
     const chainHint = isPremium ? document.getElementById('chainHint').value.trim() : null;
     const chainNext = isPremium ? (window._chainNextCoords || null) : null;
@@ -2419,7 +2467,7 @@ window.depositGhost = async () => {
     const ghostData = {
       message, location: location || 'Lieu sans nom', emoji, duration, radius,
       anonymous: anon, secret: secret || false,
-      audioUrl: audioUrl || null, photoUrl: photoUrl || null,
+      audioUrl: audioUrl || null, photoUrl: photoUrl || null, videoUrl: videoUrl || null,
       chainHint: (isPremium && chainHint) || null,
       chainLat: chainNext ? chainNext.lat : null,
       chainLng: chainNext ? chainNext.lng : null,
@@ -2439,7 +2487,7 @@ window.depositGhost = async () => {
     window._chainNextCoords = null;
     depositBtn.textContent = '👻 Déposer le fantôme';
     depositBtn.disabled = false;
-    clearAudio(); clearPhoto();
+    clearAudio(); clearPhoto(); clearVideo();
     document.getElementById('depositSuccess').classList.add('show');
     showToast('success', '👻 Votre trace est ancrée dans ce lieu…');
     playDepositSound();
@@ -4596,6 +4644,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <button class="filter-btn" onclick="setFilter('recent',this)" style="white-space:nowrap;padding:5px 12px;background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.15);border-radius:20px;color:var(--spirit-dim);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0;">✨ Récentes</button>
         <button class="filter-btn" onclick="setFilter('photo',this)" style="white-space:nowrap;padding:5px 12px;background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.15);border-radius:20px;color:var(--spirit-dim);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0;">📷 Visions</button>
         <button class="filter-btn" onclick="setFilter('audio',this)" style="white-space:nowrap;padding:5px 12px;background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.15);border-radius:20px;color:var(--spirit-dim);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0;">🎙 Voix</button>
+        <button class="filter-btn" onclick="setFilter('video',this)" style="white-space:nowrap;padding:5px 12px;background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.15);border-radius:20px;color:var(--spirit-dim);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0;">🎥 Vidéos</button>
       </div>
       <div class="ghost-list" id="ghostList" aria-label="Liste des traces proches">
         <div style="text-align:center;color:var(--spirit-dim);padding:20px 0;font-size:13px;">Invocation en cours…</div>
@@ -4862,6 +4911,20 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
           </button>
           <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)" aria-hidden="true">
           <div id="photoPreview"></div>
+        </div>
+        <!-- VIDÉO PREMIUM -->
+        <div class="form-group" style="margin-bottom:12px;position:relative;">
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Vidéo (optionnel)</span>
+            <span style="font-size:9px;background:rgba(255,200,80,.15);border:1px solid rgba(255,200,80,.3);border-radius:8px;padding:2px 6px;color:rgba(255,200,80,.8);">👑 Premium</span>
+          </label>
+          <button class="media-btn" onclick="triggerVideo()" type="button" aria-label="Ajouter une vidéo" style="${''}">
+            <span class="media-icon" aria-hidden="true">🎥</span>
+            <span>Ajouter une vidéo</span>
+            <span style="margin-left:auto;font-size:10px;opacity:.45;">max 50 Mo · 20 sec</span>
+          </button>
+          <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="handleVideo(this)" aria-hidden="true">
+          <div id="videoPreview"></div>
         </div>
         <!-- CHAÎNE DE FANTÔMES PREMIUM -->
         <div class="form-group" style="margin-bottom:14px;position:relative;" id="chainSection">
