@@ -1278,18 +1278,46 @@ function watchMyGhostResonances() {
 }
 
 // ── MODALE CONFIRMATION ─────────────────────────────────
-function showConfirm(title, subtitle) {
+function showConfirm(title, subtitle, options = {}) {
   return new Promise(resolve => {
     const modal = document.getElementById('confirmModal');
     document.getElementById('confirmTitle').textContent = title;
     document.getElementById('confirmSubtitle').textContent = subtitle;
-    modal.classList.add('show');
-    document.body.style.overflow = 'hidden';
+    const typedWrap = document.getElementById('confirmTypedWrap');
+    const typedInput = document.getElementById('confirmTypedInput');
     const btnOk = document.getElementById('confirmOk');
     const btnCancel = document.getElementById('confirmCancel');
+
+    // Mode saisie obligatoire
+    if (options.requireTyped) {
+      typedWrap.style.display = 'block';
+      typedInput.value = '';
+      btnOk.disabled = true;
+      btnOk.style.opacity = '0.35';
+      const onType = () => {
+        const ok = typedInput.value.toUpperCase() === 'SUPPRIMER';
+        btnOk.disabled = !ok;
+        btnOk.style.opacity = ok ? '1' : '0.35';
+      };
+      typedInput.addEventListener('input', onType);
+      setTimeout(() => typedInput.focus(), 80);
+      typedInput._cleanup = () => typedInput.removeEventListener('input', onType);
+    } else {
+      typedWrap.style.display = 'none';
+      btnOk.disabled = false;
+      btnOk.style.opacity = '1';
+    }
+
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+
     const cleanup = (result) => {
       modal.classList.remove('show');
       document.body.style.overflow = '';
+      if (typedInput._cleanup) { typedInput._cleanup(); delete typedInput._cleanup; }
+      btnOk.disabled = false;
+      btnOk.style.opacity = '1';
+      typedWrap.style.display = 'none';
       btnOk.removeEventListener('click', onOk);
       btnCancel.removeEventListener('click', onCancel);
       resolve(result);
@@ -1298,7 +1326,7 @@ function showConfirm(title, subtitle) {
     const onCancel = () => cleanup(false);
     btnOk.addEventListener('click', onOk);
     btnCancel.addEventListener('click', onCancel);
-    setTimeout(() => btnCancel.focus(), 50);
+    if (!options.requireTyped) setTimeout(() => btnCancel.focus(), 50);
   });
 }
 
@@ -1309,7 +1337,11 @@ window.logout = async () => {
 
 window.deleteMyGhosts = async () => {
   if (!currentUser) return;
-  const confirmed = await showConfirm('Supprimer tous mes fantômes ?', 'Cette action est irréversible — tous vos messages et réponses seront effacés.');
+  const confirmed = await showConfirm(
+    '🗑 Supprimer tous mes fantômes ?',
+    'Cette action est irréversible — tous vos messages et réponses seront effacés.',
+    { requireTyped: true }
+  );
   if (!confirmed) return;
   const btn = document.getElementById('deleteBtn');
   btn.textContent = '⏳ Suppression…';
@@ -4721,6 +4753,10 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
   <div class="confirm-box">
     <div class="confirm-title" id="confirmTitle">Confirmer</div>
     <div class="confirm-subtitle" id="confirmSubtitle"></div>
+    <div id="confirmTypedWrap" style="display:none;margin-top:12px;">
+      <div style="font-size:12px;color:rgba(255,100,100,.7);margin-bottom:6px;">Tapez <strong>SUPPRIMER</strong> pour confirmer</div>
+      <input id="confirmTypedInput" type="text" placeholder="SUPPRIMER" autocomplete="off" style="width:100%;box-sizing:border-box;background:rgba(255,80,80,.06);border:1px solid rgba(255,100,100,.3);border-radius:10px;padding:10px 12px;color:var(--ether);font-family:'Instrument Sans',sans-serif;font-size:14px;letter-spacing:1px;text-transform:uppercase;outline:none;">
+    </div>
     <div class="confirm-actions">
       <button class="confirm-cancel-btn" id="confirmCancel">Annuler</button>
       <button class="confirm-ok-btn" id="confirmOk">Supprimer</button>
