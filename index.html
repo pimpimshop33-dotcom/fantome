@@ -387,6 +387,8 @@ onAuthStateChanged(auth, async user => {
     await loadNearbyGhosts();
     // Vérifier les notifications de réponses au démarrage
     setTimeout(() => checkReplyNotifications(), 2000);
+    // Synchroniser les découvertes depuis Firestore (multi-appareils)
+    syncDiscoveriesFromFirestore();
   } else {
     currentUser = null;
     document.getElementById('bottomNav').style.display = 'none';
@@ -804,18 +806,6 @@ const RANKS = [
   {min:80,  label:'Légende',   icon:'⭐'},
 ];
 
-function getDiscoveryKey() { return currentUser ? 'discoveries_' + currentUser.uid : 'discoveries_anon'; }
-function getDiscoveredIds() {
-  try { return JSON.parse(localStorage.getItem(getDiscoveryKey()) || '[]'); } catch(e) { return []; }
-}
-function addDiscovery(ghostId) {
-  const ids = getDiscoveredIds();
-  if (ids.includes(ghostId)) return false;
-  ids.push(ghostId);
-  localStorage.setItem(getDiscoveryKey(), JSON.stringify(ids));
-  return true;
-}
-function getDiscoveryCount() { return getDiscoveredIds().length; }
 function getRank(n) {
   let rank = RANKS[0];
   for (const r of RANKS) { if (n >= r.min) rank = r; }
@@ -1892,34 +1882,100 @@ function getDailyResoKey() {
 }
 
 function hasResonatedToday() { return !!localStorage.getItem(getDailyResoKey()); }
-// ── LIMITE OUVERTURES JOURNALIÈRES ──────────────────────
+
+// ── LIMITE OUVERTURES JOURNALIÈRES (Firestore) ───────────
 const DAILY_OPEN_LIMIT = 3;
 
-function getDailyOpenKey() {
+function _todayKey() {
   const d = new Date();
-  const uid = currentUser ? currentUser.uid : 'anon';
-  return `daily_opens_${uid}_${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function getDailyOpenCount() {
-  return parseInt(localStorage.getItem(getDailyOpenKey()) || '0');
-}
-
-function incrementDailyOpenCount() {
-  const key = getDailyOpenKey();
-  const n = getDailyOpenCount() + 1;
-  localStorage.setItem(key, n);
-  return n;
-}
-
-function canOpenToday() {
+async function canOpenToday() {
   if (isPremium) return true;
-  return getDailyOpenCount() < DAILY_OPEN_LIMIT;
+  if (!currentUser) return getDailyOpenCountLocal() < DAILY_OPEN_LIMIT; // fallback offline
+  try {
+    const ref = doc(db, 'userStats', currentUser.uid);
+    const snap = await getDoc(ref);
+    const count = snap.exists() ? (snap.data().dailyOpens?.[_todayKey()] || 0) : 0;
+    return count < DAILY_OPEN_LIMIT;
+  } catch(e) {
+    // Si Firestore inaccessible, tomber sur le localStorage
+    return getDailyOpenCountLocal() < DAILY_OPEN_LIMIT;
+  }
 }
 
-function remainingOpensToday() {
+async function incrementDailyOpenCount() {
+  if (!currentUser) { _incrementLocal(); return; }
+  const today = _todayKey();
+  const ref = doc(db, 'userStats', currentUser.uid);
+  try {
+    await setDoc(ref, { dailyOpens: { [today]: increment(1) } }, { merge: true });
+  } catch(e) {}
+  _incrementLocal(); // toujours mettre à jour localement aussi
+}
+
+async function remainingOpensToday() {
   if (isPremium) return Infinity;
-  return Math.max(0, DAILY_OPEN_LIMIT - getDailyOpenCount());
+  if (!currentUser) return Math.max(0, DAILY_OPEN_LIMIT - getDailyOpenCountLocal());
+  try {
+    const ref = doc(db, 'userStats', currentUser.uid);
+    const snap = await getDoc(ref);
+    const count = snap.exists() ? (snap.data().dailyOpens?.[_todayKey()] || 0) : 0;
+    return Math.max(0, DAILY_OPEN_LIMIT - count);
+  } catch(e) {
+    return Math.max(0, DAILY_OPEN_LIMIT - getDailyOpenCountLocal());
+  }
+}
+
+// Helpers localStorage (cache local rapide)
+function _getDailyOpenLocalKey() {
+  const uid = currentUser ? currentUser.uid : 'anon';
+  return `daily_opens_${uid}_${_todayKey()}`;
+}
+function getDailyOpenCountLocal() { return parseInt(localStorage.getItem(_getDailyOpenLocalKey()) || '0'); }
+function _incrementLocal() {
+  const key = _getDailyOpenLocalKey();
+  localStorage.setItem(key, getDailyOpenCountLocal() + 1);
+}
+
+// ── DÉCOUVERTES (Firestore + localStorage) ───────────────
+function getDiscoveryKey() { return currentUser ? 'discoveries_' + currentUser.uid : 'discoveries_anon'; }
+
+function getDiscoveredIds() {
+  try { return JSON.parse(localStorage.getItem(getDiscoveryKey()) || '[]'); } catch(e) { return []; }
+}
+
+function addDiscovery(ghostId) {
+  const ids = getDiscoveredIds();
+  if (ids.includes(ghostId)) return false;
+  ids.push(ghostId);
+  // Sauvegarder localement
+  localStorage.setItem(getDiscoveryKey(), JSON.stringify(ids));
+  // Syncer dans Firestore (sans bloquer)
+  if (currentUser) {
+    setDoc(doc(db, 'userStats', currentUser.uid),
+      { discoveries: ids },
+      { merge: true }
+    ).catch(() => {});
+  }
+  return true;
+}
+
+function getDiscoveryCount() { return getDiscoveredIds().length; }
+
+// Charger les découvertes depuis Firestore au login et les fusionner
+async function syncDiscoveriesFromFirestore() {
+  if (!currentUser) return;
+  try {
+    const snap = await getDoc(doc(db, 'userStats', currentUser.uid));
+    if (snap.exists() && snap.data().discoveries) {
+      const remote = snap.data().discoveries;
+      const local = getDiscoveredIds();
+      const merged = [...new Set([...local, ...remote])];
+      localStorage.setItem(getDiscoveryKey(), JSON.stringify(merged));
+    }
+  } catch(e) {}
 }
 
 function markResonatedToday(ghostId) { localStorage.setItem(getDailyResoKey(), ghostId); }
@@ -2172,9 +2228,9 @@ window.sendReply = async () => {
   }
 };
 
-function _doOpenEnvelope() {
-  // Incrémenter le compteur journalier
-  if (!isPremium) incrementDailyOpenCount();
+async function _doOpenEnvelope() {
+  // Incrémenter le compteur journalier (Firestore)
+  if (!isPremium) await incrementDailyOpenCount();
   // FIX: Enregistrer la découverte ICI, seulement quand l'enveloppe est vraiment ouverte
   if (selectedGhost) {
     const isNewDisc = addDiscovery(selectedGhost.id);
@@ -2267,14 +2323,14 @@ function showOpenLimitWarning(remaining, onConfirm) {
   setTimeout(() => (remaining > 0 ? okBtn : cancelBtn).focus(), 80);
 }
 
-window.openEnvelope = () => {
+window.openEnvelope = async () => {
   if (!selectedGhost) return;
   // Vérifier si déjà ouvert (pas de vérif distance pour relecture)
   const revealed = document.getElementById('envelopeContent');
   if (revealed && revealed.style.display !== 'none') { _doOpenEnvelope(); return; }
 
   // ── Vérifier limite journalière AVANT la distance ───────
-  const remaining = remainingOpensToday();
+  const remaining = await remainingOpensToday();
   if (!isPremium && (remaining <= 1)) {
     // Afficher l'avertissement, puis vérifier la distance si confirmé
     showOpenLimitWarning(remaining, (confirmed) => {
