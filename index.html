@@ -1107,7 +1107,7 @@ window.activatePremium = async () => {
   const errEl = document.getElementById('premiumError');
   if (!code) { errEl.textContent = 'Entrez un code.'; return; }
   // Validation basique du format
-  if (!/^[A-Z0-9-]{8,20}$/.test(code)) { errEl.textContent = 'Format de code invalide.'; return; }
+  if (!code || code.length < 4) { errEl.textContent = 'Code trop court.'; return; }
   errEl.textContent = '';
   const btn = document.getElementById('activateBtn');
   btn.textContent = 'Vérification…';
