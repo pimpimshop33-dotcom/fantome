@@ -3386,7 +3386,7 @@ window.showScreen = (id, fromPopstate = false) => {
     if (extra)      extra.style.display      = 'none';
     if (icon)       icon.textContent         = '○';
     if (btn2)       { btn2.style.borderColor = 'rgba(255,200,80,.2)'; btn2.style.background = 'rgba(255,200,80,.06)'; }
-    if (subLabel)   { subLabel.textContent = 'Attirer des clients avec une offre géolocalisée'; subLabel.style.color = ''; }
+    if (subLabel)   { subLabel.textContent = 'Attirer des clients avec une offre géolocalisée'; subLabel.style.color = 'rgba(255,235,180,1)'; }
     // Reset step 2 sections
     ['step2DurWrap','step2MaxOpenWrap','step2RadiusWrap','step2CondWrap'].forEach(id2 => {
       const el = document.getElementById(id2); if (el) el.style.display = '';
@@ -3522,7 +3522,7 @@ window.toggleBusinessMode = () => {
     btn.style.borderColor    = 'rgba(255,200,80,.2)';
     btn.style.background     = 'rgba(255,200,80,.06)';
     subLabel.textContent     = 'Attirer des clients avec une offre géolocalisée';
-    subLabel.style.color     = '';
+    subLabel.style.color     = 'rgba(255,235,180,1)';
     // Réafficher les sections step 2
     ['step2DurWrap','step2MaxOpenWrap','step2RadiusWrap','step2CondWrap'].forEach(id => {
       const el = document.getElementById(id);
