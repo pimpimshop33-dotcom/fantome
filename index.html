@@ -2227,6 +2227,13 @@ function renderRadarDots() {
     dot.setAttribute('tabindex', '0');
     dot.setAttribute('role', 'button');
     dot.setAttribute('aria-label', `${escapeHTML(g.location || 'Fantôme')} — ${formatDistance(g.distance)}`);
+    if (g.businessMode) {
+      const bizBadge = document.createElement('div');
+      bizBadge.textContent = '🏪';
+      bizBadge.style.cssText = 'position:absolute;top:-8px;right:-8px;font-size:14px;filter:drop-shadow(0 0 4px rgba(255,200,80,.6));';
+      dot.style.position = 'relative';
+      dot.appendChild(bizBadge);
+    }
     dot.onclick = () => openGhost(g.id);
     dot.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGhost(g.id); } };
     const emoji = g.secret ? '🔮' : (g.emoji || '👻');
@@ -2372,6 +2379,20 @@ window.openGhost = async (id) => {
     const msgReportBtn = document.getElementById('msgReportBtn');
     if (msgReportBtn) msgReportBtn.style.display = isOwner ? 'none' : 'flex';
     document.getElementById('detailAuthor').textContent = selectedGhost.anonymous ? getPoeticName(selectedGhost.id) : '🌫️ ' + escapeHTML(selectedGhost.author || '');
+
+    // ── Mode Commerce : afficher le code promo ──
+    const existingPromo = document.getElementById('detailPromoBlock');
+    if (existingPromo) existingPromo.remove();
+    if (selectedGhost.businessMode && selectedGhost.promoCode) {
+      const promoBlock = document.createElement('div');
+      promoBlock.id = 'detailPromoBlock';
+      promoBlock.style.cssText = 'margin:16px 0 0;background:rgba(255,200,80,.08);border:1px solid rgba(255,200,80,.35);border-radius:14px;padding:14px 16px;text-align:center;';
+      promoBlock.innerHTML =
+        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,200,80,.7);margin-bottom:8px;">&#x1F3EA; Offre exclusive</div>' +
+        '<div style="font-size:20px;font-weight:700;color:rgba(255,200,80,.95);letter-spacing:1px;">' + escapeHTML(selectedGhost.promoCode) + '</div>' +
+        '<div style="font-size:11px;color:var(--spirit-dim);margin-top:6px;">Présentez ce message en caisse pour en bénéficier</div>';
+      document.getElementById('detailMessage').after(promoBlock);
+    }
     document.getElementById('detailTime').textContent = '🕰 ' + timeAgo(selectedGhost.createdAt);
     document.getElementById('detailDuration').textContent = '⏳ ' + timeRemaining(selectedGhost);
     document.getElementById('detailRadius').textContent = '📡 ' + escapeHTML(selectedGhost.radius || '10m');
@@ -2758,6 +2779,8 @@ window.depositGhost = async () => {
       openHour: openHour || null,
       openAfterGhostId: openAfterGhostId || null,
       openDate: openDate || null,
+      businessMode: (isPremium && document.getElementById('businessExtra')?.style.display !== 'none') || false,
+      promoCode: (isPremium && document.getElementById('businessExtra')?.style.display !== 'none') ? (document.getElementById('promoCode')?.value.trim() || null) : null,
     };
     const ghostId = await WorldService.createGhost(ghostData, userLat, userLng,
       { uid: currentUser.uid, displayName: currentUser.displayName, email: currentUser.email }
@@ -2770,6 +2793,14 @@ window.depositGhost = async () => {
     document.getElementById('depositMsg').value = '';
     document.getElementById('depositLocation').value = '';
     document.getElementById('chainHint').value = '';
+    const promoEl = document.getElementById('promoCode');
+    if (promoEl) promoEl.value = '';
+    const bizExtra = document.getElementById('businessExtra');
+    if (bizExtra) bizExtra.style.display = 'none';
+    const bizIcon = document.getElementById('businessToggleIcon');
+    if (bizIcon) bizIcon.textContent = '○';
+    const bizBtn = document.getElementById('businessToggleBtn');
+    if (bizBtn) bizBtn.style.borderColor = 'rgba(255,200,80,.2)';
     document.getElementById('chainMapLabel').textContent = 'Placer le prochain point sur la carte';
     document.getElementById('chainMapPreview').style.display = 'none';
     window._chainNextCoords = null;
@@ -3132,6 +3163,21 @@ window.showScreen = (id, fromPopstate = false) => {
 
 
 // ── CONDITIONS D'OUVERTURE ────────────────────────────────
+window.toggleBusinessMode = () => {
+  if (!isPremium) {
+    showToast('warning', '✦ Le mode Commerce est réservé aux membres Premium.');
+    showScreen('screenProfile'); setNav('nav-profile');
+    return;
+  }
+  const extra = document.getElementById('businessExtra');
+  const icon  = document.getElementById('businessToggleIcon');
+  const btn   = document.getElementById('businessToggleBtn');
+  const active = extra.style.display === 'none';
+  extra.style.display = active ? 'block' : 'none';
+  icon.textContent = active ? '●' : '○';
+  btn.style.borderColor = active ? 'rgba(255,200,80,.6)' : 'rgba(255,200,80,.2)';
+};
+
 window.selectCond = (btn) => {
   if (btn.dataset.cond === 'future' && !isPremium) {
     showToast('warning', '✦ Le message du futur est réservé aux membres Premium.');
@@ -5129,7 +5175,25 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         </div>
         <textarea class="form-textarea wizard-textarea" id="depositMsg" placeholder="Une pensée, un souvenir, un secret… quelque chose que vous laissez derrière vous." style="height:130px;margin-bottom:0;" maxlength="280" aria-required="true" aria-describedby="msgCharCount"></textarea>
         <div class="wizard-char-count"><span id="msgCharCount">0</span>/280</div>
-        <button class="wizard-next-btn" onclick="wizardNext(1)">Continuer →</button>
+
+        <!-- Mode Commerce -->
+        <div id="businessToggleWrap" style="margin:14px 0 0;">
+          <button id="businessToggleBtn" onclick="toggleBusinessMode()" type="button" style="display:flex;align-items:center;gap:10px;width:100%;background:rgba(255,200,80,.06);border:1px solid rgba(255,200,80,.2);border-radius:12px;padding:12px 14px;cursor:pointer;font-family:'Instrument Sans',sans-serif;text-align:left;">
+            <span style="font-size:18px;">🏪</span>
+            <span style="flex:1;">
+              <div style="font-size:13px;color:var(--text);font-weight:600;">Mode Commerce <span style="font-size:10px;background:rgba(255,200,80,.15);color:rgba(255,200,80,.8);border-radius:6px;padding:1px 5px;margin-left:4px;">✦ Premium</span></div>
+              <div style="font-size:11px;color:var(--spirit-dim);">Offre exclusive pour attirer des clients</div>
+            </span>
+            <span id="businessToggleIcon" style="font-size:16px;color:var(--spirit-dim);">○</span>
+          </button>
+          <div id="businessExtra" style="display:none;margin-top:10px;">
+            <label class="form-label" style="margin-bottom:6px;">Code promo ou offre</label>
+            <input class="form-input" id="promoCode" type="text" placeholder="ex: CAFE-OFFERT, -15% sur présentation…" maxlength="80" style="font-size:13px !important;">
+            <div style="font-size:10px;color:var(--spirit-dim);margin-top:5px;">Ce code sera affiché en évidence quand le client découvre votre fantôme.</div>
+          </div>
+        </div>
+
+        <button class="wizard-next-btn" onclick="wizardNext(1)" style="margin-top:14px;">Continuer →</button>
       </div>
 
       <!-- ÉTAPE 2 -->
