@@ -1104,7 +1104,7 @@ async function refreshProfileStats() {
 
 // ── TABLEAU DE BORD COMMERÇANT ──────────────────────────
 async function loadBizDashboard() {
-  if (!currentUser || !isPremium) return;
+  if (!currentUser) return;
   const section  = document.getElementById('bizDashboardSection');
   const content  = document.getElementById('bizDashboardContent');
   if (!section || !content) return;
@@ -1117,10 +1117,14 @@ async function loadBizDashboard() {
       orderBy('createdAt', 'desc'),
       limit(50)
     ));
-  } catch(e) { return; }
+  } catch(e) {
+    console.warn('[BizDashboard] erreur Firestore:', e);
+    return;
+  }
 
   // Filtrer côté client les fantômes commerce
   const bizDocs = snap.docs.filter(d => d.data().businessMode === true);
+  console.log('[BizDashboard] total ghosts:', snap.size, '| biz ghosts:', bizDocs.length);
   if (bizDocs.length === 0) { section.style.display = 'none'; return; }
   section.style.display = 'block';
 
