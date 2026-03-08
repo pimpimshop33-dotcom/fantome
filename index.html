@@ -349,7 +349,7 @@ function buildLeafletMap(centerLat, centerLng, h) {
 
   nearbyGhosts.forEach((g, i) => {
     if (!g.lat || !g.lng) return;
-    const emoji = escapeHTML(g.emoji || '👻');
+    const emoji = g.secret ? '🔮' : (g.businessMode ? '🏪' : escapeHTML(g.emoji || '👻'));
     const delay = (i * 0.3).toFixed(2);
     const ghostRadius = Math.max(20, parseInt(g.radius || '50') || 50);
     const dist = distanceMeters(centerLat, centerLng, g.lat, g.lng);
