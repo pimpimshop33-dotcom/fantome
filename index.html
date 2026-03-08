@@ -703,6 +703,13 @@ function _startNotifIntervals() {
 
 window.enableNotifications = async () => {
   const btn = document.getElementById('notifBtn');
+
+  // Cas : permission bloquée par le navigateur
+  if (Notification.permission === 'denied') {
+    showToast('warning', '🔕 Notifications bloquées — autorisez-les dans les réglages de votre navigateur.', 5000);
+    return;
+  }
+
   const alreadyEnabled = localStorage.getItem('notif_enabled') === '1' && Notification.permission === 'granted';
   if (alreadyEnabled) {
     // Toggle OFF
@@ -713,7 +720,8 @@ window.enableNotifications = async () => {
     showToast('info', '🔕 Notifications désactivées.');
     return;
   }
-  // Si permission déjà accordée, pas besoin de redemander
+
+  // Permission déjà accordée (ré-activation après désactivation)
   const alreadyGranted = Notification.permission === 'granted';
   const granted = alreadyGranted ? true : await requestNotifPermission();
   if (granted) {
@@ -721,13 +729,14 @@ window.enableNotifications = async () => {
     btn.style.borderColor = 'rgba(100,220,160,.4)';
     btn.style.color = 'rgba(100,220,160,.9)';
     localStorage.setItem('notif_enabled', '1');
-    if (!alreadyGranted) showNotif('👻 Fantôme', 'Notifications activées — vous serez alerté des fantômes proches !');
+    showToast('success', '🔔 Notifications réactivées !');
     _startNotifIntervals();
     checkDiscoveries();
   } else {
     btn.textContent = '🔕 Notifications refusées';
     btn.style.borderColor = 'rgba(255,100,100,.3)';
     btn.style.color = 'rgba(255,100,100,.7)';
+    showToast('warning', '🔕 Permission refusée — autorisez dans les réglages du navigateur.', 5000);
   }
 };
 
