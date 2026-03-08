@@ -1914,6 +1914,153 @@ window.removeFavorite = (ghostId) => {
 };
 
 // ── CLASSEMENT PUBLIC ────────────────────────────────────
+
+// ── CARTE EMPREINTE PERSONNELLE ──────────────────────────
+let _empreinteMap = null;
+
+window.loadEmpreinteMap = async () => {
+  if (!currentUser) return;
+  const container = document.getElementById('empreinteMap');
+  const loader    = document.getElementById('empreinteLoader');
+  const statsEl   = document.getElementById('empreinteStats');
+  if (!container) return;
+
+  // Reset
+  if (_empreinteMap) { try { _empreinteMap.remove(); } catch(e){} _empreinteMap = null; }
+  if (loader) loader.style.display = 'flex';
+
+  try {
+    // 1. Charger les fantômes déposés par l'utilisateur
+    const depositSnap = await getDocs(query(
+      collection(db, 'ghosts'),
+      where('authorUid', '==', currentUser.uid),
+      limit(100)
+    ));
+    const deposits = [];
+    depositSnap.forEach(d => {
+      const g = d.data();
+      if (g.lat && g.lng) deposits.push({ lat: g.lat, lng: g.lng, emoji: g.emoji || '👻', location: g.location || '?', id: d.id });
+    });
+
+    // 2. Charger les fantômes découverts (depuis Firestore discoveries)
+    const discSnap = await getDocs(query(
+      collection(db, 'discoveries'),
+      where('discoveredBy', '==', currentUser.displayName || ''),
+      limit(100)
+    )).catch(() => null);
+
+    // Fallback : IDs localStorage → chercher lat/lng dans nearbyGhosts ou Firestore
+    const discIds = getDiscoveredIds().slice(-50);
+    const discoveries = [];
+    // On cherche d'abord dans nearbyGhosts (déjà chargés)
+    discIds.forEach(id => {
+      const found = nearbyGhosts.find(g => g.id === id);
+      if (found && found.lat && found.lng) {
+        discoveries.push({ lat: found.lat, lng: found.lng, emoji: found.emoji || '👁', location: found.location || '?', id });
+      }
+    });
+    // Compléter avec Firestore pour les fantômes non locaux
+    const missingIds = discIds.filter(id => !discoveries.find(d => d.id === id)).slice(0, 20);
+    if (missingIds.length > 0) {
+      await Promise.all(missingIds.map(async id => {
+        try {
+          const d = await getDoc(doc(db, 'ghosts', id));
+          if (d.exists()) {
+            const g = d.data();
+            if (g.lat && g.lng) discoveries.push({ lat: g.lat, lng: g.lng, emoji: g.emoji || '👁', location: g.location || '?', id });
+          }
+        } catch(e) {}
+      }));
+    }
+
+    const allPoints = [...deposits, ...discoveries];
+    if (loader) loader.style.display = 'none';
+
+    if (allPoints.length === 0) {
+      container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;"><div style="font-size:32px;">👻</div><div style="font-size:12px;color:var(--spirit-dim);text-align:center;">Votre empreinte est vide pour l\'instant.<br>Déposez ou découvrez des fantômes !</div></div>';
+      return;
+    }
+
+    // 3. Centrer la carte sur le barycentre des points
+    const centerLat = allPoints.reduce((s, p) => s + p.lat, 0) / allPoints.length;
+    const centerLng = allPoints.reduce((s, p) => s + p.lng, 0) / allPoints.length;
+
+    // Créer le div leaflet
+    container.innerHTML = '<div id="empreinteLeaflet" style="width:100%;height:100%;"></div>';
+    _empreinteMap = L.map('empreinteLeaflet', { zoomControl: false, attributionControl: false })
+      .setView([centerLat, centerLng], deposits.length + discoveries.length > 5 ? 12 : 14);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+      maxZoom: 19, subdomains: 'abc', opacity: 0.55
+    }).addTo(_empreinteMap);
+
+    // 4. Marqueurs dépôts — violet lumineux
+    deposits.forEach(p => {
+      const icon = L.divIcon({
+        html: `<div style="font-size:20px;filter:drop-shadow(0 0 8px rgba(168,180,255,1));animation:ghostFloat 2.5s ease-in-out infinite;">${p.emoji}</div>`,
+        iconSize: [28, 28], iconAnchor: [14, 14], className: ''
+      });
+      L.marker([p.lat, p.lng], { icon })
+        .addTo(_empreinteMap)
+        .bindPopup(`<div style="font-size:12px;font-family:'Instrument Sans',sans-serif;">👻 <b>${p.location}</b><br><span style="opacity:.6;font-size:10px;">Votre dépôt</span></div>`);
+    });
+
+    // 5. Marqueurs découvertes — doré
+    discoveries.forEach(p => {
+      const icon = L.divIcon({
+        html: `<div style="width:10px;height:10px;background:rgba(255,200,80,.9);border-radius:50%;border:2px solid rgba(255,220,120,.8);box-shadow:0 0 8px rgba(255,200,80,.7);"></div>`,
+        iconSize: [10, 10], iconAnchor: [5, 5], className: ''
+      });
+      L.marker([p.lat, p.lng], { icon })
+        .addTo(_empreinteMap)
+        .bindPopup(`<div style="font-size:12px;font-family:'Instrument Sans',sans-serif;">👁 <b>${p.location}</b><br><span style="opacity:.6;font-size:10px;">Découverte</span></div>`);
+    });
+
+    // Ajuster zoom pour tout voir
+    if (allPoints.length > 1) {
+      const bounds = L.latLngBounds(allPoints.map(p => [p.lat, p.lng]));
+      _empreinteMap.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 });
+    }
+    setTimeout(() => _empreinteMap.invalidateSize(), 300);
+
+    // 6. Stats sous la carte
+    const cities = new Set(allPoints.map(p => p.location.split(',')[0])).size;
+    statsEl.innerHTML = `
+      <div style="flex:1;background:rgba(168,180,255,.06);border:1px solid rgba(168,180,255,.12);border-radius:12px;padding:8px 10px;text-align:center;">
+        <div style="font-size:18px;color:var(--ether);font-weight:600;">${deposits.length}</div>
+        <div style="font-size:9px;color:var(--spirit-dim);letter-spacing:.5px;text-transform:uppercase;">Dépôts</div>
+      </div>
+      <div style="flex:1;background:rgba(255,200,80,.06);border:1px solid rgba(255,200,80,.12);border-radius:12px;padding:8px 10px;text-align:center;">
+        <div style="font-size:18px;color:rgba(255,200,80,.9);font-weight:600;">${discoveries.length}</div>
+        <div style="font-size:9px;color:var(--spirit-dim);letter-spacing:.5px;text-transform:uppercase;">Découvertes</div>
+      </div>
+      <div style="flex:1;background:rgba(100,220,160,.06);border:1px solid rgba(100,220,160,.12);border-radius:12px;padding:8px 10px;text-align:center;">
+        <div style="font-size:18px;color:rgba(100,220,160,.9);font-weight:600;">${cities}</div>
+        <div style="font-size:9px;color:var(--spirit-dim);letter-spacing:.5px;text-transform:uppercase;">Lieux</div>
+      </div>`;
+
+    // Afficher bouton partage si Web Share API dispo
+    const shareBtn = document.getElementById('empreinteShareBtn');
+    if (shareBtn && navigator.share) shareBtn.style.display = 'block';
+
+  } catch(e) {
+    if (loader) loader.style.display = 'none';
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:12px;color:var(--spirit-dim);">Impossible de charger l'empreinte</div>';
+  }
+};
+
+window.shareEmpreinte = async () => {
+  const deposits = document.querySelector('#empreinteStats div:nth-child(1) .stat-num, #empreinteStats div:nth-child(1) div')?.textContent || '?';
+  try {
+    await navigator.share({
+      title: '👻 Mon empreinte Fantôme',
+      text: `J'ai laissé des traces dans ${deposits} lieux avec l'app Fantôme — des messages secrets ancrés dans des endroits réels. Approchez-vous.`,
+      url: 'https://pimpimshop33-dotcom.github.io/fantome/'
+    });
+    Analytics.track('empreinte_shared');
+  } catch(e) {}
+};
+
 window.loadLeaderboard = async () => {
   const el = document.getElementById('leaderboardContent');
   if (!el) return;
@@ -2936,7 +3083,7 @@ window.showScreen = (id, fromPopstate = false) => {
     history.pushState({ screen: id }, '', window.location.href.split('?')[0] + window.location.search);
   }
   if (id === 'screenMap') renderStaticMap();
-  if (id === 'screenProfile') { refreshProfileStats(); loadLeaderboard(); }
+  if (id === 'screenProfile') { refreshProfileStats(); loadLeaderboard(); loadEmpreinteMap(); }
   if (id === 'screenOnboard') {
     const btn = document.getElementById('obBackBtn');
     if (btn) btn.style.display = currentUser ? 'flex' : 'none';
@@ -5212,6 +5359,21 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <div class="profile-avatar-big" id="profileAvatar" aria-hidden="true">?</div>
         <div class="profile-name-big" id="profileName">…</div>
       </div>
+      <!-- ── CARTE EMPREINTE ─────────────────────────── -->
+      <div id="empreinteSection" style="margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);">🗺 Mon empreinte fantôme</div>
+          <button id="empreinteShareBtn" onclick="shareEmpreinte()" style="font-size:11px;color:rgba(168,180,255,.7);background:rgba(168,180,255,.07);border:1px solid rgba(168,180,255,.2);border-radius:20px;padding:4px 10px;cursor:pointer;font-family:'Instrument Sans',sans-serif;display:none;">↗ Partager</button>
+        </div>
+        <div id="empreinteMap" style="width:100%;height:220px;border-radius:16px;overflow:hidden;border:1px solid rgba(168,180,255,.15);background:rgba(10,10,20,.8);position:relative;">
+          <div id="empreinteLoader" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:2;">
+            <div style="font-size:28px;animation:ghostFloat 2s ease-in-out infinite;">👻</div>
+            <div style="font-size:11px;color:var(--spirit-dim);letter-spacing:.5px;">Chargement de votre empreinte…</div>
+          </div>
+        </div>
+        <div id="empreinteStats" style="display:flex;gap:8px;margin-top:8px;"></div>
+      </div>
+
       <div class="stats-grid" role="list" aria-label="Mes statistiques">
         <div class="stat-card" role="listitem" onclick="toggleDiscoveryHistory()" style="cursor:pointer;" aria-label="Voir les fantômes découverts">
           <div class="stat-num" id="statDiscovered" aria-label="Fantômes découverts">0</div>
