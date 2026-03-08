@@ -2157,7 +2157,7 @@ function renderGhostList() {
     return;
   }
   list.innerHTML = filtered.map(g => {
-    const emoji = g.secret ? '🔮' : escapeHTML(g.emoji || '👻');
+    const emoji = g.secret ? '🔮' : (g.businessMode ? '🏪' : escapeHTML(g.emoji || '👻'));
     // Âge du fantôme
     const ageMs = g.createdAt ? Date.now() - g.createdAt.seconds * 1000 : 0;
     const ageDays = ageMs / 86400000;
@@ -2236,7 +2236,7 @@ function renderRadarDots() {
     }
     dot.onclick = () => openGhost(g.id);
     dot.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGhost(g.id); } };
-    const emoji = g.secret ? '🔮' : (g.emoji || '👻');
+    const emoji = g.secret ? '🔮' : (g.businessMode ? '🏪' : (g.emoji || '👻'));
     const label = escapeHTML(g.location || 'Fantôme');
     const sweepDuration = 4;
     const angleNorm = ((angle + Math.PI / 2) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
@@ -2328,7 +2328,7 @@ window.openGhost = async (id) => {
   }
 
   document.getElementById('detailLocation').textContent = '📍 ' + escapeHTML(selectedGhost.location || 'Lieu inconnu');
-  document.getElementById('sealedEmoji').textContent = selectedGhost.secret ? '🔮' : (selectedGhost.emoji || '👻');
+  document.getElementById('sealedEmoji').textContent = selectedGhost.secret ? '🔮' : (selectedGhost.businessMode ? '🏪' : (selectedGhost.emoji || '👻'));
 
   // FIX: Guard contre lat/lng manquants
   const ghostDist = (selectedGhost.distance != null) ? selectedGhost.distance :
