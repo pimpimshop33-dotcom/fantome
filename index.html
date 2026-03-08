@@ -1173,11 +1173,21 @@ async function loadBizDashboard() {
   if (bizDocs.length === 0) { section.style.display = 'none'; return; }
   section.style.display = 'block';
 
+  // Lire ghostStats pour avoir les openCount à jour (fallback si règles bloquent l'update direct)
+  const statsMap = {};
+  try {
+    const statsSnap = await getDocs(query(
+      collection(db, 'ghostStats'),
+      where('authorUid', '==', currentUser.uid)
+    ));
+    statsSnap.forEach(d => { statsMap[d.id] = d.data().openCount || 0; });
+  } catch(e) {}
+
   let html = '';
   bizDocs.forEach(d => {
     const g   = d.data();
     const id  = d.id;
-    const opens   = g.openCount || 0;
+    const opens = Math.max(g.openCount || 0, statsMap[id] || 0);
     const expired = isExpired(g);
     const location = escapeHTML(g.location || 'Lieu inconnu');
     const title = g.message ? escapeHTML(g.message.split('\n')[0].replace(/^🏪 [^:]+: /, '')) : location;
@@ -2108,7 +2118,8 @@ window.loadEmpreinteMap = async () => {
     if (loader) loader.style.display = 'none';
 
     if (allPoints.length === 0) {
-      container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;"><div style="font-size:32px;">👻</div><div style="font-size:12px;color:var(--spirit-dim);text-align:center;">Votre empreinte est vide pour l\'instant.<br>Déposez ou découvrez des fantômes !</div></div>';
+      if (loader) loader.style.display = 'flex';
+      loader.innerHTML = '<div style="font-size:32px;">👻</div><div style="font-size:12px;color:var(--spirit-dim);text-align:center;">Votre empreinte est vide.<br>Déposez ou découvrez des fantômes !</div>';
       return;
     }
 
@@ -2116,8 +2127,10 @@ window.loadEmpreinteMap = async () => {
     const centerLat = allPoints.reduce((s, p) => s + p.lat, 0) / allPoints.length;
     const centerLng = allPoints.reduce((s, p) => s + p.lng, 0) / allPoints.length;
 
-    // Créer le div leaflet
-    container.innerHTML = '<div id="empreinteLeaflet" style="width:100%;height:100%;"></div>';
+    // Utiliser le div persistant (pas de innerHTML sur container)
+    if (loader) loader.style.display = 'none';
+    const leafletDiv = document.getElementById('empreinteLeaflet');
+    leafletDiv.innerHTML = '';
     _empreinteMap = L.map('empreinteLeaflet', { zoomControl: false, attributionControl: false })
       .setView([centerLat, centerLng], deposits.length + discoveries.length > 5 ? 12 : 14);
 
@@ -2178,7 +2191,7 @@ window.loadEmpreinteMap = async () => {
   } catch(e) {
     console.error('Empreinte error:', e);
     if (loader) loader.style.display = 'none';
-    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:12px;color:var(--spirit-dim);">Impossible de charger l\'empreinte</div>';
+    if (loader) { loader.style.display = 'flex'; loader.innerHTML = '<div style="font-size:24px;">⚠️</div><div style="font-size:11px;color:var(--spirit-dim);">Impossible de charger l\'empreinte</div>'; }
   }
 };
 
@@ -3067,7 +3080,14 @@ async function _doOpenEnvelope() {
       updateDoc(doc(db, 'ghosts', selectedGhost.id), {
         openCount: increment(1),
         ...(nowExpired ? { expired: true } : {})
-      }).catch(() => {});
+      }).catch(() => {
+        // Si règles Firestore bloquent (non-auteur), fallback vers ghostStats
+        setDoc(doc(db, 'ghostStats', selectedGhost.id), {
+          openCount: increment(1),
+          ghostId: selectedGhost.id,
+          authorUid: selectedGhost.authorUid || null
+        }, { merge: true }).catch(() => {});
+      });
       if (nowExpired) showToast('info', '👻 Ce fantôme vient de disparaître — vous étiez le dernier à pouvoir le lire.', 5000);
       // Notifier l'auteur si ce n'est pas soi-même
       if (selectedGhost.authorUid && selectedGhost.authorUid !== currentUser?.uid) {
@@ -5832,6 +5852,8 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
           <button id="empreinteShareBtn" onclick="shareEmpreinte()" style="font-size:11px;color:rgba(168,180,255,.7);background:rgba(168,180,255,.07);border:1px solid rgba(168,180,255,.2);border-radius:20px;padding:4px 10px;cursor:pointer;font-family:'Instrument Sans',sans-serif;display:none;">↗ Partager</button>
         </div>
         <div id="empreinteMap" style="width:100%;height:200px;border-radius:16px;overflow:hidden;border:1px solid rgba(168,180,255,.15);background:rgba(10,10,20,.8);position:relative;">
+          <!-- Div leaflet persistant — ne pas écraser avec innerHTML -->
+          <div id="empreinteLeaflet" style="position:absolute;inset:0;z-index:1;"></div>
           <div id="empreinteLoader" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:2;">
             <div style="font-size:28px;animation:ghostFloat 2s ease-in-out infinite;">👻</div>
             <div style="font-size:11px;color:var(--spirit-dim);letter-spacing:.5px;">Chargement de votre empreinte…</div>
