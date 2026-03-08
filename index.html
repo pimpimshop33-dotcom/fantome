@@ -2463,7 +2463,8 @@ window.depositGhost = async () => {
   const rawEmoji  = document.getElementById('depositEmoji').value || '👻';
   // FIX: Limiter l'emoji à 2 caractères max pour éviter injection de HTML
   const emoji = [...rawEmoji].slice(0, 2).join('');
-  const duration = document.querySelector('.dur-btn.active')?.textContent || '7 jours';
+  const duration = document.querySelector('.dur-btn.active:not([data-maxopen])')?.textContent || '7 jours';
+  const maxOpenCount = parseInt(document.querySelector('.dur-btn.active[data-maxopen]')?.dataset.maxopen || '0');
   const radius   = document.querySelector('.radius-btn.active')?.textContent || '10m';
   const typeBtns = document.querySelectorAll('#screenDeposit .type-selector');
   const anon     = typeBtns[1]?.querySelector('.type-btn.active')?.dataset.val === 'anon';
@@ -2497,7 +2498,7 @@ window.depositGhost = async () => {
     const openAfterGhostId = (openCondition === 'after' && isPremium) ? document.getElementById('condAfterInput').value.trim() : null;
     // ── Dépôt via WorldService.createGhost() ────────────────────────────
     const ghostData = {
-      message, location: location || 'Lieu sans nom', emoji, duration, radius,
+      message, location: location || 'Lieu sans nom', emoji, duration, radius, maxOpenCount: maxOpenCount || 0,
       anonymous: anon, secret: secret || false,
       audioUrl: audioUrl || null, photoUrl: photoUrl || null, videoUrl: videoUrl || null,
       chainHint: (isPremium && chainHint) || null,
@@ -2599,7 +2600,14 @@ async function _doOpenEnvelope() {
     if (isNewDisc) {
       WorldService.registerPresence(selectedGhost.id, true).catch(() => {});
       // Incrémenter le compteur d'ouvertures sur le fantôme
-      updateDoc(doc(db, 'ghosts', selectedGhost.id), { openCount: increment(1) }).catch(() => {});
+      const newOpenCount = (selectedGhost.openCount || 0) + 1;
+      const maxOpen = selectedGhost.maxOpenCount || 0;
+      const nowExpired = maxOpen > 0 && newOpenCount >= maxOpen;
+      updateDoc(doc(db, 'ghosts', selectedGhost.id), {
+        openCount: increment(1),
+        ...(nowExpired ? { expired: true } : {})
+      }).catch(() => {});
+      if (nowExpired) showToast('info', '👻 Ce fantôme vient de disparaître — vous étiez le dernier à pouvoir le lire.', 5000);
       // Notifier l'auteur si ce n'est pas soi-même
       if (selectedGhost.authorUid && selectedGhost.authorUid !== currentUser?.uid) {
         const lieu = selectedGhost.location || 'ce lieu';
@@ -3390,6 +3398,15 @@ window.selectType = (el) => {
 };
 
 window.selectDur = (el) => {
+  el.parentElement.querySelectorAll('.dur-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
+  el.classList.add('active');
+  el.setAttribute('aria-pressed', 'true');
+};
+
+window.selectMaxOpen = (el) => {
   el.parentElement.querySelectorAll('.dur-btn').forEach(b => {
     b.classList.remove('active');
     b.setAttribute('aria-pressed', 'false');
@@ -4839,6 +4856,15 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
             <button class="dur-btn active" onclick="selectDur(this)" aria-pressed="true">7 jours</button>
             <button class="dur-btn" onclick="selectDur(this)" aria-pressed="false">1 mois</button>
             <button class="dur-btn" onclick="selectDur(this)" aria-pressed="false">♾ Éternel</button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">Disparaît après</label>
+          <div class="duration-selector" role="group" aria-label="Nombre de découvertes avant disparition">
+            <button class="dur-btn active" data-maxopen="0" onclick="selectMaxOpen(this)" aria-pressed="true">∞ Illimité</button>
+            <button class="dur-btn" data-maxopen="1" onclick="selectMaxOpen(this)" aria-pressed="false">1 lecture</button>
+            <button class="dur-btn" data-maxopen="5" onclick="selectMaxOpen(this)" aria-pressed="false">5 lectures</button>
+            <button class="dur-btn" data-maxopen="10" onclick="selectMaxOpen(this)" aria-pressed="false">10 lectures</button>
           </div>
         </div>
         <div class="form-group" style="margin-bottom:0;">
