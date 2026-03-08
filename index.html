@@ -2525,6 +2525,8 @@ window.openGhost = async (id) => {
 
   document.getElementById('detailLocation').textContent = '📍 ' + escapeHTML(selectedGhost.location || 'Lieu inconnu');
   document.getElementById('sealedEmoji').textContent = selectedGhost.secret ? '🔮' : (selectedGhost.businessMode ? '🏪' : (selectedGhost.emoji || '👻'));
+  const readCountEl = document.getElementById('detailReadCount');
+  if (readCountEl) readCountEl.style.display = 'none';
 
   // FIX: Guard contre lat/lng manquants
   const ghostDist = (selectedGhost.distance != null) ? selectedGhost.distance :
@@ -3101,9 +3103,22 @@ async function _doOpenEnvelope() {
       if (wasFirst) {
         const firstCount = parseInt(localStorage.getItem('fantome_first_reader') || '0') + 1;
         localStorage.setItem('fantome_first_reader', firstCount);
-        showToast('success', '🥇 Vous êtes le premier à lire ce message !', 4000);
         animateStatNumber('statFirstReader', firstCount);
       }
+
+      // Annotation "vu par X personnes"
+      const readCountEl = document.getElementById('detailReadCount');
+      if (readCountEl) {
+        if (wasFirst) {
+          readCountEl.innerHTML = `<span style="color:rgba(100,220,160,.9);">🥇 Vous êtes le premier à lire ce message</span>`;
+        } else {
+          const prev = selectedGhost.openCount || 0;
+          readCountEl.innerHTML = `<span style="color:var(--spirit-dim);">👁 ${prev} personne${prev > 1 ? 's' : ''} ${prev > 1 ? 'ont' : 'a'} lu ce message avant vous</span>`;
+        }
+        readCountEl.style.display = 'block';
+      }
+
+      if (wasFirst) showToast('success', '🥇 Vous êtes le premier à lire ce message !', 4000);
       updateDoc(doc(db, 'ghosts', selectedGhost.id), {
         openCount: increment(1),
         ...(nowExpired ? { expired: true } : {})
@@ -5477,6 +5492,8 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         </div>
         <div id="detailAudio"></div>
         <div id="detailPhoto"></div>
+        <!-- Annotation "vu par X personnes" -->
+        <div id="detailReadCount" style="display:none;text-align:center;font-size:12px;padding:8px 0 4px;font-family:'Instrument Sans',sans-serif;letter-spacing:.3px;"></div>
         <div id="detailChain" style="display:none;"></div>
         <div class="detail-info">
           <div class="detail-badge" id="detailAuthor"></div>
