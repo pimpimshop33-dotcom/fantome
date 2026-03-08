@@ -272,8 +272,8 @@ function closeModal(modalId) {
 }
 
 window.renderStaticMap = () => {
-  const centerLat = userLat || 48.8566;
-  const centerLng = userLng || 2.3522;
+  const centerLat = userLat || 44.6333;
+  const centerLng = userLng || -1.1333;
   const container = document.getElementById('mapContainer');
   const h = Math.max(window.innerHeight - 160, 500);
   container.style.height = h + 'px';
@@ -469,7 +469,14 @@ onAuthStateChanged(auth, async user => {
     if (!window._locationWatchStarted) {
       window._locationWatchStarted = true;
     LocationService.startWatch();
-    LocationService.onPositionUpdate(({ lat, lng }) => {
+    LocationService.onPositionUpdate(({ lat, lng, accuracy }) => {
+      // Ignorer les positions trop imprécises (IP-based = Paris, accuracy > 5000m)
+      if (accuracy && accuracy > 5000) return;
+      // Recentrer la carte si c'est la première position réelle reçue
+      if (!userLat && window.map) {
+        window.map.setView([lat, lng], 16);
+      }
+      userLat = lat; userLng = lng;
       const toUpdate = LocationService.detectNearbyPresence(lat, lng, nearbyGhosts);
       toUpdate.forEach(ghostId => {
         LocationService.markPresenceRecorded(ghostId);
@@ -505,6 +512,13 @@ onAuthStateChanged(auth, async user => {
     });
     } // fin guard _locationWatchStarted
     document.getElementById('bottomNav').style.display = 'flex';
+    // Obtenir la position GPS réelle avant de charger les fantômes
+    try {
+      await getLocation();
+      if (window.map) window.map.setView([userLat, userLng], 16);
+    } catch(e) {
+      // GPS refusé ou timeout — garder fallback
+    }
     await loadNearbyGhosts();
     // Vérifier les notifications de réponses au démarrage
     setTimeout(() => checkReplyNotifications(), 2000);
@@ -1790,7 +1804,7 @@ window.loadNearbyGhosts = async () => {
       userLat.toFixed(4) + '° N, ' + userLng.toFixed(4) + '° E';
   } catch(e) {
     document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:12px;color:rgba(255,100,100,.6)">Géolocalisation refusée — activez-la dans les paramètres de votre navigateur.</span>';
-    userLat = 48.8566; userLng = 2.3522;
+    userLat = 44.6333; userLng = -1.1333;
   }
 
   // ── QUERY FIRESTORE ─────────────────────────────────────────────────
@@ -2923,7 +2937,7 @@ window.depositGhost = async () => {
   if (message.length > 280) { err.textContent = 'Message trop long (280 caractères max).'; return; }
   if (!userLat) {
     // Tenter une dernière fois
-    try { await getLocation(); } catch(e) { userLat = 48.8566; userLng = 2.3522; }
+    try { await getLocation(); } catch(e) { userLat = 44.6333; userLng = -1.1333; }
     if (!userLat) { err.textContent = 'Géolocalisation requise — activez-la dans votre navigateur.'; return; }
   }
   if (!navigator.onLine) { err.textContent = 'Vous êtes hors ligne — reconnectez-vous pour déposer.'; return; }
