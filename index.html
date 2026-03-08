@@ -1114,7 +1114,6 @@ async function loadBizDashboard() {
     snap = await getDocs(query(
       collection(db, 'ghosts'),
       where('authorUid', '==', currentUser.uid),
-      orderBy('createdAt', 'desc'),
       limit(50)
     ));
   } catch(e) {
@@ -1425,6 +1424,7 @@ function showToast(type, msg, duration = 3200) {
   const text  = document.getElementById('toastText');
   if (!toast) return;
   const icons = { success: '✓', error: '✕', warning: '⚠', info: '👻', report: '⚑', link: '🔗' };
+  if (!toast || !icon || !text) return;
   icon.textContent = icons[type] || '👻';
   text.innerHTML = msg;
   toast.style.borderColor = 'rgba(168,180,255,.25)';
