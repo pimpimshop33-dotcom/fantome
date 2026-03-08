@@ -1096,7 +1096,7 @@ async function refreshProfileStats() {
     let totalReso = 0;
     snap.forEach(d => { totalReso += d.data().resonances || 0; });
     animateStatNumber('statResonances', totalReso);
-  } catch(e) {}
+  } catch(e) { console.warn('refreshProfileStats:', e); }
 }
 
 window.toggleDiscoveryHistory = async () => {
@@ -2010,6 +2010,7 @@ window.loadEmpreinteMap = async () => {
 
     // 6. Stats sous la carte
     const cities = new Set(allPoints.map(p => p.location.split(',')[0])).size;
+    if (loader) loader.style.display = 'none';
     statsEl.innerHTML = `
       <div style="flex:1;background:rgba(10,10,20,.75);backdrop-filter:blur(6px);padding:8px 10px;text-align:center;border-right:1px solid rgba(168,180,255,.1);">
         <div style="font-size:16px;color:var(--ether);font-weight:600;">${deposits.length}</div>
