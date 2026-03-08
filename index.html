@@ -3166,10 +3166,23 @@ function _checkDistanceThenOpen() {
     () => {
       clearTimeout(fallbackTimer);
       btn.disabled = false;
-      hint.textContent = '⚠️ GPS indisponible — activez-le et réessayez en extérieur.';
-      setTimeout(() => { hint.textContent = origHint; }, 4000);
+      // Fallback : utiliser la position radar déjà connue si disponible
+      if (userLat && userLng) {
+        const dist = distanceMeters(userLat, userLng, selectedGhost.lat, selectedGhost.lng);
+        const ghostRadiusStr = selectedGhost.radius || '50m';
+        const ghostRadius = Math.max(20, parseInt(ghostRadiusStr) || 50);
+        if (dist <= ghostRadius) {
+          hint.textContent = origHint;
+          _doOpenEnvelope();
+        } else {
+          showDistanceError(dist);
+        }
+      } else {
+        hint.textContent = '⚠️ GPS indisponible — activez-le et réessayez en extérieur.';
+        setTimeout(() => { hint.textContent = origHint; }, 4000);
+      }
     },
-    { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 }
+    { enableHighAccuracy: true, timeout: 7000, maximumAge: 30000 }
   );
 };
 
