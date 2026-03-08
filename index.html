@@ -531,12 +531,18 @@ onAuthStateChanged(auth, async user => {
     await loadNearbyGhosts();
     // Vérifier les notifications de réponses au démarrage
     setTimeout(() => checkReplyNotifications(), 2000);
+    // Vérifier si un profil public est demandé dans l'URL
+    setTimeout(() => checkPublicProfileParam(), 1000);
     // Synchroniser les découvertes depuis Firestore (multi-appareils)
     syncDiscoveriesFromFirestore();
   } else {
     currentUser = null;
     document.getElementById('bottomNav').style.display = 'none';
-    showScreen('screenOnboard');
+    if (localStorage.getItem('fantome_onboard_seen')) {
+      showScreen('screenAuth');
+    } else {
+      showScreen('screenOnboard');
+    }
   }
 });
 
@@ -754,6 +760,36 @@ function checkVirginGhostNearby() {
   _lastVirginNotif = Date.now();
 }
 
+// ── NOTIFIER UTILISATEURS PROCHES lors d'un nouveau dépôt ────────────
+async function _notifyNearbyUsers(newGhostId, lat, lng, location) {
+  if (!currentUser) return;
+  // Chercher des fantômes dans un rayon ~150m (delta lat/lng ~0.0014°)
+  const delta = 0.0014;
+  const snap = await getDocs(query(
+    collection(db, 'ghosts'),
+    where('lat', '>=', lat - delta),
+    where('lat', '<=', lat + delta),
+    limit(20)
+  ));
+  const notified = new Set();
+  notified.add(currentUser.uid); // ne pas se notifier soi-même
+  for (const d of snap.docs) {
+    const g = d.data();
+    if (!g.authorUid || notified.has(g.authorUid)) continue;
+    // Vérifier aussi longitude (Firestore ne filtre que sur lat)
+    if (Math.abs((g.lng || 0) - lng) > delta * 2) continue;
+    notified.add(g.authorUid);
+    await addDoc(collection(db, 'notifications'), {
+      type: 'nearby_new',
+      toUid: g.authorUid,
+      ghostId: newGhostId,
+      ghostLocation: location,
+      notified: false,
+      createdAt: serverTimestamp()
+    }).catch(() => {});
+  }
+}
+
 async function checkReplyNotifications() {
   if (!currentUser) return;
   try {
@@ -782,6 +818,10 @@ async function checkReplyNotifications() {
         const hash = (n.ghostId || '').length % openMsgs.length;
         title = '✉ Votre trace a été découverte';
         msg = openMsgs[hash];
+      } else if (n.type === 'nearby_new') {
+        title = '👻 Un nouveau fantôme près de vous !';
+        const lieu = escapeHTML(n.ghostLocation || 'un lieu que vous connaissez');
+        msg = `Un inconnu vient de laisser une trace à <b>${lieu}</b> — un endroit où vous avez déjà été.`;
       } else continue;
       showNotif(title, msg);
       showToast('info', msg, 5000);
@@ -2224,14 +2264,91 @@ window.loadEmpreinteMap = async () => {
 
 window.shareEmpreinte = async () => {
   const deposits = document.querySelector('#empreinteStats div:nth-child(1) .stat-num, #empreinteStats div:nth-child(1) div')?.textContent || '?';
+  const profileUrl = currentUser ? `https://pimpimshop33-dotcom.github.io/fantome/?profil=${currentUser.uid}` : 'https://pimpimshop33-dotcom.github.io/fantome/';
   try {
     await navigator.share({
       title: '👻 Mon empreinte Fantôme',
       text: `J'ai laissé des traces dans ${deposits} lieux avec l'app Fantôme — des messages secrets ancrés dans des endroits réels. Approchez-vous.`,
-      url: 'https://pimpimshop33-dotcom.github.io/fantome/'
+      url: profileUrl
     });
     Analytics.track('empreinte_shared');
-  } catch(e) {}
+  } catch(e) {
+    // Fallback : copier le lien
+    try { await navigator.clipboard.writeText(profileUrl); showToast('success', '✓ Lien copié !', 2500); } catch(e2) {}
+  }
+};
+
+// ── PARTAGE PROFIL PUBLIC ─────────────────────────────────────────
+window.shareMyProfile = async () => {
+  if (!currentUser) return;
+  const url = `https://pimpimshop33-dotcom.github.io/fantome/?profil=${currentUser.uid}`;
+  try {
+    await navigator.share({ title: '👻 Mon profil Fantôme', text: 'Découvrez mon empreinte fantôme.', url });
+  } catch(e) {
+    try { await navigator.clipboard.writeText(url); showToast('success', '✓ Lien copié !', 2500); } catch(e2) {}
+  }
+};
+
+window.checkPublicProfileParam = async () => {
+  const uid = new URLSearchParams(window.location.search).get('profil');
+  if (!uid) return;
+  try {
+    const userDoc = await getDoc(doc(db, 'users', uid));
+    const name = userDoc.exists() ? (userDoc.data().displayName || 'Chasseur de fantômes') : 'Chasseur de fantômes';
+    const ghostsSnap = await getDocs(query(
+      collection(db, 'ghosts'),
+      where('authorUid', '==', uid),
+      where('anonymous', '==', false),
+      limit(100)
+    ));
+    const ghostCount = ghostsSnap.size;
+    const totalOpens = ghostsSnap.docs.reduce((s, d) => s + (d.data().openCount || 0), 0);
+    showPublicProfileModal(uid, name, ghostCount, totalOpens, ghostsSnap.docs);
+  } catch(e) { console.warn('checkPublicProfileParam:', e); }
+};
+
+window.showPublicProfileModal = (uid, name, ghostCount, totalOpens, ghostDocs) => {
+  const existing = document.getElementById('publicProfileModal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'publicProfileModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(6,6,14,.95);backdrop-filter:blur(12px);display:flex;flex-direction:column;align-items:center;padding:32px 20px;overflow-y:auto;';
+  const initial = name.charAt(0).toUpperCase();
+  modal.innerHTML = `
+    <button onclick="document.getElementById('publicProfileModal').remove()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:22px;color:rgba(168,180,255,.5);cursor:pointer;">✕</button>
+    <div style="font-size:52px;margin-bottom:12px;">${initial}</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-style:italic;color:var(--ether);margin-bottom:4px;">${escapeHTML(name)}</div>
+    <div style="font-size:12px;color:var(--spirit-dim);margin-bottom:28px;">Chasseur de fantômes</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:340px;margin-bottom:24px;">
+      <div style="background:var(--surface);border:1px solid rgba(168,180,255,.12);border-radius:14px;padding:16px;text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:var(--ether);">${ghostCount}</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-top:4px;">Fantômes déposés</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid rgba(168,180,255,.12);border-radius:14px;padding:16px;text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:var(--ether);">${totalOpens}</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-top:4px;">Ouvertures totales</div>
+      </div>
+    </div>
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:12px;align-self:flex-start;max-width:340px;width:100%;">🗺 Empreinte publique</div>
+    <div id="publicEmpreinteMap" style="width:100%;max-width:340px;height:200px;border-radius:16px;overflow:hidden;border:1px solid rgba(168,180,255,.15);background:rgba(10,10,20,.8);margin-bottom:24px;"></div>
+    <button onclick="window.location.href='https://pimpimshop33-dotcom.github.io/fantome/'" style="background:linear-gradient(135deg,rgba(168,180,255,.18),rgba(168,180,255,.06));border:1px solid rgba(168,180,255,.35);border-radius:14px;color:rgba(168,180,255,.95);font-size:14px;padding:14px 24px;cursor:pointer;font-family:'Instrument Sans',sans-serif;width:100%;max-width:340px;">👻 Rejoindre Fantôme</button>
+  `;
+  document.body.appendChild(modal);
+  setTimeout(() => {
+    const mapEl = document.getElementById('publicEmpreinteMap');
+    if (!mapEl || !ghostDocs.length) return;
+    const coords = ghostDocs.filter(d => d.data().lat && d.data().lng).map(d => [d.data().lat, d.data().lng]);
+    if (!coords.length) { mapEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:height:100%;font-size:12px;color:rgba(168,180,255,.4);">Aucun lieu public</div>'; return; }
+    const pubMap = L.map('publicEmpreinteMap', { zoomControl: false, attributionControl: false }).setView(coords[0], 13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(pubMap);
+    coords.forEach(([lat, lng], i) => {
+      const g = ghostDocs[i] && ghostDocs[i].data ? ghostDocs[i].data() : {};
+      const em = g.emoji || '👻';
+      L.marker([lat, lng], { icon: L.divIcon({ html: '<div style="font-size:18px;">' + em + '</div>', className: '', iconSize: [24, 24], iconAnchor: [12, 12] }) }).addTo(pubMap);
+    });
+    if (coords.length > 1) pubMap.fitBounds(coords, { padding: [20, 20], maxZoom: 14 });
+    setTimeout(() => pubMap.invalidateSize(), 300);
+  }, 200);
 };
 
 let _leaderboardLoaded = false;
@@ -3014,6 +3131,8 @@ window.depositGhost = async () => {
     clearAudio(); clearPhoto(); clearVideo();
     document.getElementById('depositSuccess').classList.add('show');
     showToast('success', '👻 Votre trace est ancrée dans ce lieu…');
+    // Notifier les utilisateurs qui ont des fantômes dans ce périmètre
+    _notifyNearbyUsers(ghostId, userLat, userLng, location || 'ce lieu').catch(() => {});
     playDepositSound();
     Analytics.track('ghost_deposited', { anonymous: anon, secret, hasAudio: !!audioUrl, hasPhoto: !!photoUrl });
     // Clic pour fermer manuellement si le timer bloque
@@ -4217,7 +4336,7 @@ function spawnObParticles() {
   }, {passive:true});
 })();
 
-window.goAuth = () => { showScreen('screenAuth'); };
+window.goAuth = () => { localStorage.setItem('fantome_onboard_seen', '1'); showScreen('screenAuth'); };
 
 function createParticles() {
   const c = document.getElementById('particles');
@@ -5290,6 +5409,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
   <!-- ONBOARDING -->
   <div class="screen active" id="screenOnboard" aria-label="Introduction à Fantôme">
     <button class="back-btn" id="obBackBtn" aria-label="Retour au radar" style="display:none;flex-shrink:0;" onclick="showScreen('screenRadar');setNav('nav-radar')">← retour</button>
+    <button onclick="window.goAuth()" style="position:absolute;top:14px;right:16px;z-index:10;background:none;border:none;font-size:12px;color:rgba(168,180,255,.45);font-family:'Instrument Sans',sans-serif;cursor:pointer;padding:6px 8px;">Passer →</button>
     <div class="ob-carousel" id="obCarousel" aria-roledescription="carousel" aria-label="Présentation de l'application">
       <div class="ob-scene active" id="obScene0" role="group" aria-roledescription="slide" aria-label="Slide 1 : Fantôme" aria-hidden="false">
         <div class="ob-scene-visual" aria-hidden="true">
@@ -5846,6 +5966,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
       <div class="profile-hdr">
         <div class="profile-avatar-big" id="profileAvatar" aria-hidden="true">?</div>
         <div class="profile-name-big" id="profileName">…</div>
+        <button onclick="shareMyProfile()" style="margin-top:10px;font-size:12px;color:rgba(168,180,255,.7);background:rgba(168,180,255,.07);border:1px solid rgba(168,180,255,.25);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:'Instrument Sans',sans-serif;">↗ Partager mon profil</button>
       </div>
       <!-- ── RANG sous le nom ─────────────────────────── -->
       <div style="text-align:center;margin-bottom:16px;padding:8px 0;">
