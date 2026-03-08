@@ -3271,7 +3271,9 @@ window.showScreen = (id, fromPopstate = false) => {
     document.getElementById('condExtraFuture').classList.remove('show');
     const chainContent = document.getElementById('chainContent');
     const chainLock = document.getElementById('chainLock');
-    const chainSection = document.getElementById('chainSection');
+    const chainSection = document.getElementById('step3ChainWrap');
+    // Reset depositSuccess overlay
+    document.getElementById('depositSuccess')?.classList.remove('show');
     if (chainSection) chainSection.style.position = 'relative';
     if (!isPremium) {
       if (chainContent) { chainContent.style.opacity = '0.3'; chainContent.style.pointerEvents = 'none'; }
@@ -3347,12 +3349,20 @@ window.toggleBusinessMode = () => {
     if (s3) s3.textContent = 'Photo ou vidéo pour illustrer votre offre (optionnel).';
     const depBtn = document.getElementById('depositBtn');
     if (depBtn) depBtn.textContent = '🏪 Publier cette offre';
-    // Forcer durée 1 mois
+    // Forcer durée 1 mois + rayon 50m
     setTimeout(() => {
       document.querySelectorAll('.dur-btn:not([data-maxopen])').forEach(b => {
         b.classList.remove('active');
         b.setAttribute('aria-pressed', 'false');
         if (b.textContent.trim() === '1 mois') {
+          b.classList.add('active');
+          b.setAttribute('aria-pressed', 'true');
+        }
+      });
+      document.querySelectorAll('.radius-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+        if (b.textContent.trim() === '50m') {
           b.classList.add('active');
           b.setAttribute('aria-pressed', 'true');
         }
@@ -5644,7 +5654,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
           <div id="videoPreview"></div>
         </div>
         <!-- CHAÎNE DE FANTÔMES PREMIUM — masquée en mode Commerce -->
-        <div id="step3ChainWrap" class="form-group" style="margin-bottom:14px;position:relative;" id="chainSection">
+        <div id="step3ChainWrap" class="form-group" style="margin-bottom:14px;position:relative;" data-section="chainSection">
           <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
             <span>🔗 Chaîne de fantômes</span>
             <span style="font-size:9px;background:rgba(255,200,80,.15);border:1px solid rgba(255,200,80,.3);border-radius:8px;padding:2px 6px;color:rgba(255,200,80,.8);" aria-label="Fonctionnalité Premium">👑 Premium</span>
