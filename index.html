@@ -376,6 +376,8 @@ onAuthStateChanged(auth, async user => {
     showScreen('screenRadar');
     setNav('nav-radar');
     // ── Présence passive — GPS watch ─────────────────────────────────
+    if (!window._locationWatchStarted) {
+      window._locationWatchStarted = true;
     LocationService.startWatch();
     LocationService.onPositionUpdate(({ lat, lng }) => {
       const toUpdate = LocationService.detectNearbyPresence(lat, lng, nearbyGhosts);
@@ -411,6 +413,7 @@ onAuthStateChanged(auth, async user => {
         }
       });
     });
+    } // fin guard _locationWatchStarted
     document.getElementById('bottomNav').style.display = 'flex';
     await loadNearbyGhosts();
     // Vérifier les notifications de réponses au démarrage
