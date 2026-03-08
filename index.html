@@ -1428,7 +1428,7 @@ function showConfirm(title, subtitle, options = {}) {
       btnOk.disabled = true;
       btnOk.style.opacity = '0.35';
       const onType = () => {
-        const ok = typedInput.value.toUpperCase() === 'SUPPRIMER';
+        const ok = typedInput.value.trim().toUpperCase() === 'SUPPRIMER';
         btnOk.disabled = !ok;
         btnOk.style.opacity = ok ? '1' : '0.35';
       };
