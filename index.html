@@ -5346,14 +5346,14 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <div class="profile-name-big" id="profileName">…</div>
       </div>
       <!-- ── RANG sous le nom ─────────────────────────── -->
-      <div style="text-align:center;margin-bottom:16px;">
-        <span id="statRank" style="font-size:15px;color:var(--text);font-weight:600;letter-spacing:.3px;">—</span>
-        <span style="font-size:11px;color:var(--spirit-dim);opacity:.5;margin-left:5px;text-transform:uppercase;letter-spacing:.8px;">rang</span>
+      <div style="text-align:center;margin-bottom:16px;padding:8px 0;">
+        <span id="statRank" style="font-size:20px;font-weight:700;color:var(--text);letter-spacing:.3px;">—</span>
+        <div style="font-size:10px;color:var(--spirit-dim);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;">Rang</div>
       </div>
 
       <!-- ── MES STATS ─────────────────────────────────── -->
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:8px;">Mes stats</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
         <div class="stat-card" role="listitem" onclick="toggleDiscoveryHistory()" style="cursor:pointer;padding:12px 8px;" aria-label="Voir les fantômes découverts">
           <div class="stat-num" id="statDiscovered" style="font-size:22px;">0</div>
           <div class="stat-label" style="font-size:10px;">Découverts</div>
@@ -5366,11 +5366,10 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
           <div class="stat-num" id="statFavorites" style="font-size:22px;">0</div>
           <div class="stat-label" style="font-size:10px;">Favoris ★</div>
         </div>
-      </div>
-      <!-- Résonances inline compact -->
-      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;padding:6px 0;">
-        <span style="font-size:11px;color:var(--spirit-dim);">✨ Résonances reçues</span>
-        <span id="statResonances" style="font-size:13px;font-weight:600;color:var(--ether);">0</span>
+        <div class="stat-card" role="listitem" style="padding:12px 8px;">
+          <div class="stat-num" id="statResonances" style="font-size:22px;">0</div>
+          <div class="stat-label" style="font-size:10px;">Résonances ✨</div>
+        </div>
       </div>
 
       <!-- ── CARTE EMPREINTE ─────────────────────────── -->
