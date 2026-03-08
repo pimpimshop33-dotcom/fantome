@@ -703,13 +703,25 @@ function _startNotifIntervals() {
 
 window.enableNotifications = async () => {
   const btn = document.getElementById('notifBtn');
-  const granted = await requestNotifPermission();
+  const alreadyEnabled = localStorage.getItem('notif_enabled') === '1' && Notification.permission === 'granted';
+  if (alreadyEnabled) {
+    // Toggle OFF
+    localStorage.removeItem('notif_enabled');
+    btn.textContent = '🔔 Activer les notifications';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    showToast('info', '🔕 Notifications désactivées.');
+    return;
+  }
+  // Si permission déjà accordée, pas besoin de redemander
+  const alreadyGranted = Notification.permission === 'granted';
+  const granted = alreadyGranted ? true : await requestNotifPermission();
   if (granted) {
     btn.textContent = '🔔 Notifications activées';
     btn.style.borderColor = 'rgba(100,220,160,.4)';
     btn.style.color = 'rgba(100,220,160,.9)';
     localStorage.setItem('notif_enabled', '1');
-    showNotif('👻 Fantôme', 'Notifications activées — vous serez alerté des fantômes proches !');
+    if (!alreadyGranted) showNotif('👻 Fantôme', 'Notifications activées — vous serez alerté des fantômes proches !');
     _startNotifIntervals();
     checkDiscoveries();
   } else {
