@@ -3037,8 +3037,8 @@ function _checkDistanceThenOpen() {
   // FIX: Timeout de sécurité si géoloc bloque trop longtemps
   const fallbackTimer = setTimeout(() => {
     btn.disabled = false;
-    hint.textContent = origHint;
-    _doOpenEnvelope(); // On laisse ouvrir après 8s de blocage
+    hint.textContent = '⚠️ GPS trop long — déplacez-vous en extérieur et réessayez.';
+    setTimeout(() => { hint.textContent = origHint; }, 4000);
   }, 8000);
 
   if (!navigator.geolocation) {
@@ -3069,10 +3069,10 @@ function _checkDistanceThenOpen() {
     () => {
       clearTimeout(fallbackTimer);
       btn.disabled = false;
-      hint.textContent = origHint;
-      _doOpenEnvelope();
+      hint.textContent = '⚠️ GPS indisponible — activez-le et réessayez en extérieur.';
+      setTimeout(() => { hint.textContent = origHint; }, 4000);
     },
-    { enableHighAccuracy: true, timeout: 7000, maximumAge: 5000 }
+    { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 }
   );
 };
 
@@ -5593,7 +5593,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">📋 Mentions légales & RGPD</div>
         <div style="font-size:12px;color:var(--warm-dim);line-height:1.7;">
           <strong>Éditeur :</strong> Fantôme — application indépendante<br>
-          <strong>Contact :</strong> pimpimshop33@gmail.com<br><br>
+          <strong>Contact :</strong> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6d1d04001d04001e05021d5e5e2d0a000c0401430e0200">[email&#160;protected]</a><br><br>
           <strong>Données collectées :</strong> adresse email, position GPS (uniquement lors de l'utilisation), messages déposés.<br><br>
           <strong>Utilisation :</strong> vos données sont utilisées exclusivement pour le fonctionnement de l'application. Elles ne sont ni vendues ni transmises à des tiers.<br><br>
           <strong>Suppression :</strong> vous pouvez supprimer vos fantômes et votre compte à tout moment depuis votre profil.<br><br>
@@ -5698,8 +5698,4 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
 
 <!-- TOAST DÉCOUVERTE -->
 <div class="discovery-toast" id="discoveryToast" role="status" aria-live="polite" aria-atomic="true">
-  <span class="discovery-toast-icon" id="toastIcon" aria-hidden="true">👻</span>
-  <span id="toastText">Fantôme découvert</span>
-</div>
-</body>
-</html>
+  <span class="discovery-toast-icon"
