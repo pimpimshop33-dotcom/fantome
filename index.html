@@ -62,7 +62,6 @@ const CLOUDINARY_UPLOAD_PRESET = 'fantome_unsigned';
 
 let currentUser = null;
 let isPremium = false;
-let isCommerce = false; // accès Commerce uniquement (sans les features Premium avancées)
 window._dbg = () => console.log('isPremium:', isPremium, '| pendingVideo:', !!window._pendingVideoFile);
 let userLat = null;
 let userLng = null;
@@ -463,7 +462,6 @@ onAuthStateChanged(auth, async user => {
     document.getElementById('profileAvatar').textContent = (user.displayName || user.email).charAt(0).toUpperCase();
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     isPremium = userDoc.exists() && userDoc.data().premium === true;
-    isCommerce = userDoc.exists() && (userDoc.data().commerce === true || userDoc.data().premium === true);
     updatePremiumUI();
     showScreen('screenRadar');
     setNav('nav-radar');
@@ -1423,22 +1421,9 @@ window.deleteOneGhost = async (ghostId) => {
 function updatePremiumUI() {
   const planEl = document.getElementById('planInfo');
   const codeSection = document.getElementById('codeSection');
-  const bizBadge = document.getElementById('bizPremiumBadge');
   if (!planEl) return;
-  // Mettre à jour le badge du bouton Commerce
-  if (bizBadge) {
-    if (isPremium || isCommerce) {
-      bizBadge.style.display = 'none'; // déjà débloqué, pas besoin du badge
-    } else {
-      bizBadge.textContent = '🔒 Premium';
-      bizBadge.style.display = '';
-    }
-  }
   if (isPremium) {
     planEl.innerHTML = '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,200,80,.7);margin-bottom:4px;">👑 Spectre Premium</div><div style="font-size:13px;color:var(--warm-dim);">Toutes les fonctionnalités débloquées</div>';
-    if (codeSection) codeSection.style.display = 'none';
-  } else if (isCommerce) {
-    planEl.innerHTML = '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(80,200,140,.7);margin-bottom:4px;">🏪 Pack Commerce</div><div style="font-size:13px;color:var(--warm-dim);">Mode Commerce activé — dépôts illimités</div>';
     if (codeSection) codeSection.style.display = 'none';
   } else {
     planEl.innerHTML = '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:4px;">Plan gratuit</div><div style="font-size:13px;color:var(--warm-dim);">Chaîne de fantômes 🔗 réservée au Premium</div>';
@@ -1458,13 +1443,7 @@ window.activatePremium = async () => {
   btn.textContent = 'Vérification…';
   btn.disabled = true;
   try {
-    // Vérifier d'abord dans premiumCodes, puis dans commerceCodes
-    let codeDoc = await getDoc(doc(db, 'premiumCodes', code));
-    let isCommerceCode = false;
-    if (!codeDoc.exists()) {
-      codeDoc = await getDoc(doc(db, 'commerceCodes', code));
-      isCommerceCode = true;
-    }
+    const codeDoc = await getDoc(doc(db, 'premiumCodes', code));
     if (!codeDoc.exists()) {
       errEl.textContent = 'Code invalide.';
       btn.textContent = 'Activer';
@@ -1478,23 +1457,14 @@ window.activatePremium = async () => {
       btn.disabled = false;
       return;
     }
-    const collection_name = isCommerceCode ? 'commerceCodes' : 'premiumCodes';
-    await updateDoc(doc(db, collection_name, code), { used: true, usedBy: currentUser.uid, usedAt: serverTimestamp() });
-    if (isCommerceCode) {
-      await setDoc(doc(db, 'users', currentUser.uid), { commerce: true, commerceSince: serverTimestamp() }, { merge: true });
-      isCommerce = true;
-      showToast('success', '🏪 Pack Commerce activé ! Mode Commerce débloqué.', 4000);
-      Analytics.track('commerce_activated');
-    } else {
-      await setDoc(doc(db, 'users', currentUser.uid), { premium: true, premiumSince: serverTimestamp() }, { merge: true });
-      isPremium = true;
-      isCommerce = true;
-      showToast('success', '👑 Premium activé ! Toutes les fonctionnalités sont débloquées.', 4000);
-      Analytics.track('premium_activated');
-    }
+    await updateDoc(doc(db, 'premiumCodes', code), { used: true, usedBy: currentUser.uid, usedAt: serverTimestamp() });
+    await setDoc(doc(db, 'users', currentUser.uid), { premium: true, premiumSince: serverTimestamp() }, { merge: true });
+    isPremium = true;
     updatePremiumUI();
     input.value = '';
     btn.textContent = 'Activé !';
+    showToast('success', '👑 Premium activé ! Toutes les fonctionnalités sont débloquées.', 4000);
+    Analytics.track('premium_activated');
   } catch(e) {
     errEl.textContent = 'Erreur : ' + e.message;
     btn.textContent = 'Activer';
@@ -2870,7 +2840,7 @@ function _todayKey() {
 }
 
 async function canOpenToday() {
-  if (isPremium || isCommerce) return true;
+  if (isPremium) return true;
   if (!currentUser) return getDailyOpenCountLocal() < DAILY_OPEN_LIMIT; // fallback offline
   try {
     const ref = doc(db, 'userStats', currentUser.uid);
@@ -2894,7 +2864,7 @@ async function incrementDailyOpenCount() {
 }
 
 async function remainingOpensToday() {
-  if (isPremium || isCommerce) return Infinity;
+  if (isPremium) return Infinity;
   if (!currentUser) return Math.max(0, DAILY_OPEN_LIMIT - getDailyOpenCountLocal());
   try {
     const ref = doc(db, 'userStats', currentUser.uid);
@@ -3132,8 +3102,8 @@ window.depositGhost = async () => {
       openHour: openHour || null,
       openAfterGhostId: openAfterGhostId || null,
       openDate: openDate || null,
-      businessMode: ((isPremium || isCommerce) && document.getElementById('businessExtra')?.style.display !== 'none') || false,
-      promoCode: ((isPremium || isCommerce) && document.getElementById('businessExtra')?.style.display !== 'none') ? (document.getElementById('promoCode')?.value.trim() || null) : null,
+      businessMode: (isPremium && document.getElementById('businessExtra')?.style.display !== 'none') || false,
+      promoCode: (isPremium && document.getElementById('businessExtra')?.style.display !== 'none') ? (document.getElementById('promoCode')?.value.trim() || null) : null,
     };
     const ghostId = await WorldService.createGhost(ghostData, userLat, userLng,
       { uid: currentUser.uid, displayName: currentUser.displayName, email: currentUser.email }
@@ -3567,7 +3537,7 @@ window.showScreen = (id, fromPopstate = false) => {
     // Reset depositSuccess overlay
     document.getElementById('depositSuccess')?.classList.remove('show');
     if (chainSection) chainSection.style.position = 'relative';
-    if (!isPremium && !isCommerce) {
+    if (!isPremium) {
       if (chainContent) { chainContent.style.opacity = '0.3'; chainContent.style.pointerEvents = 'none'; }
       if (chainLock) chainLock.style.display = 'flex';
     } else {
@@ -3600,8 +3570,8 @@ window.showScreen = (id, fromPopstate = false) => {
 
 // ── CONDITIONS D'OUVERTURE ────────────────────────────────
 window.toggleBusinessMode = () => {
-  if (!isPremium && !isCommerce) {
-    showToast('info', '🔒 Entrez un code dans votre profil pour débloquer le Mode Commerce.', 3500);
+  if (!isPremium) {
+    showToast('info', '🔒 Entrez un code Premium dans votre profil pour débloquer le Mode Commerce.', 3500);
     return;
   }
   const normalForm = document.getElementById('normalDepositForm');
