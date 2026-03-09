@@ -591,13 +591,16 @@ async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return null;
   try {
     const reg = await navigator.serviceWorker.register('/fantome/sw.js');
+    window._swReg = reg;
 
     // Détection des mises à jour du SW
     reg.addEventListener('updatefound', () => {
       const newWorker = reg.installing;
+      window._swNewWorker = newWorker;
       newWorker.addEventListener('statechange', () => {
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
           // Nouvelle version disponible
+          window._swReg = reg;
           showUpdateBanner();
         }
       });
@@ -618,13 +621,26 @@ function showUpdateBanner() {
   }
 }
 
+window._swReg = null; // garder une référence globale
+
 window.applyUpdate = () => {
-  navigator.serviceWorker.ready.then(reg => {
-    if (reg.waiting) {
+  const doReload = () => window.location.reload(true);
+  // Écouter le changement de controller → recharger
+  navigator.serviceWorker.addEventListener('controllerchange', doReload, { once: true });
+  // Essayer reg.waiting via référence globale ou navigator.serviceWorker.ready
+  const trySkip = (reg) => {
+    if (reg && reg.waiting) {
       reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-      window.location.reload();
+    } else {
+      // Fallback : recharger directement
+      doReload();
     }
-  });
+  };
+  if (window._swReg) {
+    trySkip(window._swReg);
+  } else {
+    navigator.serviceWorker.ready.then(trySkip);
+  }
 };
 
 async function requestNotifPermission() {
