@@ -903,6 +903,19 @@ function _startNotifIntervals() {
   }
 }
 
+function _setNotifBtnState(active) {
+  const btn = document.getElementById('notifBtn');
+  if (!btn) return;
+  const span = btn.querySelector('span:nth-child(2)');
+  if (active) {
+    if (span) span.textContent = 'Notifications activées ✓';
+    btn.style.color = 'rgba(100,220,160,.9)';
+  } else {
+    if (span) span.textContent = 'Activer les notifications';
+    btn.style.color = '';
+  }
+}
+
 window.enableNotifications = async () => {
   const btn = document.getElementById('notifBtn');
   const isEnabled = localStorage.getItem('notif_enabled') === '1';
@@ -910,9 +923,8 @@ window.enableNotifications = async () => {
   if (isEnabled) {
     // Toggle OFF — on utilise uniquement localStorage comme source de vérité
     localStorage.removeItem('notif_enabled');
-    btn.textContent = '🔔 Activer les notifications';
+    _setNotifBtnState(false);
     btn.style.borderColor = '';
-    btn.style.color = '';
     showToast('info', '🔕 Notifications désactivées.');
     return;
   }
@@ -927,15 +939,14 @@ window.enableNotifications = async () => {
   const alreadyGranted = Notification.permission === 'granted';
   const granted = alreadyGranted ? true : await requestNotifPermission();
   if (granted) {
-    btn.textContent = '🔔 Notifications activées';
+    _setNotifBtnState(true);
     btn.style.borderColor = 'rgba(100,220,160,.4)';
-    btn.style.color = 'rgba(100,220,160,.9)';
     localStorage.setItem('notif_enabled', '1');
     showToast('success', '🔔 Notifications activées !');
     _startNotifIntervals();
     checkDiscoveries();
   } else {
-    btn.textContent = '🔕 Notifications refusées';
+    const span4 = btn.querySelector('span:nth-child(2)'); if (span4) span4.textContent = 'Notifications refusées';
     btn.style.borderColor = 'rgba(255,100,100,.3)';
     btn.style.color = 'rgba(255,100,100,.7)';
     showToast('warning', '🔕 Permission refusée — autorisez dans les réglages du navigateur.', 5000);
@@ -947,9 +958,8 @@ registerServiceWorker().then(reg => {
     _startNotifIntervals();
     const btn = document.getElementById('notifBtn');
     if (btn) {
-      btn.textContent = '🔔 Notifications activées';
+      _setNotifBtnState(true);
       btn.style.borderColor = 'rgba(100,220,160,.4)';
-      btn.style.color = 'rgba(100,220,160,.9)';
     }
   }
 });
@@ -3489,7 +3499,8 @@ window.showScreen = (id, fromPopstate = false) => {
     history.pushState({ screen: id }, '', window.location.href.split('?')[0] + window.location.search);
   }
   if (id === 'screenMap') setTimeout(() => renderStaticMap(), 50);
-  if (id === 'screenProfile') { refreshProfileStats(); _leaderboardLoaded = false; const lp = document.getElementById('leaderboardPanel'); if (lp) lp.style.display = 'none'; loadEmpreinteMap(); loadBizDashboard(); }
+  if (id === 'screenProfile') { refreshProfileStats(); _leaderboardLoaded = false;
+    _setNotifBtnState(localStorage.getItem('notif_enabled') === '1'); const lp = document.getElementById('leaderboardPanel'); if (lp) lp.style.display = 'none'; loadEmpreinteMap(); loadBizDashboard(); }
   if (id === 'screenOnboard') {
     const btn = document.getElementById('obBackBtn');
     if (btn) btn.style.display = currentUser ? 'flex' : 'none';
