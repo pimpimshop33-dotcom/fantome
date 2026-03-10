@@ -3244,8 +3244,15 @@ async function _doOpenEnvelope() {
       const newOpenCount = (selectedGhost.openCount || 0) + 1;
       const maxOpen = selectedGhost.maxOpenCount || 0;
       const nowExpired = maxOpen > 0 && newOpenCount >= maxOpen;
-      // 🥇 Premier à lire : openCount était 0 avant cette ouverture
-      const wasFirst = !selectedGhost.openCount || selectedGhost.openCount === 0;
+      // 🥇 Premier à lire : lire openCount réel depuis Firestore
+      let realOpenCount = 0;
+      try {
+        const ghostSnap = await getDoc(doc(db, 'ghosts', selectedGhost.id));
+        realOpenCount = ghostSnap.exists() ? (ghostSnap.data().openCount || 0) : 0;
+      } catch(e) {
+        realOpenCount = selectedGhost.openCount || 0;
+      }
+      const wasFirst = realOpenCount === 0;
       if (wasFirst) {
         const firstCount = parseInt(localStorage.getItem('ghostub_first_reader') || '0') + 1;
         localStorage.setItem('ghostub_first_reader', firstCount);
@@ -3258,8 +3265,7 @@ async function _doOpenEnvelope() {
         if (wasFirst) {
           readCountEl.innerHTML = `<span style="color:rgba(100,220,160,.9);">🥇 Vous êtes le premier à lire ce message</span>`;
         } else {
-          const prev = selectedGhost.openCount || 0;
-          readCountEl.innerHTML = `<span style="color:var(--spirit-dim);">👁 ${prev} personne${prev > 1 ? 's' : ''} ${prev > 1 ? 'ont' : 'a'} lu ce message avant vous</span>`;
+          readCountEl.innerHTML = `<span style="color:var(--spirit-dim);">👁 ${realOpenCount} personne${realOpenCount > 1 ? 's' : ''} ${realOpenCount > 1 ? 'ont' : 'a'} lu ce message avant vous</span>`;
         }
         readCountEl.style.display = 'block';
       }
