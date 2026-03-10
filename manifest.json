@@ -1,9 +1,9 @@
 {
-  "name": "Fantôme",
-  "short_name": "Fantôme",
+  "name": "Ghostub",
+  "short_name": "Ghostub",
   "description": "Des messages invisibles ancrés dans les lieux réels.",
-  "start_url": "/fantome/",
-  "scope": "/fantome/",
+  "start_url": "/ghostub/",
+  "scope": "/ghostub/",
   "display": "standalone",
   "background_color": "#060608",
   "theme_color": "#060608",
