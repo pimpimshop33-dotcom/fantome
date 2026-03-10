@@ -881,13 +881,19 @@ document.addEventListener('visibilitychange', () => {
 let _visibilityListenerAdded = false;
 
 let _notifIntervalsStarted = false;
+let _notifIntervalIds = [];
+function _stopNotifIntervals() {
+  _notifIntervalIds.forEach(id => clearInterval(id));
+  _notifIntervalIds = [];
+  _notifIntervalsStarted = false;
+}
 function _startNotifIntervals() {
   if (_notifIntervalsStarted) return; // déjà démarrés, pas de doublon
   _notifIntervalsStarted = true;
-  setInterval(checkNewGhosts, 5 * 60 * 1000);
-  setInterval(checkResonances, 10 * 60 * 1000);
-  setInterval(checkDiscoveries, 3 * 60 * 1000);
-  setInterval(checkReplyNotifications, 2 * 60 * 1000);
+  _notifIntervalIds.push(setInterval(checkNewGhosts, 5 * 60 * 1000));
+  _notifIntervalIds.push(setInterval(checkResonances, 10 * 60 * 1000));
+  _notifIntervalIds.push(setInterval(checkDiscoveries, 3 * 60 * 1000));
+  _notifIntervalIds.push(setInterval(checkReplyNotifications, 2 * 60 * 1000));
   // Vérifier au retour dans l'appli — un seul listener
   if (!_visibilityListenerAdded) {
     _visibilityListenerAdded = true;
@@ -1813,6 +1819,8 @@ function showConfirm(title, subtitle, options = {}) {
 
 window.logout = async () => {
   Analytics.track('logout');
+  _stopNotifIntervals();
+  if (_unsubResonances) { _unsubResonances(); _unsubResonances = null; }
   await signOut(auth);
 };
 
@@ -1931,6 +1939,7 @@ window.loadNearbyGhosts = async () => {
             ghostMessage: (g.message || '').substring(0, 60),
             authorUid: g.authorUid,
             discoveredBy: currentUser.displayName || 'quelqu\'un',
+            discoveredByUid: currentUser.uid,
             discoveredAt: serverTimestamp(),
             notified: false
           }).catch(() => {});
@@ -2126,8 +2135,22 @@ window.removeFavorite = (ghostId) => {
   const favs = getFavorites().filter(f => f.id !== ghostId);
   saveFavorites(favs);
   updateFavoritesCount();
-  toggleFavoritesList();
-  toggleFavoritesList();
+  // Rafraîchir directement le contenu sans double toggle
+  const content = document.getElementById('favoritesListContent');
+  if (!content) return;
+  if (favs.length === 0) {
+    content.innerHTML = '<div style="opacity:.5;font-style:italic;">Aucun favori encore — appuyez sur ★ dans un fantôme.</div>';
+  } else {
+    content.innerHTML = favs.map(f => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:22px;flex-shrink:0;">${escapeHTML(f.emoji)}</span>
+      <div style="flex:1;min-width:0;cursor:pointer;" onclick="openGhost('${escapeHTML(f.id)}')">
+        <div style="font-size:13px;color:var(--ether);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHTML(f.location)}</div>
+        <div style="font-size:11px;color:var(--spirit-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">"${escapeHTML(f.message)}"</div>
+      </div>
+      <button onclick="removeFavorite('${escapeHTML(f.id)}')" aria-label="Retirer des favoris" style="background:none;border:none;color:rgba(255,200,80,.5);font-size:18px;cursor:pointer;flex-shrink:0;padding:4px;">★</button>
+    </div>`).join('');
+  }
 };
 
 // ── CLASSEMENT PUBLIC ────────────────────────────────────
@@ -2179,7 +2202,7 @@ window.loadEmpreinteMap = async () => {
     // 2. Charger les fantômes découverts (depuis Firestore discoveries)
     const discSnap = await getDocs(query(
       collection(db, 'discoveries'),
-      where('discoveredBy', '==', currentUser.displayName || ''),
+      where('discoveredByUid', '==', currentUser.uid),
       limit(100)
     )).catch(() => null);
 
@@ -3238,11 +3261,19 @@ async function _doOpenEnvelope() {
     if (isNewDisc) {
       WorldService.registerPresence(selectedGhost.id, true).catch(() => {});
       // Incrémenter le compteur d'ouvertures sur le fantôme
-      const newOpenCount = (selectedGhost.openCount || 0) + 1;
+      // FIX: Lire le vrai openCount depuis Firestore pour éviter les faux "Premier à lire"
+      let realOpenCount = 0;
+      try {
+        const ghostSnap = await getDoc(doc(db, 'ghosts', selectedGhost.id));
+        realOpenCount = ghostSnap.exists() ? (ghostSnap.data().openCount || 0) : 0;
+      } catch(e) {
+        realOpenCount = selectedGhost.openCount || 0;
+      }
+      const newOpenCount = realOpenCount + 1;
       const maxOpen = selectedGhost.maxOpenCount || 0;
       const nowExpired = maxOpen > 0 && newOpenCount >= maxOpen;
-      // 🥇 Premier à lire : openCount était 0 avant cette ouverture
-      const wasFirst = !selectedGhost.openCount || selectedGhost.openCount === 0;
+      // 🥇 Premier à lire : openCount était 0 dans Firestore
+      const wasFirst = realOpenCount === 0;
       if (wasFirst) {
         const firstCount = parseInt(localStorage.getItem('ghostub_first_reader') || '0') + 1;
         localStorage.setItem('ghostub_first_reader', firstCount);
