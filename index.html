@@ -90,6 +90,7 @@ const LANGS = {
     radar_filter_empty: 'Aucun fantôme dans ce filtre.',
     radar_new_ghost: '👻 {n} nouveau{x} fantôme{s} à proximité',
     // Detail
+    detail_first_reader: '🥇 Vous êtes le premier à lire ce message',
     detail_location_unknown: 'Lieu inconnu',
     detail_sealed_hint: 'Approchez-vous pour briser le sceau',
     detail_of_anon: 'De 👻 Anonyme · ',
@@ -166,6 +167,16 @@ const LANGS = {
     dep_biz_btn: '🏪 Mode Commerce',
     dep_biz_sub: 'Attirer des clients avec une offre géolocalisée',
     dep_biz_active: 'Mode activé — formulaire commerce',
+    dep_biz_deposit: '🏪 Publier cette offre',
+    dep_biz_visual_title: 'Ajouter un visuel',
+    dep_biz_visual_sub: 'Photo ou vidéo pour illustrer votre offre (optionnel).',
+    dep_deposit_btn: '👻 Ancrer ce fantôme',
+    dep_pending: 'En cours…',
+    dep_deleting: '⏳ Suppression…',
+    dep_secret_on: '🔮 Mode secret activé',
+    dep_secret_off: '🔮 Passer en secret',
+    auth_loading: 'Connexion…',
+    profile_notif_denied: '🔕 Notifications refusées',
     dep_biz_toast: '🏪 Mode Commerce activé — visible à 50m de votre établissement',
     dep_biz_locked: '🔒 Mode Commerce réservé au Premium — entrez un code dans votre profil.',
     dep_biz_title_err: '⚠️ Ajoutez un titre à votre offre.',
@@ -562,6 +573,16 @@ const LANGS = {
     dep_biz_btn: '🏪 Commerce Mode',
     dep_biz_sub: 'Attract customers with a geolocated offer',
     dep_biz_active: 'Mode on — commerce form',
+    dep_biz_deposit: '🏪 Publish this offer',
+    dep_biz_visual_title: 'Add a visual',
+    dep_biz_visual_sub: 'Photo or video to illustrate your offer (optional).',
+    dep_deposit_btn: '👻 Anchor this ghost',
+    dep_pending: 'Saving…',
+    dep_deleting: '⏳ Deleting…',
+    dep_secret_on: '🔮 Secret mode on',
+    dep_secret_off: '🔮 Switch to secret',
+    auth_loading: 'Signing in…',
+    profile_notif_denied: '🔕 Notifications denied',
     dep_biz_toast: '🏪 Commerce Mode on — visible within 50m of your business',
     dep_biz_locked: '🔒 Commerce Mode is Premium only — enter a code in your profile.',
     dep_biz_title_err: '⚠️ Add a title to your offer.',
@@ -1158,13 +1179,13 @@ window.toggleHuntMode = () => {
     btn.style.background = 'rgba(168,180,255,.25)';
     btn.style.color = 'rgba(200,210,255,1)';
     btn.style.borderColor = 'rgba(168,180,255,.7)';
-    btn.textContent = '🎯 Chasse ON';
+    btn.textContent = t.map_hunt_on;
     showToast('info', t.map_hunt_toast);
   } else {
     btn.style.background = 'rgba(168,180,255,.08)';
     btn.style.color = 'rgba(168,180,255,.7)';
     btn.style.borderColor = 'rgba(168,180,255,.25)';
-    btn.textContent = '🎯 Chasse';
+    btn.textContent = t.map_hunt_off;
   }
   if (window.map) renderStaticMap();
 };
@@ -1430,13 +1451,13 @@ window.login = async () => {
   err.textContent = '';
   if (!email || !pass) { err.textContent = t.auth_err_fields; return; }
   const btn = document.querySelector('#tabLogin .btn-primary');
-  if (btn) { btn.textContent = 'Connexion…'; btn.disabled = true; }
+  if (btn) { btn.textContent = t.auth_loading || 'Connexion…'; btn.disabled = true; }
   try {
     await signInWithEmailAndPassword(auth, email, pass);
     Analytics.track('login');
   } catch(e) {
     err.textContent = t.auth_err_wrong;
-    if (btn) { btn.textContent = 'Se connecter'; btn.disabled = false; }
+    if (btn) { btn.textContent = t.auth_login_btn; btn.disabled = false; }
   }
 };
 
@@ -1809,7 +1830,7 @@ window.enableNotifications = async () => {
     _startNotifIntervals();
     checkDiscoveries();
   } else {
-    const span4 = btn.querySelector('span:nth-child(2)'); if (span4) span4.textContent = 'Notifications refusées';
+    const span4 = btn.querySelector('span:nth-child(2)'); if (span4) span4.textContent = t.profile_notif_denied || 'Notifications refusées';
     btn.style.borderColor = 'rgba(255,100,100,.3)';
     btn.style.color = 'rgba(255,100,100,.7)';
     showToast('warning', t.profile_notif_denied, 5000);
@@ -2687,7 +2708,7 @@ window.deleteMyGhosts = async () => {
   );
   if (!confirmed) return;
   const btn = document.getElementById('deleteBtn');
-  btn.textContent = '⏳ Suppression…';
+  btn.textContent = t.dep_deleting || '⏳ Suppression…';
   btn.disabled = true;
   try {
     // Récupérer mes fantômes
@@ -3655,11 +3676,11 @@ window.openGhost = async (id) => {
     if (isOwner && !selectedGhost.businessMode) {
       secretBtn.style.display = 'block';
       if (selectedGhost.secret) {
-        secretBtn.textContent = '🔮 Mode secret activé';
+        secretBtn.textContent = t.dep_secret_on || '🔮 Mode secret activé';
         secretBtn.style.borderColor = 'rgba(168,100,255,.5)';
         secretBtn.style.color = 'rgba(200,150,255,.9)';
       } else {
-        secretBtn.textContent = '🔮 Passer en secret';
+        secretBtn.textContent = t.dep_secret_off || '🔮 Passer en secret';
         secretBtn.style.borderColor = '';
         secretBtn.style.color = '';
       }
@@ -3939,7 +3960,7 @@ window.toggleSecret = async () => {
   if (selectedGhost.authorUid !== currentUser.uid) return;
   const nowSecret = !selectedGhost.secret;
   const btn = document.getElementById('secretBtn');
-  btn.textContent = 'En cours…';
+  btn.textContent = t.dep_pending || 'En cours…';
   await updateDoc(doc(db, 'ghosts', selectedGhost.id), {
     secret: nowSecret,
     radius: nowSecret ? '3m' : (selectedGhost.radius || '10m'),
@@ -4029,7 +4050,7 @@ window.depositGhost = async () => {
     document.getElementById('chainMapLabel').textContent = 'Placer le prochain point sur la carte';
     document.getElementById('chainMapPreview').style.display = 'none';
     window._chainNextCoords = null;
-    depositBtn.textContent = '👻 Déposer le fantôme';
+    depositBtn.textContent = t.dep_deposit_btn || '👻 Déposer le fantôme';
     depositBtn.disabled = false;
     clearAudio(); clearPhoto(); clearVideo();
     document.getElementById('depositSuccess').classList.add('show');
@@ -4138,10 +4159,10 @@ async function _doOpenEnvelope() {
       const readCountEl = document.getElementById('detailReadCount');
       if (readCountEl) {
         if (wasFirst) {
-          readCountEl.innerHTML = `<span style="color:rgba(100,220,160,.9);">🥇 Vous êtes le premier à lire ce message</span>`;
+          readCountEl.innerHTML = `<span style="color:rgba(100,220,160,.9);">${t.detail_first_reader || '🥇 Vous êtes le premier à lire ce message'}</span>`;
         } else {
           const prev = selectedGhost.openCount || 0;
-          readCountEl.innerHTML = `<span style="color:var(--spirit-dim);">👁 ${prev} personne${prev > 1 ? 's' : ''} ${prev > 1 ? 'ont' : 'a'} lu ce message avant vous</span>`;
+          readCountEl.innerHTML = `<span style="color:var(--spirit-dim);">${_currentLang === 'fr' ? '👁 ' + prev + ' personne' + (prev > 1 ? 's ont' : ' a') + ' lu ce message avant vous' : '👁 ' + prev + ' person' + (prev > 1 ? 's' : '') + ' read this before you'}</span>`;
         }
         readCountEl.style.display = 'block';
       }
@@ -4246,7 +4267,7 @@ function showOpenLimitWarning(remaining, onConfirm) {
   if (remaining === 0) {
     icon.textContent = '🚫';
     document.getElementById('openLimitTitle').textContent = "Limite atteinte pour aujourd'hui";
-    sub.innerHTML = `Tu as déjà ouvert <strong>${DAILY_OPEN_LIMIT} fantômes</strong> aujourd'hui.<br>Reviens demain ou passe en Premium.`;
+    sub.innerHTML = t.open_limit_sub_reached.replace('{n}', DAILY_OPEN_LIMIT).replace('{s}','');
     okBtn.style.display = 'none';
     premium.style.display = 'block';
   } else {
@@ -4429,7 +4450,7 @@ window.showScreen = (id, fromPopstate = false) => {
     const depBtn = document.getElementById('depositBtn');
     if (t3) t3.textContent = t.dep_pane3_title;
     if (s3) s3.textContent = t.dep_pane3_sub;
-    if (depBtn) depBtn.textContent = '👻 Ancrer ce fantôme';
+    if (depBtn) depBtn.textContent = t.dep_deposit_btn || '👻 Ancrer ce fantôme';
     // Reset champs bizTitle/bizDesc
     const bizTitle = document.getElementById('bizTitle');
     const bizDesc  = document.getElementById('bizDesc');
@@ -4506,7 +4527,7 @@ window.toggleBusinessMode = () => {
     icon.textContent         = '●';
     btn.style.borderColor    = 'rgba(255,200,80,.6)';
     btn.style.background     = 'rgba(255,200,80,.1)';
-    subLabel.textContent     = 'Mode activé — formulaire commerce';
+    subLabel.textContent     = t.dep_biz_active;
     subLabel.style.color     = 'rgba(255,200,80,.7)';
     document.getElementById('depositEmoji').value = '🏪';
     // Masquer durée/disparaît/rayon/condition dans step 2
@@ -4521,10 +4542,10 @@ window.toggleBusinessMode = () => {
     });
     const t3 = document.getElementById('step3Title');
     const s3 = document.getElementById('step3Sub');
-    if (t3) t3.textContent = 'Ajouter un visuel';
-    if (s3) s3.textContent = 'Photo ou vidéo pour illustrer votre offre (optionnel).';
+    if (t3) t3.textContent = t.dep_biz_visual_title || 'Ajouter un visuel';
+    if (s3) s3.textContent = t.dep_biz_visual_sub || 'Photo ou vidéo pour illustrer votre offre (optionnel).';
     const depBtn = document.getElementById('depositBtn');
-    if (depBtn) depBtn.textContent = '🏪 Publier cette offre';
+    if (depBtn) depBtn.textContent = t.dep_biz_deposit || '🏪 Publier cette offre';
     // Forcer durée 1 mois + rayon 50m
     setTimeout(() => {
       document.querySelectorAll('.dur-btn:not([data-maxopen])').forEach(b => {
@@ -4567,10 +4588,10 @@ window.toggleBusinessMode = () => {
     });
     const t3b = document.getElementById('step3Title');
     const s3b = document.getElementById('step3Sub');
-    if (t3b) t3b.textContent = 'Derniers réglages';
+    if (t3b) t3b.textContent = t.dep_pane3_title;
     if (s3b) s3b.textContent = 'Tout est optionnel — les valeurs par défaut sont bonnes.';
     const depBtnB = document.getElementById('depositBtn');
-    if (depBtnB) depBtnB.textContent = '👻 Ancrer ce fantôme';
+    if (depBtnB) depBtnB.textContent = t.dep_deposit_btn || '👻 Ancrer ce fantôme';
   }
 };
 
