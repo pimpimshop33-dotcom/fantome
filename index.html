@@ -949,6 +949,8 @@ window.setLang = (lang) => {
 
   // Profile — re-render si les données sont déjà chargées
   if (typeof refreshProfileStats === 'function') refreshProfileStats();
+  if (typeof updatePremiumUI === 'function') updatePremiumUI();
+  if (typeof updatePremiumUI === 'function') updatePremiumUI();
   if (typeof loadBizDashboard === 'function') loadBizDashboard();
 
   // Empreinte map — re-render seulement si déjà initialisée (évite appel Firestore inutile)
