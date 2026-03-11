@@ -1070,10 +1070,11 @@ function formatDistance(m) {
 function timeAgo(ts) {
   if (!ts) return '';
   const s = Math.floor((Date.now() - ts.seconds * 1000) / 1000);
-  if (s < 60) return 'à l\'instant';
-  if (s < 3600) return 'il y a ' + Math.floor(s/60) + ' min';
-  if (s < 86400) return 'il y a ' + Math.floor(s/3600) + 'h';
-  return 'il y a ' + Math.floor(s/86400) + ' jours';
+  const fr = _currentLang === 'fr';
+  if (s < 60) return fr ? 'à l\'instant' : 'just now';
+  if (s < 3600) return fr ? 'il y a ' + Math.floor(s/60) + ' min' : Math.floor(s/60) + ' min ago';
+  if (s < 86400) return fr ? 'il y a ' + Math.floor(s/3600) + 'h' : Math.floor(s/3600) + 'h ago';
+  return fr ? 'il y a ' + Math.floor(s/86400) + ' jours' : Math.floor(s/86400) + ' days ago';
 }
 
 // ── DÉTECTION OFFLINE ────────────────────────────────────
@@ -2172,11 +2173,11 @@ async function loadBizDashboard() {
       const msExpiry  = msCreated + 30 * 24 * 3600 * 1000; // 1 mois
       const daysLeft  = Math.ceil((msExpiry - Date.now()) / 86400000);
       if (daysLeft <= 7 && daysLeft > 0) {
-        expiryHtml = `<span style="color:rgba(255,160,60,.9);font-size:11px;">⏰ Expire dans ${daysLeft}j</span>`;
+        expiryHtml = `<span style="color:rgba(255,160,60,.9);font-size:11px;">⏰ ${_currentLang === 'fr' ? 'Expire dans' : 'Expires in'} ${daysLeft}${_currentLang === 'fr' ? 'j' : 'd'}</span>`;
       } else if (daysLeft <= 0) {
-        expiryHtml = `<span style="color:rgba(255,100,100,.7);font-size:11px;">⏳ Expirée</span>`;
+        expiryHtml = `<span style="color:rgba(255,100,100,.7);font-size:11px;">⏳ ${_currentLang === 'fr' ? 'Expirée' : 'Expired'}</span>`;
       } else {
-        expiryHtml = `<span style="color:var(--spirit-dim);font-size:11px;">⏳ ${daysLeft}j restants</span>`;
+        expiryHtml = `<span style="color:var(--spirit-dim);font-size:11px;">⏳ ${daysLeft}${_currentLang === 'fr' ? 'j restants' : 'd left'}</span>`;
       }
     }
 
@@ -2191,16 +2192,16 @@ async function loadBizDashboard() {
             <div style="font-size:13px;color:var(--ether);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;">${title}</div>
             <div style="font-size:11px;color:var(--spirit-dim);margin-top:2px;">${location}</div>
             <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
-              <span style="color:${opensColor};font-size:13px;font-weight:600;">👁 ${opens} ouverture${opens > 1 ? 's' : ''}</span>
+              <span style="color:${opensColor};font-size:13px;font-weight:600;">👁 ${opens} ${_currentLang === 'fr' ? 'ouverture' + (opens > 1 ? 's' : '') : 'open' + (opens > 1 ? 's' : '')}</span>
               ${expiryHtml}
-              ${expired ? '<span style="color:rgba(255,100,100,.6);font-size:11px;">Expirée</span>' : ''}
+              ${_currentLang === 'fr' ? '<span style="color:rgba(255,100,100,.6);font-size:11px;">Expirée</span>' : '<span style="color:rgba(255,100,100,.6);font-size:11px;">Expired</span>'}
             </div>
           </div>
         </div>
-        ${!expired ? `<button onclick="renewBusinessGhost('${escapeHTML(id)}')" style="width:100%;margin-top:10px;padding:8px;background:rgba(255,200,80,.08);border:1px solid rgba(255,200,80,.3);border-radius:10px;color:rgba(255,200,80,.85);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;">↻ Renouveler pour 1 mois</button>` : ''}
+        ${!expired ? `<button onclick="renewBusinessGhost('${escapeHTML(id)}')" style="width:100%;margin-top:10px;padding:8px;background:rgba(255,200,80,.08);border:1px solid rgba(255,200,80,.3);border-radius:10px;color:rgba(255,200,80,.85);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;">${_currentLang === 'fr' ? '↻ Renouveler pour 1 mois' : '↻ Renew for 1 month'}</button>` : ''}
       </div>`;
   });
-  content.innerHTML = html || '<div style="opacity:.5;font-style:italic;text-align:center;padding:12px 0;">Aucune offre commerce active</div>';
+  content.innerHTML = html || `<div style="opacity:.5;font-style:italic;text-align:center;padding:12px 0;">${_currentLang === 'fr' ? 'Aucune offre commerce active' : 'No active commerce offers'}</div>`;
 }
 
 window.renewBusinessGhost = async (ghostId) => {
@@ -2286,7 +2287,7 @@ window.toggleDepositedList = async () => {
             <div style="font-size:11px;color:var(--spirit-dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;">
               <span>${date}</span>
               <span>✦ ${resonances} résonance${resonances > 1 ? 's' : ''}</span>
-              <span>👁 ${g.openCount || 0} ouverture${(g.openCount || 0) > 1 ? 's' : ''}</span>
+              <span>👁 ${g.openCount || 0} ${_currentLang === 'fr' ? 'ouverture' + ((g.openCount || 0) > 1 ? 's' : '') : 'open' + ((g.openCount || 0) > 1 ? 's' : '')}</span>
               ${expired ? '<span style="color:rgba(255,100,100,.6);">⏳ Expiré</span>' : ''}
               ${g.secret ? '<span style="color:rgba(168,100,255,.7);">🔮 Secret</span>' : ''}
             </div>
@@ -4272,12 +4273,12 @@ function showOpenLimitWarning(remaining, onConfirm) {
     premium.style.display = 'block';
   } else {
     icon.textContent = remaining === 1 ? '⚠️' : '👻';
-    document.getElementById('openLimitTitle').textContent = remaining === 1 ? 'Dernier fantôme du jour !' : `Il te reste ${remaining} ouverture${remaining > 1 ? "s" : ""} aujourd’hui`;
+    document.getElementById('openLimitTitle').textContent = remaining === 1 ? t.open_limit_title_last : t.open_limit_title_remaining.replace('{n}', remaining).replace('{s}', remaining > 1 ? 's' : '');
     sub.innerHTML = remaining === 1
-      ? "C’est ta <strong>dernière ouverture</strong> gratuite d’aujourd’hui.<br>Demain le compteur se remet à zéro."
-      : `Tu peux encore ouvrir <strong>${remaining} fantôme${remaining > 1 ? "s" : ""}</strong> gratuitement aujourd’hui.`;
+      ? t.open_limit_sub_last
+      : t.open_limit_sub_remaining.replace(/{n}/g, remaining).replace('{s}', remaining > 1 ? 's' : '');
     okBtn.style.display = '';
-    okBtn.textContent = remaining === 1 ? '✉ Utiliser ma dernière ouverture' : '✉ Ouvrir ce fantôme';
+    okBtn.textContent = remaining === 1 ? t.open_limit_btn_last : t.open_limit_btn;
     premium.style.display = remaining <= 1 ? 'block' : 'none';
   }
 
