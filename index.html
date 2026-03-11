@@ -881,6 +881,15 @@ window.setLang = (lang) => {
   // Recharger les listes dynamiques actives
   const radarScreen = document.getElementById('screenRadar');
   if (radarScreen?.classList.contains('active')) renderGhostList();
+  // Refresh éléments dynamiques JS (non data-i18n)
+  const currentTheme = localStorage.getItem('ghostub_theme') || 'dark';
+  const lbl = document.getElementById('themeToggleLabel');
+  if (lbl) lbl.textContent = currentTheme === 'light' ? t.profile_night_mode : t.profile_day_mode;
+  _setNotifBtnState(localStorage.getItem('notif_enabled') === '1');
+  if (typeof refreshProfileStats === 'function') refreshProfileStats();
+  // Relancer la carte empreinte si elle affiche le message vide (pour re-traduire)
+  const empreinteLoader = document.getElementById('empreinteLoader');
+  if (empreinteLoader && empreinteLoader.style.display !== 'none' && typeof loadEmpreinteMap === 'function') loadEmpreinteMap();
 };
 
 // Appliquer la langue au démarrage
