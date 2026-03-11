@@ -92,6 +92,7 @@ const LANGS = {
     // Detail
     detail_first_reader: '🥇 Vous êtes le premier à lire ce message',
     detail_location_unknown: 'Lieu inconnu',
+    detail_sealed_label: 'Une trace vous attend ici',
     detail_sealed_hint: 'Approchez-vous pour briser le sceau',
     detail_of_anon: 'De 👻 Anonyme · ',
     detail_of: 'De ',
@@ -517,6 +518,7 @@ const LANGS = {
     radar_new_ghost: '👻 {n} new ghost{s} nearby',
     // Detail
     detail_location_unknown: 'Unknown place',
+    detail_sealed_label: 'A trace is waiting here',
     detail_sealed_hint: 'Move closer to break the seal',
     detail_of_anon: 'From 👻 Anonymous · ',
     detail_of: 'From ',
@@ -2814,16 +2816,22 @@ const isExpired = g => GhostService.isExpired(g);
 const timeRemaining = g => {
   const raw = GhostService.timeRemaining(g);
   if (!raw || _currentLang === 'fr') return raw;
-  // Traduire les patterns français → anglais
+  // Traduire tous les patterns français → anglais
   return raw
-    .replace(/Expire dans (\d+)j/, (_, n) => `Expires in ${n}d`)
-    .replace(/(\d+)j restants/, (_, n) => `${n}d left`)
-    .replace(/Expir[ée]e?/, 'Expired')
-    .replace(/Permanent/, 'Permanent')
-    .replace(/(\d+) jour(s?)/, (_, n, s) => `${n} day${n > 1 ? 's' : ''}`)
-    .replace(/(\d+) heure(s?)/, (_, n) => `${n} hour${n > 1 ? 's' : ''}`)
-    .replace(/(\d+) mois/, (_, n) => `${n} month${n > 1 ? 's' : ''}`)
-    .replace(/(\d+) an(s?)/, (_, n) => `${n} year${n > 1 ? 's' : ''}`);
+    .replace(/Expire dans (\d+)j/i,     (_, n) => `Expires in ${n}d`)
+    .replace(/(\d+)j restants?/i,       (_, n) => `${n}d left`)
+    .replace(/(\d+) jour(s?)/i,         (_, n) => `${n} day${parseInt(n)>1?'s':''}`)
+    .replace(/(\d+) heure(s?)/i,        (_, n) => `${n} hour${parseInt(n)>1?'s':''}`)
+    .replace(/(\d+) minute(s?)/i,       (_, n) => `${n} min`)
+    .replace(/(\d+) mois/i,             (_, n) => `${n} month${parseInt(n)>1?'s':''}`)
+    .replace(/(\d+) an(s?)/i,           (_, n) => `${n} year${parseInt(n)>1?'s':''}`)
+    .replace(/Expir[eé]e?/i,            'Expired')
+    .replace(/Permanent/i,              'Permanent')
+    .replace(/aujourd'hui/i,            'today')
+    .replace(/demain/i,                 'tomorrow')
+    .replace(/ce soir/i,                'tonight')
+    .replace(/restant(s?)/i,            'left')
+    .replace(/dans /i,                  'in ');
 };
 
 window.loadNearbyGhosts = async () => {
@@ -4324,7 +4332,7 @@ function showDistanceError(dist) {
   hint.innerHTML = `<span style="color:rgba(255,120,80,.9);font-size:13px;">🌫️ Le sceau résiste encore<br><span style="font-size:11px;opacity:.7;">encore ${meters}m à parcourir</span></span>`;
   // Reset après 4s
   setTimeout(() => {
-    hint.textContent = "Approchez-vous pour briser le sceau";
+    hint.textContent = t.detail_sealed_hint;
     hint.style.color = '';
   }, 4000);
 }
@@ -6624,8 +6632,8 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <div class="envelope-sealed-body">
           <div class="envelope-sealed-emoji" id="sealedEmoji" aria-hidden="true">👻</div>
           <div class="envelope-sealed-text">
-            <div class="envelope-sealed-label">Une trace vous attend ici</div>
-            <div class="envelope-sealed-hint" id="sealedHint">Approchez-vous pour briser le sceau</div>
+            <div class="envelope-sealed-label" data-i18n="detail_sealed_label">Une trace vous attend ici</div>
+            <div class="envelope-sealed-hint" id="sealedHint" data-i18n="detail_sealed_hint">Approchez-vous pour briser le sceau</div>
           </div>
         </div>
         <button class="envelope-open-btn" id="envelopeOpenBtn" onclick="openEnvelope()" aria-label="Ouvrir le fantôme et révéler le message">
