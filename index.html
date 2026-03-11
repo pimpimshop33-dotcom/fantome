@@ -2811,7 +2811,20 @@ window.deleteMyGhosts = async () => {
 
 const isExpired = g => GhostService.isExpired(g);
 
-const timeRemaining = g => GhostService.timeRemaining(g);
+const timeRemaining = g => {
+  const raw = GhostService.timeRemaining(g);
+  if (!raw || _currentLang === 'fr') return raw;
+  // Traduire les patterns français → anglais
+  return raw
+    .replace(/Expire dans (\d+)j/, (_, n) => `Expires in ${n}d`)
+    .replace(/(\d+)j restants/, (_, n) => `${n}d left`)
+    .replace(/Expir[ée]e?/, 'Expired')
+    .replace(/Permanent/, 'Permanent')
+    .replace(/(\d+) jour(s?)/, (_, n, s) => `${n} day${n > 1 ? 's' : ''}`)
+    .replace(/(\d+) heure(s?)/, (_, n) => `${n} hour${n > 1 ? 's' : ''}`)
+    .replace(/(\d+) mois/, (_, n) => `${n} month${n > 1 ? 's' : ''}`)
+    .replace(/(\d+) an(s?)/, (_, n) => `${n} year${n > 1 ? 's' : ''}`);
+};
 
 window.loadNearbyGhosts = async () => {
   // Vérification offline
