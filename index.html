@@ -940,33 +940,30 @@ window.setLang = (lang) => {
     b.classList.toggle('active', b.dataset.lang === lang);
   });
 
-  // 3. Re-render écran actif (éléments générés dynamiquement par JS)
-  const activeScreen = document.querySelector('.screen.active')?.id;
+  // 3. Re-render tous les écrans dynamiques (pas seulement l'écran actif)
+  // car l'utilisateur peut changer la langue depuis n'importe quel écran
+  // et naviguer ensuite vers un autre écran
 
-  if (activeScreen === 'screenRadar') {
-    if (typeof renderGhostList === 'function') renderGhostList();
-  }
+  // Radar — toujours re-render la liste (visible ou non)
+  if (typeof renderGhostList === 'function') renderGhostList();
 
-  if (activeScreen === 'screenProfile') {
-    if (typeof refreshProfileStats === 'function') refreshProfileStats();
-    if (typeof loadEmpreinteMap === 'function') loadEmpreinteMap();
-    if (typeof loadBizDashboard === 'function') loadBizDashboard();
-    // Re-render listes ouvertes
-    // Fermer et réinitialiser les panels ouverts pour forcer rechargement
-    ['discoveryHistory','depositedList','favoritesList'].forEach(id => {
-      const p = document.getElementById(id);
-      if (p && p.style.display !== 'none') { p.style.display = 'none'; }
-    });
-    const lbPanel = document.getElementById('leaderboardPanel');
-    if (lbPanel && lbPanel.style.display !== 'none') {
-      if (typeof _leaderboardLoaded !== 'undefined') _leaderboardLoaded = false;
-      if (typeof loadLeaderboard === 'function') loadLeaderboard();
-    }
-  }
+  // Profile — re-render si les données sont déjà chargées
+  if (typeof refreshProfileStats === 'function') refreshProfileStats();
+  if (typeof loadBizDashboard === 'function') loadBizDashboard();
 
-  if (activeScreen === 'screenMap') {
-    // Re-render ghost count line
-    // map screen - count line already translated via data-i18n
+  // Empreinte map — re-render seulement si déjà initialisée (évite appel Firestore inutile)
+  const empreinteLoader = document.getElementById('empreinteLoader');
+  if (empreinteLoader && typeof loadEmpreinteMap === 'function') loadEmpreinteMap();
+
+  // Fermer les panels ouverts pour forcer rechargement propre
+  ['discoveryHistory','depositedList','favoritesList'].forEach(id => {
+    const p = document.getElementById(id);
+    if (p && p.style.display !== 'none') p.style.display = 'none';
+  });
+  const lbPanel = document.getElementById('leaderboardPanel');
+  if (lbPanel && lbPanel.style.display !== 'none') {
+    if (typeof _leaderboardLoaded !== 'undefined') _leaderboardLoaded = false;
+    if (typeof loadLeaderboard === 'function') loadLeaderboard();
   }
 
   // 4. Refresh éléments dynamiques persistants (toujours visibles)
