@@ -373,6 +373,10 @@ const LANGS = {
     misc_screen_radar: 'Radar — Ghostub',
     misc_screen_detail: 'Détail du fantôme — Ghostub',
     misc_screen_deposit: 'Déposer un fantôme — Ghostub',
+    map_title: 'Carte des fantômes',
+    dep_step_message: 'Message',
+    dep_step_location: 'Lieu',
+    dep_step_options: 'Options',
     misc_screen_map: 'Carte — Ghostub',
     misc_screen_profile: 'Mon profil — Ghostub',
     misc_screen_auth: 'Connexion — Ghostub',
@@ -779,6 +783,10 @@ const LANGS = {
     misc_screen_radar: 'Radar — Ghostub',
     misc_screen_detail: 'Ghost detail — Ghostub',
     misc_screen_deposit: 'Drop a ghost — Ghostub',
+    map_title: 'Ghost Map',
+    dep_step_message: 'Message',
+    dep_step_location: 'Location',
+    dep_step_options: 'Options',
     misc_screen_map: 'Map — Ghostub',
     misc_screen_profile: 'My profile — Ghostub',
     misc_screen_auth: 'Sign in — Ghostub',
@@ -6613,17 +6621,17 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <div class="wizard-steps" role="list" aria-label="Étapes du dépôt">
           <div class="wizard-step active" id="ws1" role="listitem" aria-current="step">
             <div class="wizard-step-dot" aria-hidden="true">1</div>
-            <span>Message</span>
+            <span data-i18n="dep_step_message">Message</span>
           </div>
           <div class="wizard-step-line" aria-hidden="true"></div>
           <div class="wizard-step" id="ws2" role="listitem">
             <div class="wizard-step-dot" aria-hidden="true">2</div>
-            <span>Lieu</span>
+            <span data-i18n="dep_step_location">Lieu</span>
           </div>
           <div class="wizard-step-line" aria-hidden="true"></div>
           <div class="wizard-step" id="ws3" role="listitem">
             <div class="wizard-step-dot" aria-hidden="true">3</div>
-            <span>Options</span>
+            <span data-i18n="dep_step_options">Options</span>
           </div>
         </div>
       </div>
@@ -6815,7 +6823,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
 
       <!-- ÉTAPE 3 -->
       <div class="wizard-pane" id="wizardStep3" style="display:none;">
-        <div class="wizard-pane-title" id="step3Title">Derniers réglages</div>
+        <div class="wizard-pane-title" id="step3Title" data-i18n="dep_pane3_title">Récapitulatif</div>
         <div class="wizard-pane-sub" id="step3Sub">Tout est optionnel — les valeurs par défaut sont bonnes.</div>
         <!-- Identité + Visibilité — masqué en mode Commerce -->
         <div id="step3IdentityWrap" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
@@ -6901,7 +6909,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
   <div class="screen" id="screenMap" aria-label="Carte des fantômes">
     <div class="map-screen-wrap">
       <div class="map-header">
-        <div class="map-title">Carte des fantômes</div>
+        <div class="map-title" data-i18n="map_title">Carte des fantômes</div>
         <div style="display:flex;align-items:center;gap:8px;">
           <div class="map-count" id="mapCount" aria-live="polite">0 ghost(s)</div>
           <button id="huntModeBtn" onclick="toggleHuntMode()" aria-label="Activer le mode chasse" style="background:rgba(168,180,255,.08);border:1px solid rgba(168,180,255,.25);color:rgba(168,180,255,.7);border-radius:20px;padding:4px 10px;font-size:11px;cursor:pointer;white-space:nowrap;transition:all .2s;">🎯 Chasse</button>
