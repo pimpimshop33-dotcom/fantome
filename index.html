@@ -364,7 +364,6 @@ const LANGS = {
     misc_screen_auth: 'Connexion — Ghostub',
     misc_screen_onboard: 'Ghostub',
     misc_screen_reply: 'Répondre — Ghostub',
-  },
     // Extra static HTML keys
     ob_skip: 'Passer →',
     ob_sub0: 'Des messages invisibles<br>ancrés dans les lieux réels.',
@@ -439,6 +438,7 @@ const LANGS = {
     help_legal_title: '📋 Mentions légales & RGPD',
     help_legal_body: '<strong>Éditeur :</strong> Ghostub — application indépendante<br><strong>Contact :</strong> contact@ghostub.app<br><br><strong>Données collectées :</strong> adresse email, position GPS (uniquement lors de l\'utilisation), messages déposés.<br><br><strong>Utilisation :</strong> vos données sont utilisées exclusivement pour le fonctionnement de l\'application. Elles ne sont ni vendues ni transmises à des tiers.<br><br><strong>Suppression :</strong> vous pouvez supprimer vos fantômes et votre compte à tout moment depuis votre profil.<br><br><strong>Hébergement :</strong> Firebase (Google) — serveurs européens (europe-west9).<br><br>En utilisant Ghostub, vous acceptez que vos messages soient visibles par d\'autres utilisateurs à proximité géographique.',
     help_version: 'Ghostub v1.0 — Géocaching émotionnel',
+  },
   en: {
     // Onboarding
     ob_tagline: 'Strangers have left something here.<br>Come closer.',
@@ -877,8 +877,9 @@ window.setLang = (lang) => {
   if (radarScreen?.classList.contains('active')) renderGhostList();
 };
 
-// Appliquer la langue au démarrage (attribut html)
+// Appliquer la langue au démarrage
 document.documentElement.lang = _currentLang;
+document.addEventListener("DOMContentLoaded", () => { setLang(_currentLang); });
 
 
 const firebaseConfig = {
@@ -2716,11 +2717,11 @@ window.loadNearbyGhosts = async () => {
     showToast('warning', t.radar_offline);
   }
   document.getElementById('ghostCount').textContent = '';
-  document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:13px;color:var(--spirit-dim)">Localisation en cours…</span>';
+  document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:13px;color:var(--spirit-dim)">' + t.radar_locating + '</span>';
   skeletonGhostList();
   try {
     await getLocation();
-    document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:13px;color:var(--spirit-dim)">🔍 Recherche de fantômes…</span>';
+    document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:13px;color:var(--spirit-dim)">' + t.radar_searching + '</span>';
     document.getElementById('userCoords').textContent =
       userLat.toFixed(4) + '° N, ' + userLng.toFixed(4) + '° E';
   } catch(e) {
@@ -2805,7 +2806,7 @@ window.loadNearbyGhosts = async () => {
       document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:13px;color:var(--spirit-dim)">' + t.radar_no_ghosts + '</span>';
     }
   } else {
-    document.querySelector('.ghost-count-line').innerHTML = '<span id="ghostCount">' + count + '</span> fantôme' + (count > 1 ? 's' : '') + ' dans les alentours';
+    document.querySelector('.ghost-count-line').innerHTML = '<span id="ghostCount">' + count + '</span> ' + (_currentLang === 'fr' ? ('fantôme' + (count > 1 ? 's' : '') + ' dans les alentours') : ('ghost' + (count > 1 ? 's' : '') + ' nearby'));
   }
   const mc = document.getElementById('mapCount');
   if (mc) mc.textContent = count + ' ' + (_currentLang === 'fr' ? 'fantôme(s)' : 'ghost(s)');
@@ -4411,8 +4412,8 @@ window.showScreen = (id, fromPopstate = false) => {
     const t3 = document.getElementById('step3Title');
     const s3 = document.getElementById('step3Sub');
     const depBtn = document.getElementById('depositBtn');
-    if (t3) t3.textContent = 'Derniers réglages';
-    if (s3) s3.textContent = 'Tout est optionnel — les valeurs par défaut sont bonnes.';
+    if (t3) t3.textContent = t.dep_pane3_title;
+    if (s3) s3.textContent = t.dep_pane3_sub;
     if (depBtn) depBtn.textContent = '👻 Ancrer ce fantôme';
     // Reset champs bizTitle/bizDesc
     const bizTitle = document.getElementById('bizTitle');
@@ -7066,7 +7067,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;" data-i18n="help_legal_title">📋 Mentions légales & RGPD</div>
         <div style="font-size:12px;color:var(--warm-dim);line-height:1.7;" data-i18n="help_legal_body">
           <strong>Éditeur :</strong> Ghostub — application indépendante<br>
-          <strong>Contact :</strong> contact@ghostub.app<br><br>
+          <strong>Contact :</strong> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3f5c50514b5e5c4b7f5857504c4b4a5d115e4f4f">[email&#160;protected]</a><br><br>
           <strong>Données collectées :</strong> adresse email, position GPS (uniquement lors de l'utilisation), messages déposés.<br><br>
           <strong>Utilisation :</strong> vos données sont utilisées exclusivement pour le fonctionnement de l'application. Elles ne sont ni vendues ni transmises à des tiers.<br><br>
           <strong>Suppression :</strong> vous pouvez supprimer vos fantômes et votre compte à tout moment depuis votre profil.<br><br>
@@ -7171,9 +7172,8 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
 
 <!-- TOAST DÉCOUVERTE -->
 <div class="discovery-toast" id="discoveryToast" role="status" aria-live="polite" aria-atomic="true">
-  <span class="discovery-toast-icon" id="toastIcon"></span>
+  <span class="discovery-toast-icon"></span>
   <span class="discovery-toast-text" id="toastText"></span>
 </div>
-
 </body>
 </html>
