@@ -910,7 +910,8 @@ window.setLang = (lang) => {
   _currentLang = lang;
   localStorage.setItem('ghostub_lang', lang);
   document.documentElement.lang = lang;
-  // Mettre à jour tous les éléments data-i18n et data-i18n-placeholder
+
+  // 1. Mettre à jour tous les éléments data-i18n et data-i18n-placeholder
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     const val = t[key];
@@ -921,22 +922,54 @@ window.setLang = (lang) => {
     const val = t[key];
     if (val !== undefined) el.placeholder = val;
   });
-  // Boutons langue
+
+  // 2. Boutons langue
   document.querySelectorAll('.lang-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.lang === lang);
   });
-  // Recharger les listes dynamiques actives
-  const radarScreen = document.getElementById('screenRadar');
-  if (radarScreen?.classList.contains('active')) renderGhostList();
-  // Refresh éléments dynamiques JS (non data-i18n)
+
+  // 3. Re-render écran actif (éléments générés dynamiquement par JS)
+  const activeScreen = document.querySelector('.screen.active')?.id;
+
+  if (activeScreen === 'screenRadar') {
+    if (typeof renderGhostList === 'function') renderGhostList();
+  }
+
+  if (activeScreen === 'screenProfile') {
+    if (typeof refreshProfileStats === 'function') refreshProfileStats();
+    if (typeof loadEmpreinteMap === 'function') loadEmpreinteMap();
+    if (typeof loadBizDashboard === 'function') loadBizDashboard();
+    // Re-render listes ouvertes
+    // Fermer et réinitialiser les panels ouverts pour forcer rechargement
+    ['discoveryHistory','depositedList','favoritesList'].forEach(id => {
+      const p = document.getElementById(id);
+      if (p && p.style.display !== 'none') { p.style.display = 'none'; }
+    });
+    const lbPanel = document.getElementById('leaderboardPanel');
+    if (lbPanel && lbPanel.style.display !== 'none') {
+      _leaderboardLoaded = false;
+      if (typeof loadLeaderboard === 'function') loadLeaderboard();
+    }
+  }
+
+  if (activeScreen === 'screenMap') {
+    // Re-render ghost count line
+    if (typeof renderStaticMap === 'function') renderStaticMap();
+  }
+
+  // 4. Refresh éléments dynamiques persistants (toujours visibles)
   const currentTheme = localStorage.getItem('ghostub_theme') || 'dark';
   const lbl = document.getElementById('themeToggleLabel');
   if (lbl) lbl.textContent = currentTheme === 'light' ? t.profile_night_mode : t.profile_day_mode;
-  _setNotifBtnState(localStorage.getItem('notif_enabled') === '1');
-  if (typeof refreshProfileStats === 'function') refreshProfileStats();
-  // Relancer la carte empreinte si elle affiche le message vide (pour re-traduire)
-  const empreinteLoader = document.getElementById('empreinteLoader');
-  if (empreinteLoader && empreinteLoader.style.display !== 'none' && typeof loadEmpreinteMap === 'function') loadEmpreinteMap();
+  if (typeof _setNotifBtnState === 'function') _setNotifBtnState(localStorage.getItem('notif_enabled') === '1');
+
+  // Ghost count line (radar header, always visible)
+  const ghostCount = document.getElementById('ghostCount');
+  if (ghostCount) {
+    const count = parseInt(ghostCount.textContent) || 0;
+    const mc = document.getElementById('mapCount');
+    if (mc) mc.textContent = count + ' ' + (lang === 'fr' ? 'fantôme(s)' : 'ghost(s)');
+  }
 };
 
 // Appliquer la langue au démarrage
@@ -2254,7 +2287,7 @@ window.toggleDiscoveryHistory = async () => {
   document.getElementById('depositedList').style.display = 'none';
   panel.style.display = 'block';
   const ids = getDiscoveredIds();
-  if (ids.length === 0) { list.innerHTML = '<div style="opacity:.5;font-style:italic;">Aucune découverte encore…</div>'; return; }
+  if (ids.length === 0) { list.innerHTML = `<div style="opacity:.5;font-style:italic;">${t.profile_no_discoveries || 'Aucune découverte encore…'}</div>`; return; }
   list.innerHTML = `<div style="opacity:.5;">${t.loading || 'Chargement…'}</div>`;
   try {
     const results = [];
@@ -2267,7 +2300,7 @@ window.toggleDiscoveryHistory = async () => {
             <span style="font-size:20px;">${escapeHTML(g.emoji||'👻')}</span>
             <div>
               <div style="font-size:12px;color:var(--ether);">${escapeHTML(g.location||t.detail_location_unknown)}</div>
-              <div style="font-size:11px;opacity:.5;">${g.createdAt ? new Date(g.createdAt.seconds*1000).toLocaleDateString('fr-FR') : ''}</div>
+              <div style="font-size:11px;opacity:.5;">${g.createdAt ? new Date(g.createdAt.seconds*1000).toLocaleDateString(_currentLang === 'fr' ? 'fr-FR' : 'en-GB') : ''}</div>
             </div>
           </div>`);
         }
