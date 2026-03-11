@@ -297,6 +297,13 @@ const LANGS = {
     toast_reply_err: 'Erreur — réessayez.',
     // Report
     report_title: 'Signaler ce fantôme',
+    share_modal_title: 'Partager ce fantôme',
+    open_limit_default_title: 'Encore un fantôme ?',
+    open_limit_premium_text: '✦ Avec le <strong>Plan Premium</strong>, ouvrez un nombre illimité de fantômes par jour<br>+ chaînes de fantômes, contenu secret, et plus',
+    open_limit_cancel: '← Revenir',
+    blocked_back: '← Revenir',
+    error_prefix: 'Erreur :',
+    loading: 'Chargement…',
     report_spam: '🗑 Spam / Publicité',
     report_inappropriate: '🔞 Contenu inapproprié',
     report_harassment: '⚠ Harcèlement',
@@ -312,6 +319,8 @@ const LANGS = {
     open_limit_btn_last: '✉ Utiliser ma dernière ouverture',
     open_limit_btn: '✉ Ouvrir ce fantôme',
     // Blocked conditions
+    blocked_default_title: 'Ce fantôme dort encore',
+    blocked_default_sub: 'Il se réveillera bientôt.',
     blocked_night_title: 'Ce fantôme s\'éveille la nuit',
     blocked_night_sub: 'Il n\'est accessible qu\'entre 22h et 6h du matin.',
     blocked_night_timer: 'avant la nuit',
@@ -707,6 +716,13 @@ const LANGS = {
     toast_reply_err: 'Error — try again.',
     // Report
     report_title: 'Report this ghost',
+    share_modal_title: 'Share this ghost',
+    open_limit_default_title: 'Another ghost?',
+    open_limit_premium_text: '✦ With <strong>Premium</strong>, open unlimited ghosts per day<br>+ ghost chains, secret content, and more',
+    open_limit_cancel: '← Back',
+    blocked_back: '← Back',
+    error_prefix: 'Error:',
+    loading: 'Loading…',
     report_spam: '🗑 Spam / Advertising',
     report_inappropriate: '🔞 Inappropriate content',
     report_harassment: '⚠ Harassment',
@@ -722,6 +738,8 @@ const LANGS = {
     open_limit_btn_last: '✉ Use my last open',
     open_limit_btn: '✉ Open this ghost',
     // Blocked conditions
+    blocked_default_title: 'This ghost is still sleeping',
+    blocked_default_sub: 'It will wake up soon.',
     blocked_night_title: 'This ghost awakens at night',
     blocked_night_sub: 'It is only accessible between 10 PM and 6 AM.',
     blocked_night_timer: 'until night',
@@ -2237,7 +2255,7 @@ window.toggleDiscoveryHistory = async () => {
   panel.style.display = 'block';
   const ids = getDiscoveredIds();
   if (ids.length === 0) { list.innerHTML = '<div style="opacity:.5;font-style:italic;">Aucune découverte encore…</div>'; return; }
-  list.innerHTML = '<div style="opacity:.5;">Chargement…</div>';
+  list.innerHTML = `<div style="opacity:.5;">${t.loading || 'Chargement…'}</div>`;
   try {
     const results = [];
     for (const id of ids.slice(-20).reverse()) { // 20 dernières
@@ -2268,7 +2286,7 @@ window.toggleDepositedList = async () => {
   document.getElementById('discoveryHistory').style.display = 'none';
   panel.style.display = 'block';
   if (!currentUser) return;
-  content.innerHTML = '<div style="opacity:.5;">Chargement…</div>';
+  content.innerHTML = `<div style="opacity:.5;">${t.loading || 'Chargement…'}</div>`;
   try {
     const snap = await getDocs(query(
       collection(db, 'ghosts'),
@@ -2277,7 +2295,7 @@ window.toggleDepositedList = async () => {
       limit(30)
     ));
     if (snap.empty) {
-      content.innerHTML = '<div style="opacity:.5;font-style:italic;">Aucun fantôme déposé encore…</div>';
+      content.innerHTML = `<div style="opacity:.5;font-style:italic;">${t.profile_no_deposits || 'Aucun fantôme déposé encore…'}</div>`;
       return;
     }
     let html = '';
@@ -2740,7 +2758,7 @@ window.deleteMyGhosts = async () => {
 
     await Promise.all([...dels, ...rDels, ...replyDelsOnMyGhosts]);
     const totalDel = snap.size + myReplies.size + replyDelsOnMyGhosts.length;
-    btn.textContent = '✓ ' + snap.size + ' fantômes supprimés';
+    btn.textContent = '✓ ' + snap.size + ' ' + (_currentLang === 'fr' ? 'fantômes supprimés' : 'ghosts deleted');
     btn.style.borderColor = 'rgba(100,220,160,.4)';
     btn.style.color = 'rgba(100,220,160,.9)';
     nearbyGhosts = [];
@@ -3001,7 +3019,7 @@ window.toggleFavoritesList = async () => {
   panel.style.display = 'block';
   const favs = getFavorites();
   if (favs.length === 0) {
-    content.innerHTML = '<div style="opacity:.5;font-style:italic;">Aucun favori encore — appuyez sur ★ dans un fantôme.</div>';
+    content.innerHTML = `<div style="opacity:.5;font-style:italic;">${t.misc_no_favorites || 'Aucun favori encore'}</div>`;
     return;
   }
   content.innerHTML = favs.map(f => `
@@ -3023,7 +3041,7 @@ window.removeFavorite = (ghostId) => {
   const content = document.getElementById('favoritesListContent');
   if (!content) return;
   if (favs.length === 0) {
-    content.innerHTML = '<div style="opacity:.5;font-style:italic;">Aucun favori encore — appuyez sur ★ dans un fantôme.</div>';
+    content.innerHTML = `<div style="opacity:.5;font-style:italic;">${t.misc_no_favorites || 'Aucun favori encore'}</div>`;
   } else {
     content.innerHTML = favs.map(f => `
     <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
@@ -3173,15 +3191,15 @@ window.loadEmpreinteMap = async () => {
     statsEl.innerHTML = `
       <div style="flex:1;background:rgba(10,10,20,.75);backdrop-filter:blur(6px);padding:8px 10px;text-align:center;border-right:1px solid rgba(168,180,255,.1);">
         <div style="font-size:16px;color:var(--ether);font-weight:600;">${deposits.length}</div>
-        <div style="font-size:9px;color:var(--spirit-dim);letter-spacing:.5px;text-transform:uppercase;">Dépôts</div>
+        <div style="font-size:9px;color:var(--spirit-dim);letter-spacing:.5px;text-transform:uppercase;">${t.profile_map_deposits || 'Dépôts'}</div>
       </div>
       <div style="flex:1;background:rgba(10,10,20,.75);backdrop-filter:blur(6px);padding:8px 10px;text-align:center;border-right:1px solid rgba(168,180,255,.1);">
         <div style="font-size:16px;color:rgba(255,200,80,.9);font-weight:600;">${discoveries.length}</div>
-        <div style="font-size:9px;color:var(--spirit-dim);letter-spacing:.5px;text-transform:uppercase;">Découvertes</div>
+        <div style="font-size:9px;color:var(--spirit-dim);letter-spacing:.5px;text-transform:uppercase;">${t.profile_map_discoveries || 'Découvertes'}</div>
       </div>
       <div style="flex:1;background:rgba(10,10,20,.75);backdrop-filter:blur(6px);padding:8px 10px;text-align:center;">
         <div style="font-size:16px;color:rgba(100,220,160,.9);font-weight:600;">${cities}</div>
-        <div style="font-size:9px;color:var(--spirit-dim);letter-spacing:.5px;text-transform:uppercase;">Lieux</div>
+        <div style="font-size:9px;color:var(--spirit-dim);letter-spacing:.5px;text-transform:uppercase;">${t.profile_map_places || 'Lieux'}</div>
       </div>`;
 
     // Afficher bouton partage si Web Share API dispo
@@ -3191,7 +3209,7 @@ window.loadEmpreinteMap = async () => {
   } catch(e) {
     console.error('Empreinte error:', e);
     if (loader) loader.style.display = 'none';
-    if (loader) { loader.style.display = 'flex'; loader.innerHTML = '<div style="font-size:24px;">⚠️</div><div style="font-size:11px;color:var(--spirit-dim);">Impossible de charger l\'empreinte</div>'; }
+    if (loader) { loader.style.display = 'flex'; loader.innerHTML = `<div style="font-size:24px;">⚠️</div><div style="font-size:11px;color:var(--spirit-dim);">${t.profile_map_error || 'Impossible de charger'}</div>`; }
   }
 };
 
@@ -3227,7 +3245,7 @@ window.checkPublicProfileParam = async () => {
   if (!uid) return;
   try {
     const userDoc = await getDoc(doc(db, 'users', uid));
-    const name = userDoc.exists() ? (userDoc.data().displayName || 'Chasseur de fantômes') : 'Chasseur de fantômes';
+    const name = userDoc.exists() ? (userDoc.data().displayName || (t.profile_ghost_hunter || 'Chasseur de fantômes')) : (t.profile_ghost_hunter || 'Chasseur de fantômes');
     const ghostsSnap = await getDocs(query(
       collection(db, 'ghosts'),
       where('authorUid', '==', uid),
@@ -3255,23 +3273,23 @@ window.showPublicProfileModal = (uid, name, ghostCount, totalOpens, ghostDocs) =
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:340px;margin-bottom:24px;">
       <div style="background:var(--surface);border:1px solid rgba(168,180,255,.12);border-radius:14px;padding:16px;text-align:center;">
         <div style="font-size:28px;font-weight:700;color:var(--ether);">${ghostCount}</div>
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-top:4px;">Fantômes déposés</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-top:4px;">${t.profile_stat_deposited_label || 'Fantômes déposés'}</div>
       </div>
       <div style="background:var(--surface);border:1px solid rgba(168,180,255,.12);border-radius:14px;padding:16px;text-align:center;">
         <div style="font-size:28px;font-weight:700;color:var(--ether);">${totalOpens}</div>
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-top:4px;">Ouvertures totales</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-top:4px;">${t.profile_stat_opens_label || 'Ouvertures totales'}</div>
       </div>
     </div>
-    <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:12px;align-self:flex-start;max-width:340px;width:100%;">🗺 Empreinte publique</div>
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:12px;align-self:flex-start;max-width:340px;width:100%;">${t.profile_public_footprint || '🗺 Empreinte publique'}</div>
     <div id="publicEmpreinteMap" style="width:100%;max-width:340px;height:200px;border-radius:16px;overflow:hidden;border:1px solid rgba(168,180,255,.15);background:rgba(10,10,20,.8);margin-bottom:24px;"></div>
-    <button onclick="window.location.href='https://pimpimshop33-dotcom.github.io/ghostub/'" style="background:linear-gradient(135deg,rgba(168,180,255,.18),rgba(168,180,255,.06));border:1px solid rgba(168,180,255,.35);border-radius:14px;color:rgba(168,180,255,.95);font-size:14px;padding:14px 24px;cursor:pointer;font-family:'Instrument Sans',sans-serif;width:100%;max-width:340px;">👻 Rejoindre Ghostub</button>
+    <button onclick="window.location.href='https://pimpimshop33-dotcom.github.io/ghostub/'" style="background:linear-gradient(135deg,rgba(168,180,255,.18),rgba(168,180,255,.06));border:1px solid rgba(168,180,255,.35);border-radius:14px;color:rgba(168,180,255,.95);font-size:14px;padding:14px 24px;cursor:pointer;font-family:'Instrument Sans',sans-serif;width:100%;max-width:340px;">${t.profile_join_ghostub || '👻 Rejoindre Ghostub'}</button>
   `;
   document.body.appendChild(modal);
   setTimeout(() => {
     const mapEl = document.getElementById('publicEmpreinteMap');
     if (!mapEl || !ghostDocs.length) return;
     const coords = ghostDocs.filter(d => d.data().lat && d.data().lng).map(d => [d.data().lat, d.data().lng]);
-    if (!coords.length) { mapEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:height:100%;font-size:12px;color:rgba(168,180,255,.4);">Aucun lieu public</div>'; return; }
+    if (!coords.length) { mapEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:height:100%;font-size:12px;color:rgba(168,180,255,.4);">${t.profile_no_public_places || 'Aucun lieu public'}</div>`; return; }
     const pubMap = L.map('publicEmpreinteMap', { zoomControl: false, attributionControl: false }).setView(coords[0], 13);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(pubMap);
     coords.forEach(([lat, lng], i) => {
@@ -3297,7 +3315,7 @@ window.toggleLeaderboard = async () => {
 window.loadLeaderboard = async () => {
   const el = document.getElementById('leaderboardContent');
   if (!el) return;
-  el.innerHTML = '<div style="font-size:12px;color:var(--spirit-dim);">Chargement…</div>';
+  el.innerHTML = `<div style="font-size:12px;color:var(--spirit-dim);">${t.loading || 'Chargement…'}</div>`;
   try {
     // Classement par nombre de découvertes (openCount total sur leurs fantômes)
     const snap = await getDocs(query(
@@ -3318,7 +3336,7 @@ window.loadLeaderboard = async () => {
       .sort((a, b) => b.resonances - a.resonances)
       .slice(0, 5);
     if (sorted.length === 0) {
-      el.innerHTML = '<div style="font-size:12px;color:var(--spirit-dim);font-style:italic;">Aucun chasseur encore…</div>';
+      el.innerHTML = `<div style="font-size:12px;color:var(--spirit-dim);font-style:italic;">${t.profile_no_hunters || 'Aucun chasseur encore…'}</div>`;
       return;
     }
     const medals = ['🥇','🥈','🥉'];
@@ -3327,14 +3345,14 @@ window.loadLeaderboard = async () => {
       return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);${isMe ? 'background:rgba(168,180,255,.05);border-radius:8px;padding:7px 8px;margin:0 -8px;' : ''}">
         <span style="font-size:16px;width:22px;text-align:center;flex-shrink:0;">${medals[i] || (i+1)+'.'}</span>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;color:${isMe ? 'var(--ether)' : 'var(--warm-dim)'};font-weight:${isMe ? '600' : '400'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHTML(s.name)}${isMe ? ' (vous)' : ''}</div>
-          <div style="font-size:11px;color:var(--spirit-dim);">${s.ghosts} fantôme${s.ghosts > 1 ? 's' : ''}</div>
+          <div style="font-size:13px;color:${isMe ? 'var(--ether)' : 'var(--warm-dim)'};font-weight:${isMe ? '600' : '400'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHTML(s.name)}${isMe ? ' (' + (t.profile_you || 'vous') + ')' : ''}</div>
+          <div style="font-size:11px;color:var(--spirit-dim);">${s.ghosts} ${_currentLang === 'fr' ? 'fantôme' + (s.ghosts > 1 ? 's' : '') : 'ghost' + (s.ghosts > 1 ? 's' : '')}</div>
         </div>
         <div style="font-size:13px;color:rgba(168,180,255,.7);flex-shrink:0;">✦ ${s.resonances}</div>
       </div>`;
     }).join('');
   } catch(e) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--spirit-dim);">Impossible de charger le classement.</div>';
+    el.innerHTML = `<div style="font-size:12px;color:var(--spirit-dim);">${t.profile_leaderboard_error || 'Impossible de charger le classement.'}</div>`;
   }
 };
 
@@ -4081,8 +4099,8 @@ window.depositGhost = async () => {
     successEl.addEventListener('click', dismissSuccess);
     setTimeout(() => dismissSuccess(), 2500);
   } catch(e) {
-    err.textContent = 'Erreur : ' + e.message;
-    depositBtn.textContent = '👻 Déposer le fantôme';
+    err.textContent = (t.error_prefix || 'Erreur :') + ' ' + e.message;
+    depositBtn.textContent = t.dep_deposit_btn || '👻 Ancrer ce fantôme';
     depositBtn.disabled = false;
   }
 };
@@ -4598,7 +4616,7 @@ window.toggleBusinessMode = () => {
     const t3b = document.getElementById('step3Title');
     const s3b = document.getElementById('step3Sub');
     if (t3b) t3b.textContent = t.dep_pane3_title;
-    if (s3b) s3b.textContent = 'Tout est optionnel — les valeurs par défaut sont bonnes.';
+    if (s3b) s3b.textContent = t.dep_pane3_sub;
     const depBtnB = document.getElementById('depositBtn');
     if (depBtnB) depBtnB.textContent = t.dep_deposit_btn || '👻 Ancrer ce fantôme';
   }
@@ -4659,10 +4677,10 @@ function isConditionMet(ghost) {
     return {
       ok: false,
       icon: '🌙',
-      title: 'Ce fantôme s’éveille la nuit',
-      sub: 'Il n’est accessible qu’entre 22h et 6h du matin.',
+      title: t.blocked_night_title,
+      sub: t.blocked_night_sub,
       timer: `${hh}h${mm < 10 ? '0' + mm : mm}`,
-      timerLabel: 'avant la nuit'
+      timerLabel: t.blocked_night_timer || 'avant la nuit'
     };
   }
 
@@ -4689,10 +4707,10 @@ function isConditionMet(ghost) {
     return {
       ok: false,
       icon: '⏰',
-      title: `Rendez-vous à ${fmt12}`,
-      sub: `Ce fantôme n’est accessible que 15 min autour de ${fmt12}.`,
+      title: (_currentLang === 'fr' ? `Rendez-vous à ${fmt12}` : `Appointment at ${fmt12}`),
+      sub: t.blocked_hour_sub.replace('{time}', fmt12),
       timer: hh > 0 ? `${hh}h${mm < 10 ? '0'+mm : mm}` : `${mm} min`,
-      timerLabel: 'avant l’ouverture'
+      timerLabel: t.blocked_hour_timer || 'avant l’ouverture'
     };
   }
 
@@ -4704,8 +4722,8 @@ function isConditionMet(ghost) {
     return {
       ok: false,
       icon: '🔗',
-      title: 'Un prérequis manque',
-      sub: 'Tu dois d’abord trouver et ouvrir un autre fantôme pour débloquer celui-ci.',
+      title: t.blocked_after_title,
+      sub: t.blocked_after_sub,
       timer: null,
       timerLabel: null
     };
@@ -4722,15 +4740,15 @@ function isConditionMet(ghost) {
     const months = Math.floor(days / 30);
     const years = Math.floor(days / 365);
     let timer, timerLabel;
-    if (years >= 1) { timer = `${years} an${years > 1 ? 's' : ''}`; timerLabel = 'avant l’ouverture'; }
+    if (years >= 1) { timer = `${years} ${_currentLang === 'fr' ? 'an' + (years > 1 ? 's' : '') : 'year' + (years > 1 ? 's' : '')}`; timerLabel = t.blocked_future_timer || 'avant l\'ouverture'; }
     else if (months >= 1) { timer = `${months} mois`; timerLabel = 'avant l’ouverture'; }
     else { timer = `${days} jour${days > 1 ? 's' : ''}`; timerLabel = 'avant l’ouverture'; }
-    const dateStr = new Date(openDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const dateStr = new Date(openDate).toLocaleDateString(_currentLang === 'fr' ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     return {
       ok: false,
       icon: '📅',
-      title: 'Message du futur',
-      sub: `Ce fantôme ne peut être ouvert qu'à partir du ${dateStr}.`,
+      title: t.blocked_future_title,
+      sub: t.blocked_future_sub.replace('{date}', dateStr),
       timer,
       timerLabel
     };
@@ -6542,11 +6560,11 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
       <!-- Overlay fantôme bloqué par condition -->
       <div class="ghost-blocked-overlay" id="ghostBlockedOverlay">
         <div class="blocked-icon" id="blockedIcon">🌙</div>
-        <div class="blocked-title" id="blockedTitle">Ce fantôme dort encore</div>
-        <div class="blocked-sub" id="blockedSub">Il se réveillera bientôt.</div>
+        <div class="blocked-title" id="blockedTitle" data-i18n="blocked_default_title">Ce fantôme dort encore</div>
+        <div class="blocked-sub" id="blockedSub" data-i18n="blocked_default_sub">Il se réveillera bientôt.</div>
         <div class="blocked-timer" id="blockedTimer" style="display:none;"></div>
         <div class="blocked-timer-label" id="blockedTimerLabel" style="display:none;"></div>
-        <button class="btn-secondary" onclick="history.back()" style="margin-top:4px;">← Revenir</button>
+        <button class="btn-secondary" onclick="history.back()" style="margin-top:4px;" data-i18n="blocked_back">← Revenir</button>
       </div>
 
       <div id="envelopeSealed" class="envelope-sealed">
@@ -6585,7 +6603,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <button class="share-btn" id="ghostShareBtn" onclick="openShareModal()" aria-label="Partager la position de ce fantôme" style="background:linear-gradient(135deg,rgba(168,180,255,.18),rgba(168,180,255,.08));border:1px solid rgba(168,180,255,.4);color:rgba(168,180,255,.95);font-size:14px;padding:13px;border-radius:14px;width:100%;cursor:pointer;margin-bottom:8px;letter-spacing:0.02em;">↗ Partager ce fantôme</button>
         <button class="btn-secondary" id="ghostReplyBtn" onclick="showScreen('screenReply')" style="margin-bottom:8px;">↩ Laisser une réponse ici</button>
         <button id="favoriteBtn" onclick="toggleFavorite()" aria-label="Ajouter aux favoris" style="width:100%;padding:11px;background:rgba(255,200,80,.05);border:1px solid rgba(255,200,80,.2);border-radius:13px;color:rgba(255,200,80,.5);font-family:'Instrument Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;touch-action:manipulation;">★ Ajouter aux favoris</button>
-        <button class="report-btn" id="reportBtn" onclick="openReportModal()">⚑ Signaler ce fantôme</button>
+        <button class="report-btn" id="reportBtn" onclick="openReportModal()" data-i18n="detail_report_btn">⚑ Signaler ce fantôme</button>
         <div class="section-label">Réponses dans ce lieu</div>
         <div id="repliesList"></div>
       </div>
@@ -7152,7 +7170,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
 <div class="share-modal" id="shareModal" onclick="closeShareModal(event)" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle">
   <div class="share-sheet">
     <div class="sheet-handle" aria-hidden="true"></div>
-    <div class="share-sheet-title" id="shareModalTitle">Partager ce fantôme</div>
+    <div class="share-sheet-title" id="shareModalTitle" data-i18n="share_modal_title">Partager ce fantôme</div>
     <div class="share-sheet-sub">Seule la position est partagée.<br>Le contenu reste invisible jusqu'à ce qu'on soit sur place.</div>
     <div class="share-link-box" id="shareLinkBox" aria-label="Lien de partage">…</div>
     <div class="share-actions">
@@ -7167,7 +7185,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
 <div class="report-modal" id="reportModal" onclick="closeReportModal(event)" role="dialog" aria-modal="true" aria-labelledby="reportModalTitle">
   <div class="report-sheet">
     <div class="sheet-handle" aria-hidden="true"></div>
-    <div class="report-sheet-title" id="reportModalTitle">Signaler ce fantôme</div>
+    <div class="report-sheet-title" id="reportModalTitle" data-i18n="report_title">Signaler ce fantôme</div>
     <div class="report-sheet-sub">Après 3 signalements, le message sera supprimé automatiquement.</div>
     <div class="report-reasons" role="list">
       <div class="report-reason" onclick="submitReport('spam')" role="listitem" tabindex="0" onkeydown="if(event.key==='Enter')submitReport('spam')">🚫 <span>Spam ou contenu répétitif</span></div>
@@ -7202,15 +7220,15 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
   <div class="open-limit-sheet">
     <div class="sheet-handle" aria-hidden="true"></div>
     <div class="open-limit-icon" id="openLimitIcon">👻</div>
-    <div class="open-limit-title" id="openLimitTitle">Encore un fantôme ?</div>
+    <div class="open-limit-title" id="openLimitTitle" data-i18n="open_limit_default_title">Encore un fantôme ?</div>
     <div class="open-limit-sub" id="openLimitSub"></div>
     <div class="open-limit-counter" id="openLimitDots" aria-hidden="true"></div>
     <div class="open-limit-premium" id="openLimitPremiumInfo" style="display:none;">
-      ✦ Avec le <strong>Plan Premium</strong>, ouvrez un nombre illimité de fantômes par jour<br>+ chaînes de fantômes, contenu secret, et plus
+      <span data-i18n="open_limit_premium_text">✦ Avec le <strong>Plan Premium</strong>, ouvrez un nombre illimité de fantômes par jour<br>+ chaînes de fantômes, contenu secret, et plus</span>
     </div>
     <div class="open-limit-actions">
       <button class="open-limit-ok" id="openLimitOkBtn">✉ Ouvrir quand même</button>
-      <button class="open-limit-cancel" id="openLimitCancelBtn">← Revenir</button>
+      <button class="open-limit-cancel" id="openLimitCancelBtn" data-i18n="open_limit_cancel">← Revenir</button>
     </div>
   </div>
 </div>
