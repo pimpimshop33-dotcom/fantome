@@ -146,6 +146,12 @@ const LANGS = {
     dep_err_offline: 'Vous êtes hors ligne — reconnectez-vous pour déposer.',
     dep_err_spam: '🏪 Pour les messages commerciaux, utilisez le Mode Commerce Premium.',
     dep_record_btn: 'Enregistrer un message vocal',
+    dep_record_label: 'Enregistrer',
+    dep_photo_btn_short: 'Ajouter une photo',
+    dep_video_btn_short: 'Ajouter une vidéo',
+    premium_feature: 'Fonctionnalité Premium',
+    premium_activate: 'Activer un code →',
+    profile_map_loading: 'Chargement de votre empreinte…',
     dep_record_stop: '⏹ Arrêter l\'enregistrement',
     dep_photo_btn: '📷 Ajouter une photo',
     dep_video_btn: '🎥 Ajouter une vidéo (Premium)',
@@ -565,6 +571,12 @@ const LANGS = {
     dep_err_offline: 'You\'re offline — reconnect to drop a ghost.',
     dep_err_spam: '🏪 For commercial messages, use the Premium Commerce Mode.',
     dep_record_btn: 'Record a voice message',
+    dep_record_label: 'Record',
+    dep_photo_btn_short: 'Add a photo',
+    dep_video_btn_short: 'Add a video',
+    premium_feature: 'Premium feature',
+    premium_activate: 'Activate a code →',
+    profile_map_loading: 'Loading your footprint…',
     dep_record_stop: '⏹ Stop recording',
     dep_photo_btn: '📷 Add a photo',
     dep_video_btn: '🎥 Add a video (Premium)',
@@ -947,14 +959,14 @@ window.setLang = (lang) => {
     });
     const lbPanel = document.getElementById('leaderboardPanel');
     if (lbPanel && lbPanel.style.display !== 'none') {
-      _leaderboardLoaded = false;
+      if (typeof _leaderboardLoaded !== 'undefined') _leaderboardLoaded = false;
       if (typeof loadLeaderboard === 'function') loadLeaderboard();
     }
   }
 
   if (activeScreen === 'screenMap') {
     // Re-render ghost count line
-    if (typeof renderStaticMap === 'function') renderStaticMap();
+    // map screen - count line already translated via data-i18n
   }
 
   // 4. Refresh éléments dynamiques persistants (toujours visibles)
@@ -6898,7 +6910,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
           <label class="form-label" for="recordBtn">Message vocal (optionnel)</label>
           <button class="media-btn" id="recordBtn" onclick="toggleRecording()" type="button" aria-label="Enregistrer un message vocal">
             <span class="media-icon" aria-hidden="true">🎙</span>
-            <span id="recordLabel">Enregistrer</span>
+            <span id="recordLabel" data-i18n="dep_record_label">Enregistrer</span>
             <span id="recordTimer" aria-live="polite" aria-label="Durée d'enregistrement" style="margin-left:auto;font-size:11px;opacity:.5;">00:00</span>
           </button>
           <div id="audioPreview"></div>
@@ -6908,7 +6920,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
           <label class="form-label">Photo (optionnel)</label>
           <button class="media-btn" onclick="triggerPhoto()" type="button" aria-label="Ajouter une photo depuis la galerie ou l'appareil photo">
             <span class="media-icon" aria-hidden="true">📷</span>
-            <span>Ajouter une photo</span>
+            <span data-i18n="dep_photo_btn_short">Ajouter une photo</span>
           </button>
           <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)" aria-hidden="true">
           <div id="photoPreview"></div>
@@ -6921,7 +6933,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
           </label>
           <button class="media-btn" onclick="triggerVideo()" type="button" aria-label="Ajouter une vidéo" style="${''}">
             <span class="media-icon" aria-hidden="true">🎥</span>
-            <span>Ajouter une vidéo</span>
+            <span data-i18n="dep_video_btn_short">Ajouter une vidéo</span>
             <span style="margin-left:auto;font-size:10px;opacity:.45;">max 50 Mo · 20 sec</span>
           </button>
           <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="handleVideo(this)" aria-hidden="true">
@@ -6937,14 +6949,14 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
             <input class="form-input" id="chainHint" type="text" placeholder="ex: continue vers la fontaine…" aria-label="Indice vers le prochain fantôme">
             <button type="button" onclick="setChainMarker()" class="media-btn" style="width:100%;">
               <span class="media-icon" aria-hidden="true">🗺</span>
-              <span id="chainMapLabel">Placer le prochain point sur la carte</span>
+              <span id="chainMapLabel" data-i18n="dep_chain_place">Placer le prochain point sur la carte</span>
             </button>
             <div id="chainMapPreview" style="display:none;height:120px;border-radius:12px;overflow:hidden;border:1px solid rgba(168,180,255,.2);"></div>
           </div>
           <div id="chainLock" style="display:none;position:absolute;inset:0;background:rgba(6,6,8,.85);border-radius:14px;flex-direction:column;align-items:center;justify-content:center;gap:6px;backdrop-filter:blur(3px);cursor:pointer;" onclick="showScreen('screenProfile');setNav('nav-profile')" role="button" tabindex="0" aria-label="Fonctionnalité Premium — cliquez pour activer un code" onkeydown="if(event.key==='Enter')this.click()">
             <div style="font-size:24px;" aria-hidden="true">🔒</div>
-            <div style="font-size:12px;color:var(--ether);">Fonctionnalité Premium</div>
-            <div style="font-size:11px;color:var(--spirit-dim);">Activer un code →</div>
+            <div style="font-size:12px;color:var(--ether);" data-i18n="premium_feature">Fonctionnalité Premium</div>
+            <div style="font-size:11px;color:var(--spirit-dim);" data-i18n="premium_activate">Activer un code →</div>
           </div>
         </div>
         <div class="deposit-error" id="depositError" role="alert" aria-live="polite"></div>
@@ -7015,7 +7027,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
       <!-- Panel classement inline -->
       <div id="leaderboardPanel" style="display:none;background:var(--surface);border:1px solid rgba(255,200,80,.2);border-radius:14px;padding:14px;margin-bottom:12px;">
         <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,200,80,.6);margin-bottom:10px;" data-i18n="profile_top_hunters">🏆 Top chasseurs</div>
-        <div id="leaderboardContent"><div style="font-size:12px;color:var(--spirit-dim);opacity:.6;">Chargement…</div></div>
+        <div id="leaderboardContent"><div style="font-size:12px;color:var(--spirit-dim);opacity:.6;" data-i18n="loading">Chargement…</div></div>
       </div>
 
       <!-- ── CARTE EMPREINTE ─────────────────────────── -->
@@ -7029,7 +7041,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
           <div id="empreinteLeaflet" style="position:absolute;inset:0;z-index:1;"></div>
           <div id="empreinteLoader" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:2;">
             <div style="font-size:28px;animation:ghostFloat 2s ease-in-out infinite;">👻</div>
-            <div style="font-size:11px;color:var(--spirit-dim);letter-spacing:.5px;">Chargement de votre empreinte…</div>
+            <div style="font-size:11px;color:var(--spirit-dim);letter-spacing:.5px;" data-i18n="profile_map_loading">Chargement de votre empreinte…</div>
           </div>
           <!-- Stats overlay en bas de la carte -->
           <div id="empreinteStats" style="position:absolute;bottom:0;left:0;right:0;z-index:3;display:flex;gap:0;pointer-events:none;"></div>
@@ -7039,7 +7051,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
       <div id="bizDashboardSection" style="display:none;margin-bottom:16px;">
         <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,200,80,.6);margin-bottom:8px;" data-i18n="profile_biz_section">🏪 Mes offres Commerce</div>
         <div id="bizDashboardContent">
-          <div style="font-size:12px;color:var(--spirit-dim);font-style:italic;opacity:.6;text-align:center;padding:12px 0;">Chargement…</div>
+          <div style="font-size:12px;color:var(--spirit-dim);font-style:italic;opacity:.6;text-align:center;padding:12px 0;" data-i18n="loading">Chargement…</div>
         </div>
       </div>
       <div id="discoveryHistory" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;">
@@ -7059,8 +7071,8 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
       <div class="section-label" style="margin-bottom:8px;" data-i18n="profile_account_section">Mon compte</div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;">
         <div id="planInfo">
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:4px;">Plan gratuit</div>
-          <div style="font-size:13px;color:var(--warm-dim);">Vidéo 🎥 · Chaîne 🔗 · Mode Commerce 🏪 — réservés au Premium</div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--spirit-dim);margin-bottom:4px;" data-i18n="profile_free_plan">Plan gratuit</div>
+          <div style="font-size:13px;color:var(--warm-dim);" data-i18n="profile_free_sub">Vidéo 🎥 · Chaîne 🔗 · Mode Commerce 🏪 — réservés au Premium</div>
         </div>
         <div id="codeSection" style="margin-top:12px;">
           <div style="font-size:11px;color:var(--spirit-dim);margin-bottom:6px;letter-spacing:.5px;" data-i18n="profile_code_hint">Vous avez un code d'activation ?</div>
