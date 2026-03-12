@@ -99,7 +99,7 @@ const LANGS = {
     dep_dur_24h: '24h',
     dep_dur_7d: '7 jours',
     dep_dur_1m: '1 mois',
-    dep_dur_eternal: '⊙ Éternel',
+    dep_dur_eternal: '♾ Éternel',
     dep_maxopen_inf: '∞ Illimité',
     dep_maxopen_1: '1 lecture',
     dep_maxopen_5: '5 lectures',
@@ -551,7 +551,7 @@ const LANGS = {
     dep_dur_24h: '24h',
     dep_dur_7d: '7 days',
     dep_dur_1m: '1 month',
-    dep_dur_eternal: '⊙ Eternal',
+    dep_dur_eternal: '♾ Eternal',
     dep_maxopen_inf: '∞ Unlimited',
     dep_maxopen_1: '1 read',
     dep_maxopen_5: '5 reads',
@@ -4119,7 +4119,7 @@ window.depositGhost = async () => {
   const rawEmoji  = document.getElementById('depositEmoji').value || '👻';
   // FIX: Limiter l'emoji à 2 caractères max pour éviter injection de HTML
   const emoji = [...rawEmoji].slice(0, 2).join('');
-  const duration = document.querySelector('.dur-btn.active:not([data-maxopen])')?.textContent || '7 jours';
+  const duration = document.querySelector('.dur-btn.active:not([data-maxopen])')?.textContent || t.dep_dur_7d;
   const maxOpenCount = parseInt(document.querySelector('.dur-btn.active[data-maxopen]')?.dataset.maxopen || '0');
   const radius   = document.querySelector('.radius-btn.active')?.textContent || '10m';
   const typeBtns = document.querySelectorAll('#screenDeposit .type-selector');
@@ -4691,7 +4691,7 @@ window.toggleBusinessMode = () => {
       document.querySelectorAll('.dur-btn:not([data-maxopen])').forEach(b => {
         b.classList.remove('active');
         b.setAttribute('aria-pressed', 'false');
-        if (b.textContent.trim() === '1 mois') {
+        if (b.textContent.trim() === t.dep_dur_1m) {
           b.classList.add('active');
           b.setAttribute('aria-pressed', 'true');
         }
@@ -6854,8 +6854,8 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
           <div class="duration-selector" role="group" aria-label="Durée de vie du fantôme">
             <button class="dur-btn" onclick="selectDur(this)" aria-pressed="false">24h</button>
             <button class="dur-btn active" onclick="selectDur(this)" aria-pressed="true" data-i18n="dep_dur_7d">7 jours</button>
-            <button class="dur-btn" onclick="selectDur(this)" aria-pressed="false">1 mois</button>
-            <button class="dur-btn" onclick="selectDur(this)" aria-pressed="false">♾ Éternel</button>
+            <button class="dur-btn" onclick="selectDur(this)" aria-pressed="false" data-i18n="dep_dur_1m">1 mois</button>
+            <button class="dur-btn" onclick="selectDur(this)" aria-pressed="false" data-i18n="dep_dur_eternal">♾ Éternel</button>
           </div>
         </div>
         <!-- Disparaît après — masqué en mode Commerce -->
