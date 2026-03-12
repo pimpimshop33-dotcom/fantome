@@ -2904,10 +2904,12 @@ window.loadNearbyGhosts = async () => {
     userLat = 44.6333; userLng = -1.1333;
   }
 
-  // ── QUERY FIRESTORE ─────────────────────────────────────────────────
+  // ── QUERY FIRESTORE (géohash ~15km) ─────────────────────────────────
+  // WorldService.getVisibleGhosts filtre par geohash (centre + 8 voisins ~15km)
+  // → coût Firestore proportionnel à la zone, pas à la collection globale
   let snap;
   try {
-    snap = await getDocs(query(collection(db, 'ghosts'), limit(200)));
+    snap = await WorldService.getVisibleGhosts(userLat, userLng);
   } catch(firestoreErr) {
     console.error('Firestore error:', firestoreErr);
     document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:12px;color:rgba(255,100,100,.6)">' + t.radar_firestore_err + '</span>';
