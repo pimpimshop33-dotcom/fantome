@@ -39,7 +39,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, increment, serverTimestamp, GeoPoint } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, increment, serverTimestamp, GeoPoint, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import WorldService, { buildGeohashFields, encodeGeohash } from './services/world.service.js';
 import GhostService from './services/ghost.service.js';
 import LocationService from './services/location.service.js';
@@ -2313,7 +2313,7 @@ async function loadBizDashboard() {
             <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
               <span style="color:${opensColor};font-size:13px;font-weight:600;">👁 ${opens} ${_currentLang === 'fr' ? 'ouverture' + (opens > 1 ? 's' : '') : 'open' + (opens > 1 ? 's' : '')}</span>
               ${expiryHtml}
-              ${_currentLang === 'fr' ? '<span style="color:rgba(255,100,100,.6);font-size:11px;">Expirée</span>' : '<span style="color:rgba(255,100,100,.6);font-size:11px;">Expired</span>'}
+              ${expired ? (_currentLang === 'fr' ? '<span style="color:rgba(255,100,100,.6);font-size:11px;">Expirée</span>' : '<span style="color:rgba(255,100,100,.6);font-size:11px;">Expired</span>') : ''}
             </div>
           </div>
         </div>
@@ -2466,29 +2466,23 @@ window.activatePremium = async () => {
   const code = input.value.trim().toUpperCase();
   const errEl = document.getElementById('premiumError');
   if (!code) { errEl.textContent = t.profile_code_empty; return; }
-  // Validation basique du format
-  if (!code || code.length < 4) { errEl.textContent = t.profile_code_short; return; }
+  if (code.length < 4) { errEl.textContent = t.profile_code_short; return; }
   errEl.textContent = '';
   const btn = document.getElementById('activateBtn');
   btn.textContent = t.profile_activating;
   btn.disabled = true;
   try {
-    const codeDoc = await getDoc(doc(db, 'premiumCodes', code));
-    if (!codeDoc.exists()) {
-      errEl.textContent = t.profile_code_invalid;
-      btn.textContent = t.profile_activate_btn;
-      btn.disabled = false;
-      return;
-    }
-    const data = codeDoc.data();
-    if (data.used) {
-      errEl.textContent = t.profile_code_used;
-      btn.textContent = t.profile_activate_btn;
-      btn.disabled = false;
-      return;
-    }
-    await updateDoc(doc(db, 'premiumCodes', code), { used: true, usedBy: currentUser.uid, usedAt: serverTimestamp() });
-    await setDoc(doc(db, 'users', currentUser.uid), { premium: true, premiumSince: serverTimestamp() }, { merge: true });
+    // Transaction atomique : lecture + écriture en une seule opération
+    // → impossible d'activer le même code deux fois simultanément
+    await runTransaction(db, async (txn) => {
+      const codeRef = doc(db, 'premiumCodes', code);
+      const codeSnap = await txn.get(codeRef);
+      if (!codeSnap.exists()) throw { code: 'not-found' };
+      if (codeSnap.data().used) throw { code: 'already-used' };
+      const userRef = doc(db, 'users', currentUser.uid);
+      txn.update(codeRef, { used: true, usedBy: currentUser.uid, usedAt: serverTimestamp() });
+      txn.set(userRef, { premium: true, premiumSince: serverTimestamp() }, { merge: true });
+    });
     isPremium = true;
     updatePremiumUI();
     input.value = '';
@@ -2496,7 +2490,9 @@ window.activatePremium = async () => {
     showToast('success', t.profile_premium_toast, 4000);
     Analytics.track('premium_activated');
   } catch(e) {
-    errEl.textContent = 'Erreur : ' + e.message;
+    if (e.code === 'not-found') errEl.textContent = t.profile_code_invalid;
+    else if (e.code === 'already-used') errEl.textContent = t.profile_code_used;
+    else errEl.textContent = 'Erreur : ' + e.message;
     btn.textContent = t.profile_activate_btn;
     btn.disabled = false;
   }
