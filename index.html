@@ -1004,7 +1004,6 @@ window.setLang = (lang) => {
   // Profile — re-render si les données sont déjà chargées
   if (typeof refreshProfileStats === 'function') refreshProfileStats();
   if (typeof updatePremiumUI === 'function') updatePremiumUI();
-  if (typeof updatePremiumUI === 'function') updatePremiumUI();
   if (typeof loadBizDashboard === 'function') loadBizDashboard();
 
   // Empreinte map — re-render seulement si déjà initialisée (évite appel Firestore inutile)
@@ -3029,9 +3028,20 @@ const POETIC_ADJ  = ['silencieux','nocturne','perdu','oublié','errant','pâle',
 const POETIC_NOUN = ['passant','souffle','murmure','reflet','voyageur','ombre','témoin','spectre','visiteur','veilleur','rêveur','fantôme'];
 const POETIC_TIME = ["du soir","de l'aube","d'hiver","de minuit","d'automne","du crépuscule","de mars","sans nom","sans visage","d'un instant"];
 
+// Tableaux EN — même index que FR pour cohérence (même ghost = même "persona")
+const POETIC_ADJ_EN  = ['silent','nocturnal','lost','forgotten','wandering','pale','distant','secret','invisible','somber','misty','fleeting'];
+const POETIC_NOUN_EN = ['wanderer','whisper','murmur','reflection','traveler','shadow','witness','specter','visitor','watcher','dreamer','ghost'];
+const POETIC_TIME_EN = ['of the evening','of the dawn','of winter','of midnight','of autumn','of dusk','of march','with no name','with no face','of a moment'];
+
 function getPoeticName(ghostId) {
   let hash = 0;
   for (let i = 0; i < ghostId.length; i++) hash = (hash * 31 + ghostId.charCodeAt(i)) >>> 0;
+  if (_currentLang === 'en') {
+    const adj  = POETIC_ADJ_EN[hash % POETIC_ADJ_EN.length];
+    const noun = POETIC_NOUN_EN[(hash >> 4) % POETIC_NOUN_EN.length];
+    const time = POETIC_TIME_EN[(hash >> 8) % POETIC_TIME_EN.length];
+    return `The ${adj} ${noun} ${time}`;
+  }
   const adj  = POETIC_ADJ[hash % POETIC_ADJ.length];
   const noun = POETIC_NOUN[(hash >> 4) % POETIC_NOUN.length];
   const time = POETIC_TIME[(hash >> 8) % POETIC_TIME.length];
