@@ -1,0 +1,104 @@
+{
+  "indexes": [
+
+    // ── NOTIFICATIONS ──────────────────────────────────────
+    // checkReplyNotifications() : where toUid == x AND notified == false
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "toUid",    "order": "ASCENDING" },
+        { "fieldPath": "notified", "order": "ASCENDING" }
+      ]
+    },
+
+    // ── DISCOVERIES ────────────────────────────────────────
+    // checkDiscoveries() : where authorUid == x AND notified == false
+    {
+      "collectionGroup": "discoveries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "authorUid", "order": "ASCENDING" },
+        { "fieldPath": "notified",  "order": "ASCENDING" }
+      ]
+    },
+    // loadEmpreinteMap() : where discoveredByUid == x
+    {
+      "collectionGroup": "discoveries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "discoveredByUid", "order": "ASCENDING" }
+      ]
+    },
+
+    // ── GHOSTS ─────────────────────────────────────────────
+    // checkResonances() : where authorUid == x, limit 50
+    {
+      "collectionGroup": "ghosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "authorUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    // refreshProfileStats() : where authorUid == x (count + resonances)
+    {
+      "collectionGroup": "ghosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "authorUid",  "order": "ASCENDING" },
+        { "fieldPath": "resonances", "order": "DESCENDING" }
+      ]
+    },
+    // _notifyNearbyUsers() : where lat >= x AND lat <= y
+    {
+      "collectionGroup": "ghosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lat", "order": "ASCENDING" }
+      ]
+    },
+
+    // ── REPORTS ────────────────────────────────────────────
+    // submitReport auto-moderation (Cloud Function) : where ghostId == x
+    {
+      "collectionGroup": "reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ghostId",   "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+
+    // ── REPLIES ────────────────────────────────────────────
+    // openGhost replies : where ghostId == x, orderBy createdAt
+    {
+      "collectionGroup": "replies",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ghostId",   "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    // deleteMyGhosts : where authorUid == x
+    {
+      "collectionGroup": "replies",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "authorUid", "order": "ASCENDING" }
+      ]
+    },
+
+    // ── GHOST STATS ────────────────────────────────────────
+    // loadBizDashboard ghostStats : where authorUid == x
+    {
+      "collectionGroup": "ghostStats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "authorUid", "order": "ASCENDING" }
+      ]
+    }
+
+  ],
+  "fieldOverrides": []
+}
