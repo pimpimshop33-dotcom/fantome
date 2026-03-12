@@ -2961,7 +2961,7 @@ window.loadNearbyGhosts = async () => {
   if (!navigator.onLine) {
     showToast('warning', t.radar_offline);
   }
-  document.getElementById('ghostCount').textContent = '';
+  const _gc = document.getElementById('ghostCount'); if (_gc) _gc.textContent = '';
   document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:13px;color:var(--spirit-dim)">' + t.radar_locating + '</span>';
   skeletonGhostList();
   try {
