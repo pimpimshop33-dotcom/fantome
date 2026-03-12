@@ -14,12 +14,12 @@
 <!-- Sécurité : Content Security Policy -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self' https:;
-  script-src 'self' 'unsafe-inline' https://www.gstatic.com https://unpkg.com https://cdnjs.cloudflare.com;
-  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com;
+  script-src 'self' 'unsafe-inline' https://www.gstatic.com https://unpkg.com/leaflet@1.9.4/ https://cdnjs.cloudflare.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com/leaflet@1.9.4/;
   font-src https://fonts.gstatic.com;
   img-src 'self' data: blob: https://res.cloudinary.com https://*.tile.openstreetmap.fr https://*.openstreetmap.org https://raw.githubusercontent.com;
   media-src blob: https://res.cloudinary.com;
-  connect-src https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://api.cloudinary.com https://www.gstatic.com https://unpkg.com https://*.unpkg.com https://cdnjs.cloudflare.com https://nominatim.openstreetmap.org https://pimpimshop33-dotcom.github.io wss://*.firebaseio.com;
+  connect-src https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://api.cloudinary.com https://www.gstatic.com https://unpkg.com/leaflet@1.9.4/ https://nominatim.openstreetmap.org https://pimpimshop33-dotcom.github.io wss://*.firebaseio.com;
   worker-src 'self' blob:;
 ">
 <title>👻 Ghostub</title>
@@ -269,6 +269,9 @@ const LANGS = {
     profile_delete_confirm_sub: 'Cette action est irréversible — tous vos messages et réponses seront effacés.',
     profile_delete_success: '✓ {n} fantômes supprimés',
     profile_delete_err: 'Erreur — réessayez',
+    profile_export_btn: '⬇ Exporter mes données',
+    profile_export_ok: '✓ Export téléchargé',
+    profile_export_empty: 'Aucune donnée à exporter',
     profile_day_mode: 'Mode jour',
     profile_night_mode: 'Mode nuit',
     profile_lang_label: '🌐 Langue / Language',
@@ -721,6 +724,9 @@ const LANGS = {
     profile_delete_confirm_sub: 'This is irreversible — all your messages and replies will be deleted.',
     profile_delete_success: '✓ {n} ghosts deleted',
     profile_delete_err: 'Error — try again',
+    profile_export_btn: '⬇ Export my data',
+    profile_export_ok: '✓ Export downloaded',
+    profile_export_empty: 'No data to export',
     profile_day_mode: 'Day mode',
     profile_night_mode: 'Night mode',
     profile_lang_label: '🌐 Langue / Language',
@@ -2869,7 +2875,65 @@ window.deleteMyGhosts = async () => {
   }
 };
 
-const isExpired = g => GhostService.isExpired(g);
+// ── EXPORT RGPD (Art. 20 — Portabilité des données) ─────
+window.exportMyData = async () => {
+  if (!currentUser) return;
+  const btn = document.querySelector('[onclick="exportMyData()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Préparation…'; }
+  try {
+    // 1. Mes fantômes déposés
+    const ghostsSnap = await getDocs(query(collection(db, 'ghosts'), where('authorUid', '==', currentUser.uid)));
+    const ghosts = ghostsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // 2. Mes réponses envoyées
+    const repliesSnap = await getDocs(query(collection(db, 'replies'), where('authorUid', '==', currentUser.uid)));
+    const replies = repliesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // 3. Mes découvertes (localStorage)
+    const discoveries = getDiscoveredIds();
+
+    // 4. Mes favoris (localStorage)
+    const favorites = getFavorites();
+
+    if (!ghosts.length && !replies.length && !discoveries.length) {
+      showToast('info', t.profile_export_empty);
+      if (btn) { btn.disabled = false; btn.textContent = t.profile_export_btn; }
+      return;
+    }
+
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      account: {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        displayName: currentUser.displayName,
+        premium: isPremium
+      },
+      ghosts,
+      replies,
+      discoveredGhostIds: discoveries,
+      favorites
+    };
+
+    // Téléchargement JSON
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `ghostub-export-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('success', t.profile_export_ok, 4000);
+    Analytics.track('data_exported', { ghosts: ghosts.length, replies: replies.length });
+  } catch(e) {
+    showToast('error', 'Erreur export : ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = t.profile_export_btn; }
+  }
+};
 
 const timeRemaining = g => {
   const raw = GhostService.timeRemaining(g);
@@ -7217,6 +7281,9 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <button class="lang-btn" data-lang="en" onclick="setLang('en')" style="padding:4px 12px;border-radius:10px;border:1px solid var(--border);background:none;font-family:'Instrument Sans',sans-serif;font-size:12px;color:var(--warm-dim);cursor:pointer;transition:all .2s;">EN</button>
       </div>
       <!-- Actions danger -->
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;padding-bottom:8px;">
+        <button onclick="exportMyData()" style="background:none;border:none;cursor:pointer;font-family:'Instrument Sans',sans-serif;font-size:12px;color:rgba(168,180,255,.45);padding:6px 12px;border-radius:8px;" data-i18n="profile_export_btn">⬇ Exporter mes données</button>
+      </div>
       <div style="display:flex;gap:12px;justify-content:center;padding-bottom:24px;">
         <button onclick="logout()" id="logoutBtn" data-i18n="profile_logout" style="background:none;border:none;cursor:pointer;font-family:'Instrument Sans',sans-serif;font-size:12px;color:rgba(255,100,100,.5);padding:6px 12px;border-radius:8px;">🚪 Déconnexion</button>
         <span style="color:var(--border);font-size:12px;line-height:28px;">·</span>
