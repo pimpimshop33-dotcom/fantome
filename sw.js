@@ -1,6 +1,12 @@
 // ── GHOSTUB Service Worker ──────────────────────────────
-const CACHE_NAME = 'ghostub-v13';
-const STATIC = ['/ghostub/', '/ghostub/index.html', '/ghostub/manifest.json'];
+const CACHE_NAME = 'ghostub-v14';
+const STATIC = [
+  '/ghostub/',
+  '/ghostub/index.html',
+  '/ghostub/app.js',
+  '/ghostub/style.css',
+  '/ghostub/manifest.json'
+];
 // ── INSTALL ─────────────────────────────────────────────
 self.addEventListener('install', e => {
   e.waitUntil(
