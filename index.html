@@ -6117,7 +6117,7 @@ window.selectMaxOpen = (el) => {
 
 // ── ONBOARDING CAROUSEL ─────────────────
 let obCurrentScene = 0;
-const OB_TOTAL = 4;
+const OB_TOTAL = 5;
 
 function goObScene(n) {
   const scenes = document.querySelectorAll('.ob-scene');
@@ -6142,9 +6142,69 @@ function goObScene(n) {
     cta.classList.remove('visible');
     if (hint) hint.style.display = '';
   }
-  if (n === 3) spawnObParticles();
+  if (n === 4) spawnObParticles();
+  if (n === 2) _resetObDemo();
 }
 window.goObScene = goObScene;
+
+
+// ── ONBOARDING INTERACTIF ────────────────────────────────
+function _resetObDemo() {
+  const sealed = document.getElementById('obDemoSealed');
+  const revealed = document.getElementById('obDemoRevealed');
+  const btn = document.getElementById('obDemoBtn');
+  const sub = document.getElementById('obSub2Demo');
+  if (sealed) { sealed.style.display = 'block'; sealed.style.opacity = '1'; }
+  if (revealed) revealed.style.display = 'none';
+  if (btn) { btn.textContent = '✉ Briser le sceau'; btn.disabled = false; }
+  if (sub) sub.innerHTML = 'Chaque message est une<br>enveloppe scellée à dévoiler.';
+}
+
+window.obDemoBreakSeal = () => {
+  const btn = document.getElementById('obDemoBtn');
+  const sealed = document.getElementById('obDemoSealed');
+  const revealed = document.getElementById('obDemoRevealed');
+  const sub = document.getElementById('obSub2Demo');
+  if (!btn || btn.disabled) return;
+  btn.disabled = true;
+  // Haptic + son + flash — les vraies fonctions de l'app
+  if (navigator.vibrate) navigator.vibrate([10, 30, 20, 40, 10, 30, 250]);
+  const flash = document.getElementById('sealBreakFlash');
+  if (flash) { flash.style.animation = 'none'; flash.offsetHeight; flash.style.animation = 'sealFlash 0.9s ease-out forwards'; }
+  _launchSealParticles();
+  playRevealSound();
+  // Fade out enveloppe
+  sealed.style.opacity = '0';
+  setTimeout(() => {
+    sealed.style.display = 'none';
+    revealed.style.display = 'block';
+    if (sub) sub.innerHTML = '✓ Tu viens de briser un sceau.<br><span style="color:rgba(100,220,160,.7);">Glisse pour continuer →</span>';
+    // Auto-avance vers slide GPS après 2s
+    setTimeout(() => goObScene(3), 2200);
+  }, 400);
+};
+
+window.obRequestGps = async () => {
+  const btn = document.getElementById('obGpsBtn');
+  const icon = document.getElementById('obGpsIcon');
+  if (!btn) return;
+  btn.textContent = '⏳ Activation…';
+  btn.disabled = true;
+  try {
+    await new Promise((res, rej) => {
+      navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000, maximumAge: 60000 });
+    });
+    if (icon) icon.textContent = '✓';
+    btn.textContent = '✓ GPS activé !';
+    btn.style.borderColor = 'rgba(100,220,160,.7)';
+    btn.style.color = 'rgba(100,220,160,.95)';
+    setTimeout(() => goObScene(4), 1200);
+  } catch(e) {
+    btn.textContent = 'Continuer sans GPS →';
+    btn.disabled = false;
+    btn.onclick = () => goObScene(4);
+  }
+};
 
 function spawnObParticles() {
   const wrap = document.getElementById('obResoParticles');
@@ -7329,21 +7389,39 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         </div>
       </div>
       <div class="ob-scene" id="obScene2" role="group" aria-roledescription="slide" aria-label="Slide 3 : Ouvrir" aria-hidden="true">
-        <div class="ob-scene-visual" aria-hidden="true">
-          <div class="ob-envelope">
-            <div class="ob-env-flap"></div>
-            <div class="ob-env-body">
-              <div class="ob-env-emoji">👻</div>
-              <div class="ob-env-lines"><div class="ob-env-line"></div><div class="ob-env-line ob-line2"></div><div class="ob-env-line ob-line3"></div></div>
-            </div>
+        <div class="ob-scene-visual" aria-hidden="true" style="width:260px;height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+          <div id="obDemoSealed" style="width:220px;background:linear-gradient(160deg,rgba(22,22,34,.98),rgba(14,14,24,.99));border:1px solid rgba(168,180,255,.2);border-radius:16px;padding:16px;text-align:center;transition:opacity .3s;">
+            <div style="font-size:36px;margin-bottom:8px;filter:drop-shadow(0 0 12px rgba(168,180,255,.5));">👻</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;color:rgba(230,225,255,.8);margin-bottom:12px;">Un inconnu a laissé quelque chose ici…</div>
+            <button id="obDemoBtn" onclick="obDemoBreakSeal()" style="width:100%;padding:11px;background:linear-gradient(135deg,rgba(168,180,255,.15),rgba(168,180,255,.06));border:1px solid rgba(168,180,255,.3);border-radius:12px;color:rgba(230,225,255,.95);font-family:'Instrument Sans',sans-serif;font-size:13px;cursor:pointer;touch-action:manipulation;transition:all .2s;">✉ Briser le sceau</button>
+          </div>
+          <div id="obDemoRevealed" style="display:none;width:220px;background:linear-gradient(160deg,rgba(22,22,34,.98),rgba(14,14,24,.99));border:1px solid rgba(100,220,160,.25);border-radius:16px;padding:16px;text-align:center;animation:revealContent .45s cubic-bezier(.25,.8,.25,1) forwards;">
+            <div style="font-size:28px;margin-bottom:8px;">👻</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:rgba(230,225,255,.9);line-height:1.5;">"La vie est trop courte pour ne pas laisser une trace."</div>
+            <div style="font-size:10px;color:rgba(168,180,255,.4);margin-top:8px;letter-spacing:.5px;">Un inconnu · Il y a 3 jours</div>
           </div>
         </div>
         <div class="ob-scene-text">
           <div class="ob-title" data-i18n="ob_title2">Ouvrez</div>
-          <div class="ob-sub" data-i18n="ob_sub2">Chaque message est une<br>enveloppe scellée à dévoiler.</div>
+          <div class="ob-sub" id="obSub2Demo" data-i18n="ob_sub2">Chaque message est une<br>enveloppe scellée à dévoiler.</div>
         </div>
       </div>
-      <div class="ob-scene" id="obScene3" role="group" aria-roledescription="slide" aria-label="Slide 4 : Résonner" aria-hidden="true">
+      <div class="ob-scene" id="obScene3" role="group" aria-roledescription="slide" aria-label="Slide 4 : GPS" aria-hidden="true">
+        <div class="ob-scene-visual" aria-hidden="true" style="width:200px;height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+          <div style="position:relative;width:100px;height:100px;display:flex;align-items:center;justify-content:center;">
+            <div class="ob-glow-ring" style="width:90px;height:90px;"></div>
+            <div class="ob-glow-ring ob-ring2" style="width:120px;height:120px;"></div>
+            <div style="font-size:42px;filter:drop-shadow(0 0 20px rgba(100,220,160,.6));" id="obGpsIcon">📍</div>
+          </div>
+          <button id="obGpsBtn" onclick="obRequestGps()" style="padding:10px 24px;background:linear-gradient(135deg,rgba(100,220,160,.2),rgba(100,220,160,.08));border:1px solid rgba(100,220,160,.4);border-radius:20px;color:rgba(100,220,160,.95);font-family:'Instrument Sans',sans-serif;font-size:13px;cursor:pointer;touch-action:manipulation;transition:all .25s;">📡 Activer la détection</button>
+        </div>
+        <div class="ob-scene-text">
+          <div class="ob-title">Localisez-vous</div>
+          <div class="ob-sub">Le GPS permet de détecter<br>les ghosts autour de vous.</div>
+        </div>
+      </div>
+
+      <div class="ob-scene" id="obScene4" role="group" aria-roledescription="slide" aria-label="Slide 5 : Résonner" aria-hidden="true">
         <div class="ob-scene-visual" aria-hidden="true">
           <div class="ob-reso-wrap">
             <div class="ob-reso-btn">✦ Résonner</div>
@@ -7360,7 +7438,8 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
       <button class="ob-dot active" role="tab" onclick="goObScene(0)" aria-label="Slide 1 : Ghostub" aria-selected="true"></button>
       <button class="ob-dot" role="tab" onclick="goObScene(1)" aria-label="Slide 2 : Découvrir" aria-selected="false"></button>
       <button class="ob-dot" role="tab" onclick="goObScene(2)" aria-label="Slide 3 : Ouvrir" aria-selected="false"></button>
-      <button class="ob-dot" role="tab" onclick="goObScene(3)" aria-label="Slide 4 : Résonner" aria-selected="false"></button>
+      <button class="ob-dot" role="tab" onclick="goObScene(3)" aria-label="Slide 4 : GPS" aria-selected="false"></button>
+      <button class="ob-dot" role="tab" onclick="goObScene(4)" aria-label="Slide 5 : Résonner" aria-selected="false"></button>
     </div>
     <div class="ob-cta" id="obCta" style="opacity:0;pointer-events:none;">
       <button class="btn-primary" onclick="goAuth()" style="margin-bottom:10px;" data-i18n="ob_cta">Entrer dans les lieux ›</button>
