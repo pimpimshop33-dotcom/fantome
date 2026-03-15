@@ -1522,7 +1522,7 @@ onAuthStateChanged(auth, async user => {
     let _firstAccuratePosition = false;
     LocationService.onPositionUpdate(({ lat, lng, accuracy }) => {
       // Ignorer les positions trop imprécises (IP-based = Paris, accuracy > 5000m)
-      if (accuracy && accuracy > 10000) return; // Seuil relevé pour mobile
+      if (accuracy && accuracy > 5000) return;
       // Recentrer la carte si c'est la première position réelle reçue
       if (!userLat && window.map) {
         window.map.setView([lat, lng], 16);
@@ -3488,12 +3488,14 @@ window.loadNearbyGhosts = async () => {
   try {
     await getLocation();
     document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:13px;color:var(--spirit-dim)">' + t.radar_searching + '</span>';
+    window._gpsIsFallback = false;
     document.getElementById('userCoords').textContent =
       userLat.toFixed(4) + '° N, ' + userLng.toFixed(4) + '° E';
   } catch(e) {
     document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:12px;color:rgba(255,100,100,.6)">' + t.radar_no_gps + '</span>';
     // Fallback centre de France si GPS indisponible
     userLat = 46.6034; userLng = 1.8883;
+    window._gpsIsFallback = true;
   }
 
   // ── QUERY FIRESTORE (géohash ~15km) ─────────────────────────────────
@@ -3525,8 +3527,8 @@ window.loadNearbyGhosts = async () => {
       return;
     }
     if (g.lat && g.lng) {
-      g.distance = distanceMeters(userLat, userLng, g.lat, g.lng);
-      if (g.distance <= 5000) nearbyGhosts.push(g);
+      g.distance = window._gpsIsFallback ? 0 : distanceMeters(userLat, userLng, g.lat, g.lng);
+      if (window._gpsIsFallback || g.distance <= 5000) nearbyGhosts.push(g);
     }
   });
   nearbyGhosts.sort((a,b) => a.distance - b.distance);
