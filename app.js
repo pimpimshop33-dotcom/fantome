@@ -1478,18 +1478,6 @@ function buildLeafletMap(centerLat, centerLng, h) {
 }
 
 
-// Géolocalisation par IP en dernier recours (évite le hardcode Arcachon)
-async function _getIpLocation() {
-  try {
-    const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(4000) });
-    const d = await r.json();
-    if (d.latitude && d.longitude) {
-      return { lat: parseFloat(d.latitude), lng: parseFloat(d.longitude) };
-    }
-  } catch(e) {}
-  return null;
-}
-
 function getLocation() {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) { reject((_currentLang === 'en' ? 'Geolocation not supported' : 'Géolocalisation non supportée')); return; }
@@ -3504,14 +3492,8 @@ window.loadNearbyGhosts = async () => {
       userLat.toFixed(4) + '° N, ' + userLng.toFixed(4) + '° E';
   } catch(e) {
     document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:12px;color:rgba(255,100,100,.6)">' + t.radar_no_gps + '</span>';
-    // Tentative géoloc IP avant fallback définitif
-    const _ipLoc = await _getIpLocation();
-    if (_ipLoc) {
-      userLat = _ipLoc.lat; userLng = _ipLoc.lng;
-    } else {
-      // Fallback centre de France si tout échoue — permet quand même de voir l'app
-      userLat = 46.6034; userLng = 1.8883;
-    }
+    // Fallback centre de France si GPS indisponible
+    userLat = 46.6034; userLng = 1.8883;
   }
 
   // ── QUERY FIRESTORE (géohash ~15km) ─────────────────────────────────
@@ -5136,12 +5118,7 @@ window.depositGhost = async () => {
   if (message.length > 280) { err.textContent = t.dep_err_long; return; }
   if (!userLat) {
     // Tenter une dernière fois
-    try {
-      await getLocation();
-    } catch(e) {
-      const _ipLoc2 = await _getIpLocation();
-      if (_ipLoc2) { userLat = _ipLoc2.lat; userLng = _ipLoc2.lng; }
-    }
+    try { await getLocation(); } catch(e) {}
     if (!userLat) { err.textContent = t.dep_err_gps; return; }
   }
   if (!navigator.onLine) { err.textContent = t.dep_err_offline; return; }
