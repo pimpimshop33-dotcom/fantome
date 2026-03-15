@@ -2594,9 +2594,11 @@ function updatePremiumUI() {
   const planEl = document.getElementById('planInfo');
   const codeSection = document.getElementById('codeSection');
   if (!planEl) return;
-  // Lock/unlock ghost dédié
+  // Lock/unlock sections Premium
   const dedLock = document.getElementById('dedicatedLock');
   if (dedLock) dedLock.style.display = isPremium ? 'none' : 'flex';
+  const videoLock = document.getElementById('videoLock');
+  if (videoLock) videoLock.style.display = isPremium ? 'none' : 'flex';
   // Badge avatar Premium
   const avatar = document.getElementById('profileAvatar');
   if (avatar) {
