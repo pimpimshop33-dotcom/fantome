@@ -1481,18 +1481,18 @@ function buildLeafletMap(centerLat, centerLng, h) {
 function getLocation() {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) { reject((_currentLang === 'en' ? 'Geolocation not supported' : 'Géolocalisation non supportée')); return; }
-    // Tentative haute précision
+    // 1. Essayer d'abord une position en cache (instantané, fonctionne si GPS déjà actif)
     navigator.geolocation.getCurrentPosition(
       pos => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; resolve(pos); },
       () => {
-        // Fallback basse précision si haute précision échoue (fréquent sur mobile)
+        // 2. Fallback basse précision avec long timeout (mobile PWA)
         navigator.geolocation.getCurrentPosition(
           pos => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; resolve(pos); },
           err => reject(err),
-          { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 }
+          { enableHighAccuracy: false, timeout: 30000, maximumAge: 300000 }
         );
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
     );
   });
 }
@@ -1530,7 +1530,7 @@ onAuthStateChanged(auth, async user => {
     let _firstAccuratePosition = false;
     LocationService.onPositionUpdate(({ lat, lng, accuracy }) => {
       // Ignorer les positions trop imprécises (IP-based = Paris, accuracy > 5000m)
-      if (accuracy && accuracy > 5000) return;
+      if (accuracy && accuracy > 10000) return; // Seuil relevé pour mobile
       // Recentrer la carte si c'est la première position réelle reçue
       if (!userLat && window.map) {
         window.map.setView([lat, lng], 16);
