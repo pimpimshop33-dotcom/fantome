@@ -2597,8 +2597,16 @@ function updatePremiumUI() {
   // Lock/unlock sections Premium
   const dedLock = document.getElementById('dedicatedLock');
   if (dedLock) dedLock.style.display = isPremium ? 'none' : 'flex';
-  const premiumBanner = document.getElementById('premiumBannerDeposit');
-  if (premiumBanner) premiumBanner.style.display = isPremium ? 'none' : 'block';
+  // Basculer aperçu / contenu pour chaque section Premium
+  const _togglePremiumSection = (freeId, premiumId) => {
+    const freeEl = document.getElementById(freeId);
+    const premEl = document.getElementById(premiumId);
+    if (freeEl) freeEl.style.display = isPremium ? 'none' : 'flex';
+    if (premEl) premEl.style.display = isPremium ? 'block' : 'none';
+  };
+  _togglePremiumSection('videoPreview_free', 'videoContent_premium');
+  _togglePremiumSection('chainPreview_free', 'chainContent_premium');
+  _togglePremiumSection('dedicatedPreview_free', 'dedicatedContent_premium');
   // Badge avatar Premium
   const avatar = document.getElementById('profileAvatar');
   if (avatar) {
