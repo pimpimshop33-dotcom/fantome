@@ -1520,6 +1520,18 @@ onAuthStateChanged(auth, async user => {
         g.distance = dist;
         const card = document.querySelector(`[onclick*="${g.id}"]`);
         if (!card) return;
+        // Mise à jour live de la distance affichée sans re-render
+        const distEl = card.querySelector('.envelope-dist');
+        if (distEl) {
+          distEl.textContent = formatDistance(dist);
+          if (dist <= 50) {
+            distEl.style.cssText = 'background:rgba(100,220,160,.1);border:1px solid rgba(100,220,160,.25);color:rgba(100,220,160,.9);';
+          } else if (dist <= 200) {
+            distEl.style.cssText = 'background:rgba(255,200,80,.08);border:1px solid rgba(255,200,80,.2);color:rgba(255,200,80,.8);';
+          } else {
+            distEl.style.cssText = 'background:rgba(168,180,255,.08);border:1px solid rgba(168,180,255,.12);color:rgba(168,180,255,.6);';
+          }
+        }
         if (dist <= 10) {
           card.style.boxShadow = '0 0 24px rgba(168,180,255,.45)';
           card.style.borderColor = 'rgba(168,180,255,.7)';
