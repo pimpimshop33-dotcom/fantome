@@ -1481,18 +1481,10 @@ function buildLeafletMap(centerLat, centerLng, h) {
 function getLocation() {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) { reject((_currentLang === 'en' ? 'Geolocation not supported' : 'Géolocalisation non supportée')); return; }
-    // 1. Essayer d'abord une position en cache (instantané, fonctionne si GPS déjà actif)
     navigator.geolocation.getCurrentPosition(
       pos => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; resolve(pos); },
-      () => {
-        // 2. Fallback basse précision avec long timeout (mobile PWA)
-        navigator.geolocation.getCurrentPosition(
-          pos => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; resolve(pos); },
-          err => reject(err),
-          { enableHighAccuracy: false, timeout: 30000, maximumAge: 300000 }
-        );
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+      err => reject(err),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 }
     );
   });
 }
