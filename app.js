@@ -6400,6 +6400,7 @@ function setWizardStep(n) {
   });
   document.querySelector('#screenDeposit .scroll').scrollTop = 0;
   if (n === 2) setTimeout(_initDepositMiniMap, 80);
+  if (n === 3) updatePremiumUI(); // Basculer aperçu/contenu Premium à l'affichage de l'étape 3
 }
 
 window.pickEmoji = (el, emoji) => {
