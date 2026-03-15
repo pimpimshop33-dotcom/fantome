@@ -5730,6 +5730,76 @@ window.wizardNext = (step) => {
 
 window.wizardBack = (step) => { setWizardStep(step - 1); };
 
+
+// ── DEPOSIT MINI-MAP ─────────────────────────────────────
+let _depositMiniMap = null;
+let _depositRadiusCircle = null;
+
+function _initDepositMiniMap() {
+  if (!userLat || !userLng) return;
+  const loader = document.getElementById('depositMiniLoader');
+  const container = document.getElementById('depositMiniMap');
+  if (!container) return;
+
+  // Invalider si déjà initialisé (retour arrière)
+  if (_depositMiniMap) {
+    _depositMiniMap.invalidateSize();
+    _depositMiniMap.setView([userLat, userLng], 17);
+    _updateRadiusCircle();
+    if (loader) loader.style.display = 'none';
+    return;
+  }
+
+  _depositMiniMap = L.map('depositMiniMap', {
+    zoomControl: false,
+    attributionControl: false,
+    dragging: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    touchZoom: false
+  }).setView([userLat, userLng], 17);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 20
+  }).addTo(_depositMiniMap);
+
+  // Marqueur position
+  L.divIcon && L.marker([userLat, userLng], {
+    icon: L.divIcon({
+      html: '<div style="width:12px;height:12px;background:rgba(168,180,255,.9);border-radius:50%;border:2px solid rgba(255,255,255,.8);box-shadow:0 0 12px rgba(168,180,255,.7);"></div>',
+      iconSize: [12, 12], iconAnchor: [6, 6], className: ''
+    })
+  }).addTo(_depositMiniMap);
+
+  _updateRadiusCircle();
+  if (loader) loader.style.display = 'none';
+}
+
+function _updateRadiusCircle() {
+  if (!_depositMiniMap || !userLat || !userLng) return;
+  const activeBtn = document.querySelector('.radius-btn.active');
+  const radiusStr = activeBtn ? activeBtn.textContent : '10m';
+  const radiusM = Math.max(3, parseInt(radiusStr) || 10);
+
+  if (_depositRadiusCircle) _depositMiniMap.removeLayer(_depositRadiusCircle);
+  _depositRadiusCircle = L.circle([userLat, userLng], {
+    radius: radiusM,
+    color: 'rgba(168,180,255,.8)',
+    fillColor: 'rgba(168,180,255,.12)',
+    fillOpacity: 1,
+    weight: 1.5
+  }).addTo(_depositMiniMap);
+
+  // Zoom adapté au rayon
+  const zoom = radiusM <= 3 ? 19 : radiusM <= 10 ? 18 : 17;
+  _depositMiniMap.setView([userLat, userLng], zoom);
+}
+
+window._selectRadius = (btn) => {
+  selectType(btn);           // comportement existant inchangé
+  _updateRadiusCircle();     // mise à jour du cercle
+};
+
 function setWizardStep(n) {
   [1,2,3].forEach(i => {
     document.getElementById('wizardStep' + i).style.display = i === n ? 'block' : 'none';
@@ -5744,6 +5814,7 @@ function setWizardStep(n) {
     if (dot) dot.textContent = i < n ? '✓' : String(i);
   });
   document.querySelector('#screenDeposit .scroll').scrollTop = 0;
+  if (n === 2) setTimeout(_initDepositMiniMap, 80);
 }
 
 window.pickEmoji = (el, emoji) => {
@@ -7335,12 +7406,9 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
       <div class="wizard-pane" id="wizardStep2" style="display:none;">
         <div class="wizard-pane-title" data-i18n="dep_pane2_title">Où et combien de temps ?</div>
         <div class="wizard-pane-sub" data-i18n="dep_pane2_sub">Le fantôme sera ancré ici.</div>
-        <div class="deposit-map" style="margin-bottom:14px;" role="img" aria-label="Carte de votre position actuelle">
-          <div class="map-grid" aria-hidden="true"></div>
-          <div class="map-pulse" aria-hidden="true"></div>
-          <div class="map-pulse2" aria-hidden="true"></div>
-          <div class="map-pin" aria-hidden="true">📍</div>
-          <div class="map-loc" id="userCoords">📡 Localisation en cours…</div>
+        <div style="width:100%;height:180px;border-radius:16px;overflow:hidden;border:1px solid rgba(168,180,255,.15);margin-bottom:14px;position:relative;" role="img" aria-label="Carte de votre position actuelle">
+          <div id="depositMiniMap" style="position:absolute;inset:0;z-index:1;"></div>
+          <div id="depositMiniLoader" style="position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;background:rgba(6,4,16,.8);font-size:12px;color:rgba(168,180,255,.5);letter-spacing:.5px;">📡 Localisation…</div>
         </div>
         <div class="form-group" style="margin-bottom:12px;">
           <label class="form-label" for="depositLocation" data-i18n="dep_loc_label">Nom du lieu</label>
@@ -7370,9 +7438,9 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <div id="step2RadiusWrap" class="form-group" style="margin-bottom:0;">
           <label class="form-label" data-i18n="dep_radius_label">Rayon de détection</label>
           <div class="radius-selector" role="group" aria-label="Rayon de détection">
-            <button class="radius-btn" onclick="selectType(this)" aria-pressed="false">3m</button>
-            <button class="radius-btn active" onclick="selectType(this)" aria-pressed="true">10m</button>
-            <button class="radius-btn" onclick="selectType(this)" aria-pressed="false">50m</button>
+            <button class="radius-btn" onclick="_selectRadius(this)" aria-pressed="false">3m</button>
+            <button class="radius-btn active" onclick="_selectRadius(this)" aria-pressed="true">10m</button>
+            <button class="radius-btn" onclick="_selectRadius(this)" aria-pressed="false">50m</button>
           </div>
         </div>
         <!-- Condition d'ouverture — masquée en mode Commerce -->
