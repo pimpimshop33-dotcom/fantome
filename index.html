@@ -2331,13 +2331,27 @@ async function refreshProfileStats() {
   const firstReaderCount = parseInt(localStorage.getItem('ghostub_first_reader') || '0');
   animateStatNumber('statFirstReader', firstReaderCount);
   try {
-    const snap = await getDocs(query(collection(db, 'ghosts'), where('authorUid','==', currentUser.uid)));
+    // Lire d'abord les compteurs dénormalisés (1 lecture) si disponibles
+    const userRef = doc(db, 'users', currentUser.uid);
+    const userSnap = await getDoc(userRef);
+    const userData = userSnap.exists() ? userSnap.data() : {};
     const _depKey2 = 'ghostub_total_deposited_' + currentUser.uid;
     const _localDep = parseInt(localStorage.getItem(_depKey2) || '0');
-    animateStatNumber('statDeposited', Math.max(snap.size, _localDep));
-    let totalReso = 0;
-    snap.forEach(d => { totalReso += d.data().resonances || 0; });
-    animateStatNumber('statResonances', totalReso);
+    if (userData.ghostCount != null) {
+      animateStatNumber('statDeposited', Math.max(userData.ghostCount, _localDep));
+    } else {
+      // Fallback : compter les docs (progressivement remplacé par ghostCount)
+      const snap = await getDocs(query(collection(db, 'ghosts'), where('authorUid','==', currentUser.uid), limit(100)));
+      animateStatNumber('statDeposited', Math.max(snap.size, _localDep));
+    }
+    if (userData.totalResonances != null) {
+      animateStatNumber('statResonances', userData.totalResonances);
+    } else {
+      const snap2 = await getDocs(query(collection(db, 'ghosts'), where('authorUid','==', currentUser.uid), limit(100)));
+      let totalReso = 0;
+      snap2.forEach(d => { totalReso += d.data().resonances || 0; });
+      animateStatNumber('statResonances', totalReso);
+    }
   } catch(e) { console.warn('refreshProfileStats:', e); }
 }
 
@@ -2524,7 +2538,7 @@ window.deleteOneGhost = async (ghostId) => {
   if (!confirmed) return;
   try {
     // Supprimer les réponses associées
-    const replies = await getDocs(query(collection(db, 'replies'), where('ghostId', '==', ghostId)));
+    const replies = await getDocs(query(collection(db, 'replies'), where('ghostId', '==', ghostId), limit(50)));
     const dels = replies.docs.map(d => deleteDoc(doc(db, 'replies', d.id)));
     await Promise.all([...dels, deleteDoc(doc(db, 'ghosts', ghostId))]);
     // Retirer l'élément de la liste sans recharger
@@ -2695,7 +2709,7 @@ window.submitReport = async (reason) => {
     localStorage.setItem(key, '1');
     showToast('success', t.toast_report_sent);
     await updateDoc(doc(db, 'ghosts', ghostId), { reportCount: increment(1) });
-    const ghostDoc = await getDocs(query(collection(db, 'reports'), where('ghostId', '==', ghostId)));
+    const ghostDoc = await getDocs(query(collection(db, 'reports'), where('ghostId', '==', ghostId), limit(1)));
     if (ghostDoc.size >= REPORT_THRESHOLD) {
       await deleteDoc(doc(db, 'ghosts', ghostId));
       showScreen('screenRadar');
@@ -3241,19 +3255,19 @@ window.deleteMyGhosts = async () => {
   btn.disabled = true;
   try {
     // Récupérer mes fantômes
-    const snap = await getDocs(query(collection(db, 'ghosts'), where('authorUid', '==', currentUser.uid)));
+    const snap = await getDocs(query(collection(db, 'ghosts'), where('authorUid', '==', currentUser.uid), limit(50)));
     const ghostIds = snap.docs.map(d => d.id);
     const dels = snap.docs.map(d => deleteDoc(doc(db, 'ghosts', d.id)));
 
     // FIX: Supprimer mes réponses ET toutes les réponses sur mes fantômes
-    const myReplies = await getDocs(query(collection(db, 'replies'), where('authorUid', '==', currentUser.uid)));
+    const myReplies = await getDocs(query(collection(db, 'replies'), where('authorUid', '==', currentUser.uid), limit(100)));
     const rDels = myReplies.docs.map(d => deleteDoc(doc(db, 'replies', d.id)));
 
     // Supprimer aussi les réponses d'autres utilisateurs sur mes fantômes
     const replyDelsOnMyGhosts = [];
     for (const gid of ghostIds.slice(0, 20)) { // limiter à 20 pour éviter trop d'appels
       try {
-        const r = await getDocs(query(collection(db, 'replies'), where('ghostId', '==', gid)));
+        const r = await getDocs(query(collection(db, 'replies'), where('ghostId', '==', gid), limit(20)));
         r.docs.forEach(d => replyDelsOnMyGhosts.push(deleteDoc(doc(db, 'replies', d.id))));
       } catch(e) {}
     }
@@ -3279,11 +3293,11 @@ window.exportMyData = async () => {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Préparation…'; }
   try {
     // 1. Mes fantômes déposés
-    const ghostsSnap = await getDocs(query(collection(db, 'ghosts'), where('authorUid', '==', currentUser.uid)));
+    const ghostsSnap = await getDocs(query(collection(db, 'ghosts'), where('authorUid', '==', currentUser.uid), limit(200)));
     const ghosts = ghostsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     // 2. Mes réponses envoyées
-    const repliesSnap = await getDocs(query(collection(db, 'replies'), where('authorUid', '==', currentUser.uid)));
+    const repliesSnap = await getDocs(query(collection(db, 'replies'), where('authorUid', '==', currentUser.uid), limit(200)));
     const replies = repliesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     // 3. Mes découvertes (localStorage)
@@ -4902,6 +4916,12 @@ window.resonate = async () => {
   btn.textContent = t.detail_reso_sent;
   markResonatedToday(selectedGhost.id);
   await updateDoc(doc(db, 'ghosts', selectedGhost.id), { resonances: increment(1) });
+  // Compteur dénormalisé sur l'auteur du ghost
+  if (selectedGhost.authorUid) {
+    setDoc(doc(db, 'users', selectedGhost.authorUid),
+      { totalResonances: increment(1) }, { merge: true }
+    ).catch(e => console.warn('totalResonances increment:', e));
+  }
   Analytics.track('resonate');
 };
 
@@ -5032,6 +5052,10 @@ window.depositGhost = async () => {
       updateDoc(doc(db, 'ghosts', ghostId), { videoUrl }).catch(e => console.warn('videoUrl update:', e));
     }
     await WorldService.recordDepositTimestamp(currentUser.uid);
+    // Compteur dénormalisé — 1 lecture au lieu de N pour refreshProfileStats
+    setDoc(doc(db, 'users', currentUser.uid),
+      { ghostCount: increment(1) }, { merge: true }
+    ).catch(e => console.warn('ghostCount increment:', e));
     document.getElementById('depositMsg').value = '';
     document.getElementById('depositLocation').value = '';
     document.getElementById('chainHint').value = '';
