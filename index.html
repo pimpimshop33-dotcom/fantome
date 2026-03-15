@@ -2554,6 +2554,9 @@ function updatePremiumUI() {
   const planEl = document.getElementById('planInfo');
   const codeSection = document.getElementById('codeSection');
   if (!planEl) return;
+  // Lock/unlock ghost dédié
+  const dedLock = document.getElementById('dedicatedLock');
+  if (dedLock) dedLock.style.display = isPremium ? 'none' : 'flex';
   // Badge avatar Premium
   const avatar = document.getElementById('profileAvatar');
   if (avatar) {
@@ -4358,6 +4361,26 @@ window.openGhost = async (id) => {
   // FIX: isLocked vérifie la distance calculée (ghostDist)
   const isLocked = selectedGhost.secret && ghostDist > 3 && !isOwner;
 
+  // ── Ghost dédié : vérifier si l'utilisateur est le destinataire ──
+  if (selectedGhost.dedicatedTo && !isOwner) {
+    const uid = currentUser?.uid || '';
+    const email = currentUser?.email || '';
+    const target = selectedGhost.dedicatedTo.trim();
+    const isRecipient = target === uid || target === email || target === '';
+    if (!isRecipient) {
+      showScreen('screenDetail');
+      setNav('nav-radar');
+      showBlockedOverlay({
+        ok: false,
+        titleKey: 'blocked_dedicated_title',
+        subKey: 'blocked_dedicated_sub',
+        title: '💌 Message personnel',
+        sub: 'Ce ghost a été laissé pour quelqu’un d’autre.',
+        showTimer: false
+      });
+      return;
+    }
+  }
   // ── Vérifier la condition d'ouverture (sauf pour le propriétaire) ──
   resetBlockedOverlay();
   if (!isOwner) {
@@ -4794,6 +4817,7 @@ window.depositGhost = async () => {
     const ghostData = {
       message, location: location || 'Lieu sans nom', emoji, duration, radius, maxOpenCount: maxOpenCount || 0,
       anonymous: anon, secret: secret || false,
+      dedicatedTo: (isPremium && document.getElementById('dedicatedUidInput')?.value.trim()) || null,
       audioUrl: audioUrl || null, photoUrl: photoUrl || null, videoUrl: videoUrl || null,
       chainHint: (isPremium && chainHint) || null,
       chainLat: chainNext ? chainNext.lat : null,
@@ -4831,6 +4855,15 @@ window.depositGhost = async () => {
     depositBtn.disabled = false;
     clearAudio(); clearPhoto(); clearVideo();
     document.getElementById('depositSuccess').classList.add('show');
+    // Ghost dédié sans UID : afficher le lien de partage
+    if (isPremium && !document.getElementById('dedicatedUidInput')?.value.trim()) {
+      const _dedEl = document.getElementById('successSubText');
+      if (_dedEl && ghostId) {
+        const _link = 'https://pimpimshop33-dotcom.github.io/ghostub/?ghost=' + ghostId + '&dedicated=1&ref=' + (currentUser.uid.slice(0,8));
+        window._lastDedicatedLink = _link;
+        _dedEl.innerHTML = 'Ton ghost est ancr\u00e9.<br><span style="font-size:11px;opacity:.7;">Partage ce lien pour le d\u00e9dier :</span><br><button onclick="navigator.clipboard.writeText(window._lastDedicatedLink).then(()=>showToast(\'link\',\'Lien copi\u00e9 !\'))" style="font-size:10px;color:rgba(168,180,255,.8);word-break:break-all;background:none;border:none;cursor:pointer;text-align:left;padding:4px 0;">' + _link + '</button>';
+      }
+    }
     // Incrémenter compteur cumulatif (persiste même si ghost supprimé/expiré)
     const _depKey = 'ghostub_total_deposited_' + (currentUser ? currentUser.uid : 'anon');
     localStorage.setItem(_depKey, (parseInt(localStorage.getItem(_depKey) || '0') + 1).toString());
@@ -7794,6 +7827,22 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
             <div style="font-size:24px;" aria-hidden="true">🔒</div>
             <div style="font-size:12px;color:var(--ether);" data-i18n="premium_feature">Fonctionnalité Premium</div>
             <div style="font-size:11px;color:var(--spirit-dim);" data-i18n="premium_activate">Activer un code →</div>
+          </div>
+        </div>
+        <!-- Ghost dédié — Premium -->
+        <div class="form-group" id="step3DedicatedWrap" style="margin-bottom:14px;position:relative;">
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>💌 Pour quelqu’un (optionnel)</span>
+            <span style="font-size:9px;background:rgba(255,200,80,.15);border:1px solid rgba(255,200,80,.3);border-radius:8px;padding:2px 6px;color:rgba(255,200,80,.8);">👑 Premium</span>
+          </label>
+          <div id="dedicatedContent" style="background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.1);border-radius:14px;padding:12px;">
+            <div style="font-size:12px;color:var(--warm-dim);margin-bottom:10px;line-height:1.5;">Seul le destinataire pourra ouvrir ce ghost. Partage-lui le code après le dépôt.</div>
+            <input class="form-input" id="dedicatedUidInput" type="text" placeholder="UID ou email du destinataire (optionnel)" style="font-size:13px !important;margin-bottom:8px;" aria-label="UID du destinataire">
+            <div style="font-size:10px;color:var(--spirit-dim);">Laisse vide pour générer un code QR après le dépôt.</div>
+          </div>
+          <div id="dedicatedLock" style="display:none;position:absolute;inset:0;background:rgba(6,6,8,.85);border-radius:14px;flex-direction:column;align-items:center;justify-content:center;gap:6px;backdrop-filter:blur(3px);cursor:pointer;" onclick="showScreen('screenProfile');setNav('nav-profile')" role="button" tabindex="0" aria-label="Fonctionnalité Premium">
+            <div style="font-size:24px;" aria-hidden="true">🔒</div>
+            <div style="font-size:12px;color:var(--ether);">Fonctionnalité Premium</div>
           </div>
         </div>
         <div class="deposit-error" id="depositError" role="alert" aria-live="polite"></div>
