@@ -3493,9 +3493,12 @@ window.loadNearbyGhosts = async () => {
       userLat.toFixed(4) + '° N, ' + userLng.toFixed(4) + '° E';
   } catch(e) {
     document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:12px;color:rgba(255,100,100,.6)">' + t.radar_no_gps + '</span>';
-    // Fallback centre de France si GPS indisponible
-    userLat = 46.6034; userLng = 1.8883;
-    window._gpsIsFallback = true;
+    // Utiliser la dernière position connue si disponible, sinon centre de France
+    if (!userLat || !userLng) {
+      userLat = 46.6034; userLng = 1.8883;
+      window._gpsIsFallback = true;
+    }
+    // Si on a déjà une position réelle, on l'utilise sans marquer comme fallback
   }
 
   // ── QUERY FIRESTORE (géohash ~15km) ─────────────────────────────────
