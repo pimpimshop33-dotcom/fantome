@@ -2329,13 +2329,26 @@ async function refreshProfileStats() {
   const firstReaderCount = parseInt(localStorage.getItem('ghostub_first_reader') || '0');
   animateStatNumber('statFirstReader', firstReaderCount);
   try {
-    const snap = await getDocs(query(collection(db, COLL.GHOSTS), where('authorUid','==', currentUser.uid)));
+    // 1 lecture Firestore sur users/{uid} pour les compteurs dénormalisés
+    const userSnap = await getDoc(doc(db, COLL.USERS, currentUser.uid));
+    const userData = userSnap.exists() ? userSnap.data() : {};
     const _depKey2 = 'ghostub_total_deposited_' + currentUser.uid;
     const _localDep = parseInt(localStorage.getItem(_depKey2) || '0');
-    animateStatNumber('statDeposited', Math.max(snap.size, _localDep));
-    let totalReso = 0;
-    snap.forEach(d => { totalReso += d.data().resonances || 0; });
-    animateStatNumber('statResonances', totalReso);
+    if (userData.ghostCount != null) {
+      animateStatNumber('statDeposited', Math.max(userData.ghostCount, _localDep));
+    } else {
+      // Fallback : compter les docs (migration douce)
+      const snap = await getDocs(query(collection(db, COLL.GHOSTS), where('authorUid','==', currentUser.uid), limit(100)));
+      animateStatNumber('statDeposited', Math.max(snap.size, _localDep));
+    }
+    if (userData.totalResonances != null) {
+      animateStatNumber('statResonances', userData.totalResonances);
+    } else {
+      const snap2 = await getDocs(query(collection(db, COLL.GHOSTS), where('authorUid','==', currentUser.uid), limit(100)));
+      let totalReso = 0;
+      snap2.forEach(d => { totalReso += d.data().resonances || 0; });
+      animateStatNumber('statResonances', totalReso);
+    }
   } catch(e) { console.warn('refreshProfileStats:', e); }
 }
 
@@ -2584,6 +2597,26 @@ function updatePremiumUI() {
   }
 }
 
+
+
+// ── VÉRIFICATION PREMIUM SERVEUR ─────────────────────────
+// Relit Firestore avant toute opération Premium critique
+// Empêche le contournement via DevTools
+async function _verifyPremiumServer() {
+  if (!currentUser) return false;
+  try {
+    const snap = await getDoc(doc(db, COLL.USERS, currentUser.uid));
+    const serverPremium = snap.exists() && snap.data().premium === true;
+    if (serverPremium !== isPremium) {
+      isPremium = serverPremium; // sync si désynchronisé
+      updatePremiumUI();
+    }
+    return serverPremium;
+  } catch(e) {
+    console.warn('_verifyPremiumServer:', e);
+    return isPremium; // fallback sur valeur locale si réseau indispo
+  }
+}
 
 // ── STRIPE CHECKOUT ──────────────────────────────────────
 // Stub — à connecter à la Cloud Function createCheckoutSession quand Stripe est prêt
@@ -4910,6 +4943,11 @@ window.resonate = async () => {
   btn.textContent = t.detail_reso_sent;
   markResonatedToday(selectedGhost.id);
   await updateDoc(doc(db, COLL.GHOSTS, selectedGhost.id), { resonances: increment(1) });
+  // Compteur dénormalisé totalResonances sur l'auteur
+  if (selectedGhost.authorUid) {
+    setDoc(doc(db, COLL.USERS, selectedGhost.authorUid), { totalResonances: increment(1) }, { merge: true })
+      .catch(e => console.warn('totalResonances increment:', e));
+  }
   Analytics.track('resonate');
 };
 
@@ -4997,6 +5035,8 @@ window.depositGhost = async () => {
   if (!navigator.onLine) { err.textContent = t.dep_err_offline; return; }
 
   err.textContent = '';
+  // Vérification Premium serveur avant opération critique
+  if (isPremium) await _verifyPremiumServer();
   // Cooldown : 0 pour Premium, 15min pour Free
   if (!isPremium) {
     const cooldownCheck = await WorldService.checkDepositCooldown(currentUser.uid, isExpired);
@@ -5040,6 +5080,9 @@ window.depositGhost = async () => {
       updateDoc(doc(db, COLL.GHOSTS, ghostId), { videoUrl }).catch(e => console.warn('videoUrl update:', e));
     }
     await WorldService.recordDepositTimestamp(currentUser.uid);
+    // Compteur dénormalisé ghostCount
+    setDoc(doc(db, COLL.USERS, currentUser.uid), { ghostCount: increment(1) }, { merge: true })
+      .catch(e => console.warn('ghostCount increment:', e));
     document.getElementById('depositMsg').value = '';
     document.getElementById('depositLocation').value = '';
     document.getElementById('chainHint').value = '';
