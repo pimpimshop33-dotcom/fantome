@@ -1688,6 +1688,7 @@ function showNotif(title, body) {
 
 let notifCheckedGhosts = new Set();
 let _checkNewGhostsTimer = null;
+let _lastNotifTime = 0; // anti-spam : max 1 notif toutes les 10 min
 async function checkNewGhosts() {
   if (!currentUser || !userLat) return;
   // FIX: Debounce — ne pas appeler plus d'une fois par minute
@@ -1704,7 +1705,11 @@ async function checkNewGhosts() {
       if (dist <= 5000) {
         notifCheckedGhosts.add(g.id);
         if (g.createdAt && (Date.now() - g.createdAt.seconds * 1000) < 600000) {
-          showNotif(t.notif_new_ghost_title, `À ${formatDistance(dist)} de vous — ${escapeHTML(g.location || t.detail_location_unknown)}`);
+          const _now = Date.now();
+          if (_now - _lastNotifTime > 600000) {
+            _lastNotifTime = _now;
+            showNotif(t.notif_new_ghost_title, `À ${formatDistance(dist)} de vous — ${escapeHTML(g.location || t.detail_location_unknown)}`);
+          }
         }
       }
     });
@@ -4005,8 +4010,13 @@ function renderGhostList() {
           <div class="envelope-hint">${hintText}</div>
         </div>
         <div class="envelope-meta">
-          <div class="envelope-dist">${formatDistance(g.distance)}</div>
+          <div class="envelope-dist" style="${
+            g.distance <= 50  ? 'background:rgba(100,220,160,.1);border:1px solid rgba(100,220,160,.25);color:rgba(100,220,160,.9);' :
+            g.distance <= 200 ? 'background:rgba(255,200,80,.08);border:1px solid rgba(255,200,80,.2);color:rgba(255,200,80,.8);' :
+                                'background:rgba(168,180,255,.08);border:1px solid rgba(168,180,255,.12);color:rgba(168,180,255,.6);'
+          }">${formatDistance(g.distance)}</div>
           <div class="envelope-reso" style="${resoStyle}" aria-label="${resoCount} résonances">${resoStars}</div>
+          ${g.openCount > 0 ? `<div class="envelope-views" aria-label="${g.openCount} vues">👁 ${g.openCount}</div>` : ''}
         </div>
       </div>
       <div class="envelope-footer">
@@ -4572,9 +4582,11 @@ window.depositGhost = async () => {
   if (!navigator.onLine) { err.textContent = t.dep_err_offline; return; }
 
   err.textContent = '';
-  // TEST MODE — cooldown désactivé (à réactiver avant prod)
-  // const cooldownCheck = await WorldService.checkDepositCooldown(currentUser.uid, isExpired);
-  // if (!cooldownCheck.ok) { err.textContent = cooldownCheck.reason; return; }
+  // Cooldown : 0 pour Premium, 15min pour Free
+  if (!isPremium) {
+    const cooldownCheck = await WorldService.checkDepositCooldown(currentUser.uid, isExpired);
+    if (!cooldownCheck.ok) { err.textContent = cooldownCheck.reason; return; }
+  }
   const depositBtn = document.getElementById('depositBtn');
   const hasMedia = !!(window._pendingAudioBlob || window._pendingPhotoFile || window._pendingVideoFile);
   setLoading(depositBtn, true);
@@ -6197,10 +6209,11 @@ button, [role="button"] {
 .envelope-location{font-size:13px;font-weight:500;color:var(--ether);letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;}
 .envelope-hint{font-family:'Cormorant Garamond',serif;font-size:13px;font-style:italic;color:rgba(240,232,216,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .envelope-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;}
-.envelope-dist{font-size:10px;background:rgba(168,180,255,.08);border:1px solid rgba(168,180,255,.12);border-radius:20px;padding:2px 8px;color:rgba(168,180,255,.6);}
+.envelope-dist{font-size:10px;border-radius:20px;padding:2px 8px;font-weight:500;}
 .envelope-reso{font-size:10px;color:rgba(168,180,255,.35);}
 .envelope-footer{display:flex;gap:5px;padding:0 14px 10px;}
 .envelope-tag{font-size:9px;letter-spacing:.4px;background:rgba(168,180,255,.05);border:1px solid rgba(168,180,255,.1);border-radius:20px;padding:2px 8px;color:rgba(168,180,255,.4);}
+.envelope-views{font-size:9px;color:rgba(168,180,255,.35);margin-top:1px;}
 .secret-badge{font-size:8px;letter-spacing:.8px;background:rgba(168,100,255,.2);border:1px solid rgba(168,100,255,.4);border-radius:6px;padding:1px 5px;color:rgba(200,150,255,.9);vertical-align:middle;}
 .ghost-envelope-secret{border-color:rgba(168,100,255,.25) !important;background:linear-gradient(160deg,rgba(28,18,40,0.98) 0%,rgba(18,12,28,0.99) 100%) !important;}
 .ghost-envelope-secret .envelope-flap{background:linear-gradient(180deg,rgba(168,100,255,.15) 0%,rgba(168,100,255,.05) 100%);border-bottom-color:rgba(168,100,255,.2);}
