@@ -4696,7 +4696,10 @@ function _checkDistanceThenOpen() {
       );
       const ghostRadiusStr = selectedGhost.radius || '50m';
       const ghostRadius = Math.max(20, parseInt(ghostRadiusStr) || 50);
-      if (dist <= ghostRadius) {
+      // Prendre en compte l'imprécision GPS : si dist - accuracy <= ghostRadius, on laisse passer
+      const accuracy = pos.coords.accuracy || 0;
+      const effectiveDist = Math.max(0, dist - accuracy * 0.5);
+      if (effectiveDist <= ghostRadius) {
         hint.textContent = origHint;
         _doOpenEnvelope();
       } else {
@@ -4722,7 +4725,7 @@ function _checkDistanceThenOpen() {
         setTimeout(() => { hint.textContent = origHint; }, 4000);
       }
     },
-    { enableHighAccuracy: true, timeout: 7000, maximumAge: 30000 }
+    { enableHighAccuracy: true, timeout: 7000, maximumAge: 5000 }
   );
 };
 
@@ -5887,7 +5890,7 @@ button, [role="button"] {
 .back-btn:hover{color:var(--spirit);}
 .detail-location{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--spirit-dim);margin-bottom:4px;}
 .detail-distance{font-size:12px;color:var(--spirit-dim);margin-bottom:16px;}
-.detail-message{font-family:'Cormorant Garamond',serif;font-size:26px;font-style:italic;font-weight:400;color:var(--ether);line-height:1.6;background:var(--ghost);border:1px solid var(--border);border-left:3px solid var(--spirit);border-radius:0 16px 16px 0;padding:24px 22px;margin-bottom:24px;letter-spacing:.01em;}
+.detail-message{font-family:'Cormorant Garamond',serif;font-size:32px;font-style:italic;font-weight:400;color:var(--ether);line-height:1.6;background:var(--ghost);border:1px solid var(--border);border-left:3px solid var(--spirit);border-radius:0 16px 16px 0;padding:24px 22px;margin-bottom:24px;letter-spacing:.01em;}
 .detail-info{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);}
 .detail-badge{display:flex;align-items:center;gap:5px;background:var(--ghost);border:1px solid var(--border);border-radius:20px;padding:5px 10px;font-size:11px;color:var(--warm-dim);}
 .resonance-btn{width:100%;padding:13px;background:var(--ghost);border:1px solid var(--border-bright);border-radius:13px;color:var(--spirit);font-family:'Instrument Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;margin-bottom:8px;touch-action:manipulation;}
