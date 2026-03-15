@@ -1308,20 +1308,11 @@ window.renderStaticMap = () => {
 };
 
 
-// Met à jour les marqueurs sans reconstruire la carte
+// Met à jour la vue carte sans reconstruire
 function _updateMapMarkers(centerLat, centerLng) {
   if (!map) return;
-  // Supprimer les anciens marqueurs (garder uniquement les layers de tuiles)
-  map.eachLayer(layer => {
-    if (layer instanceof L.Marker || layer instanceof L.Circle) {
-      map.removeLayer(layer);
-    }
-  });
-  // Ré-ajouter position utilisateur
-  const userIcon = L.divIcon({ html: '<div class="user-map-dot"></div>', iconSize: [16,16], iconAnchor: [8,8], className: '' });
-  L.marker([centerLat, centerLng], { icon: userIcon }).addTo(map);
-  // Ré-ajouter les ghosts (déléguer au reste de buildLeafletMap via flag)
-  _addGhostMarkersToMap(centerLat, centerLng);
+  map.setView([centerLat, centerLng], map.getZoom());
+  setTimeout(() => map.invalidateSize(), 100);
 }
 
 // ── MODE CHASSE ─────────────────────────────────────────
