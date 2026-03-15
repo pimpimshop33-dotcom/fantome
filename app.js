@@ -132,6 +132,11 @@ const LANGS = {
     dep_err_long: 'Message trop long (280 caractères max).',
     dep_err_gps: 'Géolocalisation requise — activez-la dans votre navigateur.',
     dep_err_offline: 'Vous êtes hors ligne — reconnectez-vous pour déposer.',
+    misc_error_generic: 'Erreur — réessaie plus tard.',
+    stripe_btn_premium: '✦ Devenir Chasseur Premium',
+    stripe_btn_commerce: '🏪 Activer le Plan Commerce',
+    stripe_pending_premium: 'Paiement en ligne bientôt disponible — utilise un code pour l’instant.',
+    stripe_pending_commerce: 'Paiement Commerce bientôt disponible — contacte contact@ghostub.app',
     dep_err_spam: '🏪 Pour les messages commerciaux, utilisez le Mode Commerce Premium.',
     dep_record_btn: 'Enregistrer un message vocal',
     dep_record_label: 'Enregistrer',
@@ -595,6 +600,11 @@ const LANGS = {
     dep_err_long: 'Message too long (280 chars max).',
     dep_err_gps: 'Location required — enable it in your browser.',
     dep_err_offline: 'You\'re offline — reconnect to drop a ghost.',
+    misc_error_generic: 'Error — please try again later.',
+    stripe_btn_premium: '✦ Become a Premium Hunter',
+    stripe_btn_commerce: '🏪 Activate Commerce Plan',
+    stripe_pending_premium: 'Online payment coming soon — use a code for now.',
+    stripe_pending_commerce: 'Commerce payment coming soon — contact contact@ghostub.app',
     dep_err_spam: '🏪 For commercial messages, use the Premium Commerce Mode.',
     dep_record_btn: 'Record a voice message',
     dep_record_label: 'Record',
@@ -2254,17 +2264,26 @@ function _renderStreak() {
 
 // ── MILESTONES ──────────────────────────────────────────
 const MILESTONES = [1,5,10,25,50,100];
-const RANKS = [
+const RANKS_FR = [
   {min:0,   label:'Novice',    icon:'🌫️'},
   {min:5,   label:'Vagabond',  icon:'🚶'},
   {min:15,  label:'Spectre',   icon:'👻'},
   {min:40,  label:'Chasseur',  icon:'🔍'},
   {min:80,  label:'Légende',   icon:'⭐'},
 ];
+const RANKS_EN = [
+  {min:0,   label:'Novice',    icon:'🌫️'},
+  {min:5,   label:'Wanderer',  icon:'🚶'},
+  {min:15,  label:'Spectre',   icon:'👻'},
+  {min:40,  label:'Hunter',    icon:'🔍'},
+  {min:80,  label:'Legend',    icon:'⭐'},
+];
+const RANKS = () => _currentLang === 'en' ? RANKS_EN : RANKS_FR;
 
 function getRank(n) {
-  let rank = RANKS[0];
-  for (const r of RANKS) { if (n >= r.min) rank = r; }
+  const ranks = RANKS();
+  let rank = ranks[0];
+  for (const r of ranks) { if (n >= r.min) rank = r; }
   return rank;
 }
 
@@ -2572,7 +2591,7 @@ window.startStripeCheckout = async (plan) => {
   const btn = plan === 'premium'
     ? document.getElementById('stripeBtn')
     : document.getElementById('stripeBtnCommerce');
-  if (btn) { btn.textContent = '⏳ Connexion…'; btn.disabled = true; }
+  if (btn) { btn.textContent = '⏳' + (t.auth_loading || ' Connexion…'); btn.disabled = true; }
   try {
     // Appel à la Cloud Function (décommenter quand Stripe est configuré)
     // const fn = httpsCallable(functions, 'createCheckoutSession');
@@ -2581,15 +2600,17 @@ window.startStripeCheckout = async (plan) => {
     // ─────────────────────────────────────────────────────
     // Temporaire : afficher un message d'attente
     showToast('info', plan === 'premium'
-      ? 'Paiement en ligne bientôt disponible — utilise un code pour l’instant.'
-      : 'Paiement Commerce bientôt disponible — contacte contact@ghostub.app');
+      ? (t.stripe_pending_premium || 'Paiement en ligne bientôt disponible.')
+      : (t.stripe_pending_commerce || 'Paiement Commerce bientôt disponible.'));
     Analytics.track('stripe_intent', { plan });
   } catch(e) {
-    showToast('error', 'Erreur — réessaie plus tard.');
+    showToast('error', t.misc_error_generic || 'Erreur — réessaie plus tard.');
     console.warn('startStripeCheckout:', e);
   } finally {
     if (btn) {
-      btn.textContent = plan === 'premium' ? '❆ Devenir Chasseur Premium' : '🏪 Activer le Plan Commerce';
+      btn.textContent = plan === 'premium'
+        ? (t.stripe_btn_premium || '✦ Devenir Chasseur Premium')
+        : (t.stripe_btn_commerce || '🏪 Activer le Plan Commerce');
       btn.disabled = false;
     }
   }
@@ -2802,7 +2823,7 @@ window.shareMapLocation = async () => {
     // Label sous le chiffre
     ctx.fillStyle = 'rgba(168,180,255,0.7)';
     ctx.font = 'italic 52px "Cormorant Garamond", Georgia, serif';
-    ctx.fillText(count > 1 ? 'présences détectées' : 'présence détectée', W/2, H/2 + 60);
+    ctx.fillText(_currentLang === 'en' ? (count > 1 ? 'presences detected' : 'presence detected') : (count > 1 ? 'présences détectées' : 'présence détectée'), W/2, H/2 + 60);
 
     // Lieu (GPS)
     if (userLat && userLng) {
@@ -2814,7 +2835,7 @@ window.shareMapLocation = async () => {
     // CTA
     ctx.fillStyle = 'rgba(168,180,255,0.4)';
     ctx.font = '34px "Instrument Sans", sans-serif';
-    ctx.fillText('Approche-toi pour découvrir ce qui t’attend', W/2, H - 170);
+    ctx.fillText(_currentLang === 'en' ? 'Come closer to discover what awaits you' : 'Approche-toi pour découvrir ce qui t’attend', W/2, H - 170);
     ctx.fillStyle = 'rgba(168,180,255,0.2)';
     ctx.font = '28px "Instrument Sans", sans-serif';
     ctx.fillText('ghostub.app', W/2, H - 110);
@@ -2822,7 +2843,9 @@ window.shareMapLocation = async () => {
     // Export
     canvas.toBlob(async (blob) => {
       const file = new File([blob], 'ghostub-lieu.png', { type: 'image/png' });
-      const shareText = `${count} présence${count > 1 ? 's' : ''} détectée${count > 1 ? 's' : ''} ici — approche-toi pour découvrir ce qui t’attend. 👻`;
+      const shareText = _currentLang === 'en'
+        ? `${count} presence${count > 1 ? 's' : ''} detected here — come closer to discover what awaits you. 👻`
+        : `${count} présence${count > 1 ? 's' : ''} détectée${count > 1 ? 's' : ''} ici — approche-toi pour découvrir ce qui t’attend. 👻`;
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: '👻 Ghostub', text: shareText });
@@ -2928,11 +2951,11 @@ window.generateGhostCard = async () => {
     // ── Message principal ─────────────────────────────────
     ctx.fillStyle = 'rgba(230,225,255,0.92)';
     ctx.font = 'italic 72px "Cormorant Garamond", Georgia, serif';
-    ctx.fillText('J\u2019ai brisé un sceau', W/2, H*0.56);
+    ctx.fillText(_currentLang === 'en' ? 'I broke a seal' : 'J’ai brisé un sceau', W/2, H*0.56);
 
     ctx.fillStyle = 'rgba(168,180,255,0.6)';
     ctx.font = 'italic 52px "Cormorant Garamond", Georgia, serif';
-    ctx.fillText('dans ce lieu…', W/2, H*0.56 + 80);
+    ctx.fillText(_currentLang === 'en' ? 'in this place…' : 'dans ce lieu…', W/2, H*0.56 + 80);
 
     // ── Lieu ─────────────────────────────────────────────
     const lieu = selectedGhost.location || 'Lieu inconnu';
@@ -2969,7 +2992,7 @@ window.generateGhostCard = async () => {
     // CTA bas
     ctx.fillStyle = 'rgba(168,180,255,0.35)';
     ctx.font = '34px "Instrument Sans", sans-serif';
-    ctx.fillText('Viens découvrir ce qui t’attend', W/2, H - 108);
+    ctx.fillText(_currentLang === 'en' ? 'Come discover what awaits you' : 'Viens découvrir ce qui t’attend', W/2, H - 108);
     ctx.fillStyle = 'rgba(168,180,255,0.2)';
     ctx.font = '28px "Instrument Sans", sans-serif';
     ctx.fillText('ghostub.app', W/2, H - 65);
@@ -2982,7 +3005,7 @@ window.generateGhostCard = async () => {
           await navigator.share({
             files: [file],
             title: '👻 Ghost Card — Ghostub',
-            text: 'J\u2019ai brisé un sceau ici…'
+            text: _currentLang === 'en' ? 'I broke a seal here…' : 'J’ai brisé un sceau ici…'
           });
           Analytics.track('ghost_card_shared');
         } catch(e) {
@@ -4065,7 +4088,7 @@ window.generateYearCard = async () => {
     // Titre
     ctx.fillStyle = 'rgba(255,200,80,0.85)';
     ctx.font = 'italic 62px "Cormorant Garamond", Georgia, serif';
-    ctx.fillText('Mon année en fantômes', W/2, 230);
+    ctx.fillText(_currentLang === 'en' ? 'My year in ghosts' : 'Mon année en fantômes', W/2, 230);
 
     // Nom + rang
     ctx.fillStyle = 'rgba(230,225,255,0.9)';
@@ -4081,9 +4104,9 @@ window.generateYearCard = async () => {
 
     // Stats grandes
     const stats = [
-      { num: discovered, label: 'sceaux brisés',  icon: '🔮', y: 560 },
-      { num: deposited,  label: 'fantômes invoqués', icon: '👻', y: 760 },
-      { num: resonances, label: 'résonances données', icon: '✦', y: 960 },
+      { num: discovered, label: _currentLang === 'en' ? 'seals broken' : 'sceaux brisés', icon: '🔮', y: 560 },
+      { num: deposited,  label: _currentLang === 'en' ? 'ghosts invoked' : 'fantômes invoqués', icon: '👻', y: 760 },
+      { num: resonances, label: _currentLang === 'en' ? 'resonances given' : 'résonances données', icon: '✦', y: 960 },
     ];
 
     stats.forEach(({ num, label, icon, y }) => {
@@ -4121,7 +4144,7 @@ window.generateYearCard = async () => {
     // CTA
     ctx.fillStyle = 'rgba(168,180,255,0.35)';
     ctx.font = '32px "Instrument Sans", sans-serif';
-    ctx.fillText('Et toi, qu’est-ce que tu as laissé cette année ?', W/2, H-100);
+    ctx.fillText(_currentLang === 'en' ? 'And you, what did you leave this year?' : 'Et toi, qu’est-ce que tu as laissé cette année ?', W/2, H-100);
     ctx.fillStyle = 'rgba(168,180,255,0.2)';
     ctx.font = '28px "Instrument Sans", sans-serif';
     ctx.fillText('ghostub.app', W/2, H-55);
@@ -4131,7 +4154,13 @@ window.generateYearCard = async () => {
       const file = new File([blob], 'mon-annee-ghostub.png', { type: 'image/png' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
-          await navigator.share({ files: [file], title: '✨ Mon année Ghostub', text: `${discovered} sceaux brisés, ${deposited} fantômes invoqués. #Ghostub` });
+          await navigator.share({
+            files: [file],
+            title: _currentLang === 'en' ? '✨ My Ghostub Year' : '✨ Mon année Ghostub',
+            text: _currentLang === 'en'
+              ? `${discovered} seals broken, ${deposited} ghosts invoked. #Ghostub`
+              : `${discovered} sceaux brisés, ${deposited} fantômes invoqués. #Ghostub`
+          });
           Analytics.track('year_card_shared');
         } catch(e) {
           if (e.name !== 'AbortError') _downloadCanvas(canvas, 'mon-annee-ghostub.png');
@@ -5496,14 +5525,14 @@ window.showScreen = (id, fromPopstate = false) => {
   }
   // Mettre à jour le titre de la page pour screen reader
   const screenTitles = {
-    screenRadar: 'Radar — Ghostub',
-    screenDetail: 'Détail du fantôme — Ghostub',
-    screenDeposit: 'Déposer un fantôme — Ghostub',
-    screenMap: 'Carte — Ghostub',
-    screenProfile: 'Mon profil — Ghostub',
-    screenAuth: 'Connexion — Ghostub',
+    screenRadar:   t.misc_screen_radar   || 'Ghostub',
+    screenDetail:  t.misc_screen_detail  || 'Ghostub',
+    screenDeposit: t.misc_screen_deposit || 'Ghostub',
+    screenMap:     t.misc_screen_map     || 'Ghostub',
+    screenProfile: t.misc_screen_profile || 'Ghostub',
+    screenAuth:    t.misc_screen_auth    || 'Ghostub',
     screenOnboard: 'Ghostub',
-    screenReply: 'Répondre — Ghostub',
+    screenReply:   t.misc_screen_reply   || 'Ghostub',
   };
   document.title = screenTitles[id] || 'Ghostub';
 };
