@@ -2172,7 +2172,6 @@ window.triggerVideo = () => {
     showToast('info', t.dep_video_locked, 3000);
     return;
   }
-  console.log('[Ghostub] triggerVideo — isPremium:', isPremium, '_pendingVideoFile:', window._pendingVideoFile);
   document.getElementById('videoInput').click();
 };
 
@@ -2241,7 +2240,6 @@ async function uploadMedia(uid) {
     fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
     fd.append('folder', 'ghostub/videos');
     videoUrl = await uploadToCloudinary(fd, 'video');
-    console.log('[Ghostub] videoUrl uploadé:', videoUrl);
   }
   return { audioUrl, photoUrl, videoUrl };
 }
@@ -2364,7 +2362,6 @@ async function loadBizDashboard() {
 
   // Filtrer côté client les fantômes commerce
   const bizDocs = snap.docs.filter(d => d.data().businessMode === true);
-  console.log('[BizDashboard] total ghosts:', snap.size, '| biz ghosts:', bizDocs.length);
   if (bizDocs.length === 0) { section.style.display = 'none'; return; }
   section.style.display = 'block';
 
@@ -3348,6 +3345,7 @@ window.loadNearbyGhosts = async () => {
     snap = await WorldService.getVisibleGhosts(userLat, userLng);
   } catch(firestoreErr) {
     console.error('Firestore error:', firestoreErr);
+    showToast('error', t.radar_firestore_err || 'Erreur de chargement.');
     document.querySelector('.ghost-count-line').innerHTML = '<span style="font-size:12px;color:rgba(255,100,100,.6)">' + t.radar_firestore_err + '</span>';
     renderGhostList(); renderRadarDots(); return;
   }
@@ -4997,7 +4995,7 @@ window.depositGhost = async () => {
     );
     // Secours : forcer videoUrl dans Firestore si présent
     if (videoUrl && ghostId) {
-      updateDoc(doc(db, 'ghosts', ghostId), { videoUrl }).catch(() => {});
+      updateDoc(doc(db, 'ghosts', ghostId), { videoUrl }).catch(e => console.warn('videoUrl update:', e));
     }
     await WorldService.recordDepositTimestamp(currentUser.uid);
     document.getElementById('depositMsg').value = '';
@@ -5036,7 +5034,7 @@ window.depositGhost = async () => {
     setTimeout(() => _launchDepositParticles(), 80);
     showToast('success', t.dep_success);
     // Notifier les utilisateurs qui ont des fantômes dans ce périmètre
-    _notifyNearbyUsers(ghostId, userLat, userLng, location || 'ce lieu').catch(() => {});
+    _notifyNearbyUsers(ghostId, userLat, userLng, location || 'ce lieu').catch(e => console.warn('notify:', e));
     playDepositSound();
     Analytics.track('ghost_deposited', { anonymous: anon, secret, hasAudio: !!audioUrl, hasPhoto: !!photoUrl });
     // Clic pour fermer manuellement si le timer bloque
@@ -5052,7 +5050,8 @@ window.depositGhost = async () => {
     successEl.addEventListener('click', dismissSuccess);
     setTimeout(() => dismissSuccess(), 2500);
   } catch(e) {
-    err.textContent = (t.error_prefix || 'Erreur :') + ' ' + e.message;
+    err.textContent = t.dep_err_generic || 'Une erreur est survenue — vérifie ta connexion et réessaie.';
+    console.warn('depositGhost error:', e);
     depositBtn.textContent = t.dep_deposit_btn || '👻 Ancrer ce fantôme';
     depositBtn.disabled = false;
   }
