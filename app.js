@@ -1686,18 +1686,22 @@ function showUpdateBanner() {
 window._swReg = null; // garder une référence globale
 
 window.applyUpdate = () => {
-  const doReload = () => window.location.reload(true);
-  // Écouter le changement de controller → recharger
+  const doReload = () => {
+    // Forcer rechargement sans cache via URL avec timestamp
+    const url = new URL(window.location.href);
+    url.searchParams.set('_r', Date.now());
+    window.location.replace(url.toString());
+  };
   navigator.serviceWorker.addEventListener('controllerchange', doReload, { once: true });
-  // Essayer reg.waiting via référence globale ou navigator.serviceWorker.ready
   const trySkip = (reg) => {
     if (reg && reg.waiting) {
       reg.waiting.postMessage({ type: 'SKIP_WAITING' });
     } else {
-      // Fallback : recharger directement
       doReload();
     }
   };
+  // Fallback si controllerchange ne se déclenche pas dans les 3s
+  setTimeout(doReload, 3000);
   if (window._swReg) {
     trySkip(window._swReg);
   } else {
