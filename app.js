@@ -5651,7 +5651,7 @@ window.showScreen = (id, fromPopstate = false) => {
       const el = document.getElementById(id2); if (el) el.style.display = '';
     });
     // Reset step 3 sections + titre + bouton
-    ['step3IdentityWrap','step3VocalWrap','step3ChainWrap'].forEach(id2 => {
+    ['step3IdentityWrap','step3VocalWrap',].forEach(id2 => {
       const el = document.getElementById(id2); if (el) el.style.display = '';
     });
     const t3 = document.getElementById('step3Title');
@@ -5674,7 +5674,7 @@ window.showScreen = (id, fromPopstate = false) => {
     document.getElementById('condExtraFuture').classList.remove('show');
     const chainContent = document.getElementById('chainContent');
     const chainLock = document.getElementById('chainLock');
-    const chainSection = document.getElementById('step3ChainWrap');
+    const chainSection = document.getElementById();
     // Reset depositSuccess overlay
     document.getElementById('depositSuccess')?.classList.remove('show');
     if (chainSection) chainSection.style.position = 'relative';
@@ -5745,7 +5745,7 @@ window.toggleBusinessMode = () => {
       if (el) el.style.display = 'none';
     });
     // Masquer identité/vocal/chaîne dans step 3, adapter titre
-    ['step3IdentityWrap','step3VocalWrap','step3ChainWrap'].forEach(id => {
+    ['step3IdentityWrap','step3VocalWrap',].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
@@ -5791,7 +5791,7 @@ window.toggleBusinessMode = () => {
       if (el) el.style.display = '';
     });
     // Réafficher les sections step 3
-    ['step3IdentityWrap','step3VocalWrap','step3ChainWrap'].forEach(id => {
+    ['step3IdentityWrap','step3VocalWrap',].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = '';
     });
