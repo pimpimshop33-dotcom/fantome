@@ -216,11 +216,11 @@
     <div class="scroll">
       <div class="section-label" data-i18n="radar_section_label">Traces dans les alentours</div>
       <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;" role="group" aria-label="Filtres">
-        <button class="filter-btn active" onclick="setFilter('all',this)" style="white-space:nowrap;padding:5px 12px;background:rgba(168,180,255,.12);border:1px solid rgba(168,180,255,.35);border-radius:20px;color:var(--ether);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0;" data-i18n="filter_all">🌫️ Toutes</button>
-        <button class="filter-btn" onclick="setFilter('recent',this)" style="white-space:nowrap;padding:5px 12px;background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.15);border-radius:20px;color:var(--spirit-dim);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0;" data-i18n="filter_recent">✨ Récentes</button>
-        <button class="filter-btn" onclick="setFilter('photo',this)" style="white-space:nowrap;padding:5px 12px;background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.15);border-radius:20px;color:var(--spirit-dim);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0;" data-i18n="filter_photo">📷 Visions</button>
-        <button class="filter-btn" onclick="setFilter('audio',this)" style="white-space:nowrap;padding:5px 12px;background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.15);border-radius:20px;color:var(--spirit-dim);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0;" data-i18n="filter_audio">🎙 Voix</button>
-        <button class="filter-btn" onclick="setFilter('video',this)" style="white-space:nowrap;padding:5px 12px;background:rgba(168,180,255,.04);border:1px solid rgba(168,180,255,.15);border-radius:20px;color:var(--spirit-dim);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0;" data-i18n="filter_video">🎥 Vidéos</button>
+        <button class="filter-btn active" onclick="setFilter('all',this)" data-i18n="filter_all">🌫️ Toutes</button>
+        <button class="filter-btn" onclick="setFilter('recent',this)" data-i18n="filter_recent">✨ Récentes</button>
+        <button class="filter-btn" onclick="setFilter('photo',this)" data-i18n="filter_photo">📷 Visions</button>
+        <button class="filter-btn" onclick="setFilter('audio',this)" data-i18n="filter_audio">🎙 Voix</button>
+        <button class="filter-btn" onclick="setFilter('video',this)" data-i18n="filter_video">🎥 Vidéos</button>
       </div>
       <div class="ghost-list" id="ghostList" aria-label="Liste des traces proches">
         <div style="text-align:center;color:var(--spirit-dim);padding:20px 0;font-size:13px;">Invocation en cours…</div>
@@ -291,7 +291,7 @@
         <button class="btn-secondary" id="secretBtn" onclick="toggleSecret()" aria-label="Passer ce fantôme en mode secret" style="display:none;margin-bottom:8px;font-size:13px;padding:11px;">🔮 Passer en secret</button>
         <button class="share-btn" id="ghostShareBtn" onclick="openShareModal()" aria-label="Partager la position de ce fantôme" style="background:linear-gradient(135deg,rgba(168,180,255,.18),rgba(168,180,255,.08));border:1px solid rgba(168,180,255,.4);color:rgba(168,180,255,.95);font-size:14px;padding:13px;border-radius:14px;width:100%;cursor:pointer;margin-bottom:8px;letter-spacing:0.02em;" data-i18n="detail_share_ghost_btn">↗ Partager ce fantôme</button>
         <button class="btn-secondary" id="ghostReplyBtn" onclick="showScreen('screenReply')" style="margin-bottom:8px;" data-i18n="detail_reply_ghost_btn">↩ Laisser une réponse ici</button>
-        <button id="favoriteBtn" onclick="toggleFavorite()" aria-label="Ajouter aux favoris" style="width:100%;padding:11px;background:rgba(255,200,80,.05);border:1px solid rgba(255,200,80,.2);border-radius:13px;color:rgba(255,200,80,.5);font-family:'Instrument Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;touch-action:manipulation;">★ Ajouter aux favoris</button>
+        <button id="favoriteBtn" onclick="toggleFavorite()" class="btn-favorite" aria-label="Ajouter aux favoris">★ Ajouter aux favoris</button>
         <button class="report-btn" id="reportBtn" onclick="openReportModal()" data-i18n="detail_report_btn">⚑ Signaler ce fantôme</button>
         <div class="section-label" data-i18n="detail_replies_title">Réponses dans ce lieu</div>
         <div id="repliesList"></div>
@@ -612,8 +612,8 @@
         <div class="map-title" data-i18n="map_title">Carte des fantômes</div>
         <div style="display:flex;align-items:center;gap:8px;">
           <div class="map-count" id="mapCount" aria-live="polite">0 ghost(s)</div>
-          <button id="mapShareBtn" onclick="shareMapLocation()" aria-label="Partager ce lieu" style="background:rgba(168,180,255,.08);border:1px solid rgba(168,180,255,.25);color:rgba(168,180,255,.7);border-radius:20px;padding:4px 10px;font-size:11px;cursor:pointer;white-space:nowrap;transition:all .2s;">↗ Partager</button>
-          <button id="huntModeBtn" onclick="toggleHuntMode()" aria-label="Activer le mode chasse" style="background:rgba(168,180,255,.08);border:1px solid rgba(168,180,255,.25);color:rgba(168,180,255,.7);border-radius:20px;padding:4px 10px;font-size:11px;cursor:pointer;white-space:nowrap;transition:all .2s;">🎯 Chasse</button>
+          <button id="mapShareBtn" onclick="shareMapLocation()" class="map-header-btn" aria-label="Partager ce lieu">↗ Partager</button>
+          <button id="huntModeBtn" onclick="toggleHuntMode()" class="map-header-btn" aria-label="Activer le mode chasse">🎯 Chasse</button>
         </div>
       </div>
       <div id="mapContainer" role="region" aria-label="Carte interactive des fantômes proches"></div>
@@ -779,25 +779,25 @@
       </div>
       <!-- Paramètres -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px;">
-        <button id="themeToggleBtn" onclick="toggleTheme()" style="display:flex;align-items:center;gap:12px;width:100%;padding:13px 16px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;font-family:'Instrument Sans',sans-serif;font-size:13px;color:var(--text);text-align:left;">
-          <span style="font-size:16px;">🌙</span>
+        <button id="themeToggleBtn" onclick="toggleTheme()" class="settings-row-btn">
+          <span class="row-icon">🌙</span>
           <span id="themeToggleLabel" style="flex:1;" data-i18n="profile_day_mode">Mode jour</span>
-          <span style="font-size:11px;color:var(--spirit-dim);">›</span>
+          <span class="row-arrow">›</span>
         </button>
-        <button id="notifBtn" onclick="enableNotifications()" style="display:flex;align-items:center;gap:12px;width:100%;padding:13px 16px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;font-family:'Instrument Sans',sans-serif;font-size:13px;color:var(--text);text-align:left;">
-          <span style="font-size:16px;">🔔</span>
+        <button id="notifBtn" onclick="enableNotifications()" class="settings-row-btn">
+          <span class="row-icon">🔔</span>
           <span style="flex:1;" data-i18n="profile_notif_off">Activer les notifications</span>
-          <span style="font-size:11px;color:var(--spirit-dim);">›</span>
+          <span class="row-arrow">›</span>
         </button>
-        <button onclick="showScreen('screenOnboard')" style="display:flex;align-items:center;gap:12px;width:100%;padding:13px 16px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;font-family:'Instrument Sans',sans-serif;font-size:13px;color:var(--text);text-align:left;" aria-label="Revoir l'introduction">
-          <span style="font-size:16px;">👻</span>
+        <button onclick="showScreen('screenOnboard')" class="settings-row-btn" aria-label="Revoir l'introduction">
+          <span class="row-icon">👻</span>
           <span style="flex:1;" data-i18n="profile_rewatch_intro">Revoir l'intro</span>
-          <span style="font-size:11px;color:var(--spirit-dim);">›</span>
+          <span class="row-arrow">›</span>
         </button>
-        <button onclick="showScreen('screenHelp')" style="display:flex;align-items:center;gap:12px;width:100%;padding:13px 16px;background:none;border:none;cursor:pointer;font-family:'Instrument Sans',sans-serif;font-size:13px;color:var(--text);text-align:left;" aria-label="Aide et informations">
-          <span style="font-size:16px;">❓</span>
+        <button onclick="showScreen('screenHelp')" class="settings-row-btn" aria-label="Aide et informations">
+          <span class="row-icon">❓</span>
           <span style="flex:1;" data-i18n="profile_help_link">Aide & Mentions légales</span>
-          <span style="font-size:11px;color:var(--spirit-dim);">›</span>
+          <span class="row-arrow">›</span>
         </button>
       </div>
       <!-- Sélecteur de langue -->
