@@ -2597,29 +2597,32 @@ function updatePremiumUI() {
   // Lock/unlock sections Premium
   const dedLock = document.getElementById('dedicatedLock');
   if (dedLock) dedLock.style.display = isPremium ? 'none' : 'flex';
-  // Basculer aperçu / contenu pour chaque section Premium
-  const _premiumPreviews = [
-    { freeId: 'videoPreview_free',     premId: 'videoContent_premium',     icon: '🎥', label: 'Vidéo', sub: 'Jusqu’à 20 sec · s’ouvre uniquement sur place' },
-    { freeId: 'chainPreview_free',     premId: 'chainContent_premium',     icon: '🔗', label: 'Chaîne de fantômes', sub: 'Chasse au trésor urbaine · enchaîne tes ghosts' },
-    { freeId: 'dedicatedPreview_free', premId: 'dedicatedContent_premium', icon: '💌', label: 'Pour quelqu’un', sub: 'Ghost secret réservé à une seule personne' },
+  // Sections Premium — injection directe dans les wrappers
+  const _premSections = [
+    { id: 'premSection_video',     icon: '🎥', label: 'Vidéo', sub: 'Jusqu’à 20 sec · s’ouvre uniquement sur place',
+      premiumHtml: `<label class="form-label" style="display:flex;align-items:center;justify-content:space-between;"><span>Vidéo (optionnel)</span><span style="font-size:9px;background:rgba(255,200,80,.15);border:1px solid rgba(255,200,80,.3);border-radius:8px;padding:2px 6px;color:rgba(255,200,80,.8);">👑 Premium</span></label><button class="media-btn" onclick="triggerVideo()" type="button"><span class="media-icon">🎥</span><span>Ajouter une vidéo</span><span style="margin-left:auto;font-size:10px;opacity:.45;">max 50 Mo · 20 sec</span></button>` },
+    { id: 'premSection_chain',     icon: '🔗', label: 'Chaîne de fantômes', sub: 'Chasse au trésor urbaine · enchaîne tes ghosts',
+      premiumHtml: null }, // chainContent géré séparément
+    { id: 'premSection_dedicated', icon: '💌', label: 'Pour quelqu’un', sub: 'Ghost secret réservé à une seule personne',
+      premiumHtml: null }, // dedicatedContent géré séparément
   ];
-  _premiumPreviews.forEach(({ freeId, premId, icon, label, sub }) => {
-    let freeEl = document.getElementById(freeId);
-    const premEl = document.getElementById(premId);
-    // Créer le bouton aperçu s'il n'existe pas (ancien HTML en cache)
-    if (!freeEl && premEl) {
-      freeEl = document.createElement('button');
-      freeEl.id = freeId;
-      freeEl.className = 'cond-btn';
-      freeEl.type = 'button';
-      freeEl.style.cssText = 'display:none;width:100%;';
-      freeEl.onclick = () => { showScreen('screenProfile'); setNav('nav-profile'); };
-      freeEl.innerHTML = `<span class="cond-btn-icon">${icon}</span><span class="cond-btn-text"><div class="cond-btn-label">${label} <span style="font-size:10px;background:rgba(255,200,80,.15);color:rgba(255,200,80,.8);border-radius:6px;padding:1px 5px;margin-left:4px;vertical-align:middle;">✦ Premium</span></div><div class="cond-btn-sub">${sub}</div></span>`;
-      premEl.parentNode.insertBefore(freeEl, premEl);
-    }
-    if (freeEl) freeEl.style.display = isPremium ? 'none' : 'flex';
-    if (premEl) premEl.style.display = isPremium ? 'block' : 'none';
+
+  const _badge = (txt) => `<span style="font-size:10px;background:rgba(255,200,80,.15);color:rgba(255,200,80,.8);border-radius:6px;padding:1px 5px;margin-left:4px;vertical-align:middle;">✦ Premium</span>`;
+  const _freeBtn = (icon, label, sub) => `<button class="cond-btn" onclick="showScreen('screenProfile');setNav('nav-profile')" type="button" style="width:100%;"><span class="cond-btn-icon">${icon}</span><span class="cond-btn-text"><div class="cond-btn-label">${label} ${_badge()}</div><div class="cond-btn-sub">${sub}</div></span></button>`;
+
+  _premSections.forEach(({ id, icon, label, sub, premiumHtml }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = isPremium
+      ? (premiumHtml || '')
+      : _freeBtn(icon, label, sub);
   });
+
+  // Afficher/masquer chainContent et dedicatedContent
+  const chainContent = document.getElementById('chainContent');
+  if (chainContent) chainContent.style.display = isPremium ? 'flex' : 'none';
+  const dedContent = document.getElementById('dedicatedContent');
+  if (dedContent) dedContent.style.display = isPremium ? 'block' : 'none';
   // Badge avatar Premium
   const avatar = document.getElementById('profileAvatar');
   if (avatar) {
