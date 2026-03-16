@@ -2,28 +2,44 @@
 <html lang="fr">
 <head>
 <script>
-// Nuke vieux SW + enregistrer sw2.js directement
+(function(){
+  if (!('serviceWorker' in navigator)) return;
+  // Déjà nettoyé lors d'un passage précédent ?
+  if (sessionStorage.getItem('sw_nuked')) return;
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    var hasOld = regs.some(function(r){
+      return !(r.active && r.active.scriptURL && r.active.scriptURL.includes('sw2.js'));
+    });
+    if (!hasOld) return; // sw2.js déjà actif, rien à faire
+    // Désinstaller tous les vieux SW
+    Promise.all(regs.map(function(r){ return r.unregister(); })).then(function(){
+      sessionStorage.setItem('sw_nuked', '1');
+      // Recharger sur une URL fraîche sans cache
+      var url = location.pathname + '?_fresh=' + Date.now();
+      location.replace(url);
+    });
+  });
+})();
+</script>
+<script>
+// Force SW update — à supprimer après v21
 (function(){
   if (!('serviceWorker' in navigator)) return;
   navigator.serviceWorker.getRegistrations().then(function(regs){
-    var oldSWs = regs.filter(function(r){
-      return r.scope && r.scope.includes('/ghostub/') && 
-             !(r.active && r.active.scriptURL && r.active.scriptURL.includes('sw2.js'));
-    });
-    var unregPromises = oldSWs.map(function(r){ return r.unregister(); });
-    Promise.all(unregPromises).then(function(){
-      // Enregistrer sw2.js immédiatement
-      return navigator.serviceWorker.register('/ghostub/sw2.js', {scope: '/ghostub/'});
-    }).then(function(reg){
-      // Si nouvelle version en attente, l'activer
-      if (reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
-      reg.addEventListener('updatefound', function(){
-        var w = reg.installing;
-        w.addEventListener('statechange', function(){
-          if (w.state === 'installed') w.postMessage({type:'SKIP_WAITING'});
-        });
+    var needReload = regs.length > 0;
+    var done = 0;
+    if (regs.length === 0) return;
+    regs.forEach(function(reg){
+      reg.unregister().then(function(){
+        done++;
+        if (done === regs.length && needReload) {
+          // Recharger proprement sans cache
+          var url = new URL(location.href);
+          url.searchParams.set('_sw_cleared', Date.now());
+          location.replace(url.toString());
+        }
       });
-    }).catch(function(e){ console.warn('SW2 reg:', e); });
+    });
   });
 })();
 </script>
@@ -62,7 +78,7 @@
 <!-- Manifest PWA -->
 <link rel="manifest" href="/ghostub/manifest.json">
 
-<script type="module" src="app.js?v=24"></script>
+<script type="module" src="app.js?v=25"></script>
 
 <style>
 /* ── BASE VARIABLES ────────────────────────────────────── */
