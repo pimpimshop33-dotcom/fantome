@@ -261,8 +261,8 @@ button, [role="button"] {
 .radius-selector{display:flex;gap:6px;margin-bottom:12px;}
 .radius-btn{flex:1;padding:8px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:11px;cursor:pointer;color:var(--warm-dim);transition:all .2s;touch-action:manipulation;}
 .radius-btn.active{border-color:var(--spirit-dim);color:var(--spirit);}
-.duration-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
-.dur-btn{padding:6px 11px;background:var(--surface);border:1px solid var(--border);border-radius:20px;font-size:11px;cursor:pointer;color:var(--warm-dim);transition:all .2s;touch-action:manipulation;}
+.duration-selector{display:flex;gap:6px;margin-bottom:14px;}
+.dur-btn{flex:1;padding:8px 6px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:11px;cursor:pointer;color:var(--warm-dim);transition:all .2s;touch-action:manipulation;}
 .dur-btn.active{border-color:var(--spirit-dim);color:var(--spirit);}
 .deposit-error{color:var(--red);font-size:12px;min-height:16px;margin-bottom:8px;}
 
@@ -1019,7 +1019,7 @@ button:focus-visible,[role="button"]:focus-visible{outline:2px solid var(--spiri
 .cond-btn.premium-locked{opacity:.55;position:relative;}
 .cond-btn-icon{font-size:20px;width:28px;text-align:center;flex-shrink:0;}
 .cond-btn-text{flex:1;}
-.cond-btn-label{font-size:13px;color:var(--warm-dim);}
+.cond-btn-label{font-size:13px;color:var(--warm-dim);display:flex;align-items:center;flex-wrap:wrap;gap:4px;}
 .cond-btn-sub{font-size:10px;color:var(--spirit-dim);margin-top:1px;}
 .cond-btn.active .cond-btn-label{color:var(--ether);}
 .cond-premium-tag{font-size:9px;padding:2px 6px;background:rgba(255,200,80,.1);border:1px solid rgba(255,200,80,.3);border-radius:8px;color:rgba(255,210,100,.8);flex-shrink:0;}
@@ -1072,3 +1072,6 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
 .settings-row-btn:hover{background:rgba(168,180,255,.04);}
 .settings-row-btn .row-icon{font-size:16px;flex-shrink:0;}
 .settings-row-btn .row-arrow{font-size:11px;color:var(--spirit-dim);}
+
+/* ── BADGE PREMIUM UNIFIÉ ───────────────────────────────── */
+.badge-premium{font-size:10px;background:rgba(255,200,80,.15);color:rgba(255,200,80,.9);border-radius:6px;padding:2px 6px;font-weight:600;white-space:nowrap;flex-shrink:0;border:1px solid rgba(255,200,80,.25);}
