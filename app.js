@@ -2615,7 +2615,7 @@ function updatePremiumUI() {
       premiumHtml: null }, // dedicatedContent géré séparément
   ];
 
-  const _badge = (txt) => `<span style="font-size:10px;background:rgba(255,200,80,.15);color:rgba(255,200,80,.8);border-radius:6px;padding:1px 5px;margin-left:4px;vertical-align:middle;">✦ Premium</span>`;
+  const _badge = (txt) => `<span class="badge-premium">✦ Premium</span>`;
   const _freeBtn = (icon, label, sub) => `<button class="cond-btn" onclick="showScreen('screenProfile');setNav('nav-profile')" type="button" style="width:100%;"><span class="cond-btn-icon">${icon}</span><span class="cond-btn-text"><div class="cond-btn-label">${label} ${_badge()}</div><div class="cond-btn-sub">${sub}</div></span></button>`;
 
   _premSections.forEach(({ id, icon, label, sub, premiumHtml }) => {
