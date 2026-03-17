@@ -51,7 +51,7 @@ const LANGS = {
     radar_filter_empty: 'Aucun fantôme dans ce filtre.',
     radar_new_ghost: '👻 {n} nouveau{x} fantôme{s} à proximité',
     // Detail
-    detail_first_reader: '🥇 Vous êtes le premier à lire ce message',
+    detail_first_reader: t.detail_first_reader,
     detail_location_unknown: 'Lieu inconnu',
     detail_sealed_label: 'Une trace vous attend ici',
     detail_anonymous: 'Anonyme',
@@ -94,7 +94,7 @@ const LANGS = {
     detail_reported: '✓ Déjà signalé',
     detail_secret_on: '🔮 Mode secret activé',
     detail_secret_off: '🔮 Passer en secret',
-    detail_first_reader: '🥇 Vous êtes le premier à lire ce message',
+    detail_first_reader: t.detail_first_reader,
     detail_first_toast: '🥇 Vous êtes le premier à lire ce message !',
     detail_views: '👁 {n} personne{s} {verbe} lu ce message avant vous',
     detail_vocal: '🎙 Message vocal',
@@ -155,6 +155,13 @@ const LANGS = {
     dep_duration_label: 'Durée de vie',
     dep_radius_label: 'Rayon de détection',
     dep_identity_label: 'Identité',
+    dep_visibility_label: 'Visibilité',
+    dep_vocal_label: 'Message vocal (optionnel)',
+    dep_photo_label: 'Photo (optionnel)',
+    profile_code_question: 'Vous avez un code d\'activation ?',
+    dep_dedicated_hint: 'Laisse vide pour que n\'importe qui puisse l\'ouvrir.',
+    dep_future_hint: 'Le fantôme sera invisible jusqu\'à cette date — comme un message dans une bouteille',
+    reply_msg_label: 'Votre message',
     dep_identity_named: '🌫️ Signé',
     dep_identity_anon: '👻 Anonyme',
     dep_secret_label: '🔮 Secret (3m)',
@@ -168,7 +175,7 @@ const LANGS = {
     dep_biz_active: 'Mode activé — formulaire commerce',
     dep_biz_deposit: '🏪 Publier cette offre',
     dep_biz_visual_title: 'Ajouter un visuel',
-    dep_biz_visual_sub: 'Photo ou vidéo pour illustrer votre offre (optionnel).',
+    dep_biz_visual_sub: t.dep_biz_media_hint || 'Photo ou vidéo pour illustrer votre offre (optionnel).',
     dep_deposit_btn: '👻 Ancrer ce fantôme',
     dep_pending: 'En cours…',
     dep_deleting: '⏳ Suppression…',
@@ -369,7 +376,7 @@ const LANGS = {
     misc_error_load: 'Erreur de chargement',
     misc_unavailable: 'Données indisponibles',
     misc_no_discoveries: 'Aucune découverte encore…',
-    misc_no_deposited: 'Aucun fantôme déposé encore…',
+    misc_no_deposited: t.profile_no_ghost_deposited || 'Aucun fantôme déposé encore…',
     misc_no_favorites: 'Aucun favori encore — appuyez sur ★ dans un fantôme.',
     misc_no_leaderboard: 'Aucun chasseur encore…',
     misc_leaderboard_err: 'Impossible de charger le classement.',
@@ -381,7 +388,7 @@ const LANGS = {
     misc_public_profile_deposited: 'Fantômes déposés',
     misc_public_profile_opens: 'Ouvertures totales',
     misc_public_profile_map: '🗺 Empreinte publique',
-    misc_public_profile_no_loc: 'Aucun lieu public',
+    misc_public_profile_no_loc: t.profile_no_public_place || 'Aucun lieu public',
     misc_public_profile_join: '👻 Rejoindre Ghostub',
     misc_discovery_btn_label: 'Votre dépôt',
     misc_discovery_found_label: 'Découverte',
@@ -391,7 +398,19 @@ const LANGS = {
     misc_days_left: '⏳ {n}j restants',
     misc_opens: '👁 {n} ouverture{s}',
     misc_ptr_pull: 'Tirer pour actualiser',
-    misc_ptr_release: 'Relâcher pour actualiser',
+    misc_ptr_release: 'Relâcher pour actualiser'
+    misc_presences_here: ' presences here — get closer!',
+    detail_discovered_prefix: 'Ghost discovered · <b>',
+    detail_already_read_suffix: ' read this message before you',
+    profile_no_ghost_deposited: 'No ghosts deposited yet…',
+    profile_no_public_place: 'No public place',
+    dep_biz_media_hint: 'Photo or video to illustrate your offer (optional).',,
+    misc_presences_here: ' présences ici — approche-toi !',
+    detail_discovered_prefix: 'Fantôme découvert · <b>',
+    detail_already_read_suffix: ' lu ce message avant vous',
+    profile_no_ghost_deposited: 'Aucun fantôme déposé encore…',
+    profile_no_public_place: 'Aucun lieu public',
+    dep_biz_media_hint: 'Photo ou vidéo pour illustrer votre offre (optionnel).',
     misc_ptr_refreshing: 'Actualisation…',
     misc_screen_radar: 'Radar — Ghostub',
     misc_screen_detail: 'Détail du fantôme — Ghostub',
@@ -635,6 +654,13 @@ const LANGS = {
     dep_duration_label: 'Lifespan',
     dep_radius_label: 'Detection radius',
     dep_identity_label: 'Identity',
+    dep_visibility_label: 'Visibility',
+    dep_vocal_label: 'Voice message (optional)',
+    dep_photo_label: 'Photo (optional)',
+    profile_code_question: 'Do you have an activation code?',
+    dep_dedicated_hint: 'Leave empty so anyone can open it.',
+    dep_future_hint: 'The ghost will be invisible until this date — like a message in a bottle',
+    reply_msg_label: 'Your message',
     dep_identity_named: '🌫️ Signed',
     dep_identity_anon: '👻 Anonymous',
     dep_secret_label: '🔮 Secret (3m)',
@@ -1495,7 +1521,7 @@ function buildLeafletMap(centerLat, centerLng, h) {
       });
       L.marker([g.lat, g.lng], { icon: spotIcon })
         .addTo(map)
-        .on('click', () => showToast('info', clusterIds.length + (_currentLang === 'en' ? ' presences here — come closer!' : ' présences ici — approche-toi !')));
+        .on('click', () => showToast('info', clusterIds.length + (_currentLang === 'en' ? ' presences here — come closer!' : t.misc_presences_here || ' présences ici — approche-toi !')));
     }
   });
   setTimeout(() => map && map.invalidateSize(), 500);
@@ -2366,7 +2392,7 @@ function showDiscoveryToast(count, isNew) {
     Analytics.track('milestone', { count, rank: rank.label });
   } else if (isNew) {
     icon.textContent = '👻';
-    text.innerHTML = (_currentLang === 'fr' ? 'Fantôme découvert · <b>' + count + '</b> au total' : 'Ghost discovered · <b>' + count + '</b> total');
+    text.innerHTML = (_currentLang === 'fr' ? t.detail_discovered_prefix || 'Fantôme découvert · <b>' + count + '</b> au total' : 'Ghost discovered · <b>' + count + '</b> total');
     Analytics.track('ghost_discovered', { total: count });
   } else { return; }
   toast.classList.add('show');
@@ -2563,7 +2589,7 @@ window.toggleDepositedList = async () => {
       limit(30)
     ));
     if (snap.empty) {
-      content.innerHTML = `<div style="opacity:.5;font-style:italic;">${t.profile_no_deposits || 'Aucun fantôme déposé encore…'}</div>`;
+      content.innerHTML = `<div style="opacity:.5;font-style:italic;">${t.profile_no_deposits || t.profile_no_ghost_deposited || 'Aucun fantôme déposé encore…'}</div>`;
       return;
     }
     let html = '';
@@ -4423,7 +4449,7 @@ window.showPublicProfileModal = (uid, name, ghostCount, totalOpens, ghostDocs) =
     const mapEl = document.getElementById('publicEmpreinteMap');
     if (!mapEl || !ghostDocs.length) return;
     const coords = ghostDocs.filter(d => d.data().lat && d.data().lng).map(d => [d.data().lat, d.data().lng]);
-    if (!coords.length) { mapEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:height:100%;font-size:12px;color:rgba(168,180,255,.4);">${t.profile_no_public_places || 'Aucun lieu public'}</div>`; return; }
+    if (!coords.length) { mapEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:height:100%;font-size:12px;color:rgba(168,180,255,.4);">${t.profile_no_public_places || t.profile_no_public_place || 'Aucun lieu public'}</div>`; return; }
     const pubMap = L.map('publicEmpreinteMap', { zoomControl: false, attributionControl: false }).setView(coords[0], 13);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(pubMap);
     coords.forEach(([lat, lng], i) => {
@@ -5376,10 +5402,10 @@ async function _doOpenEnvelope() {
       const readCountEl = document.getElementById('detailReadCount');
       if (readCountEl) {
         if (wasFirst) {
-          readCountEl.innerHTML = `<span style="color:rgba(100,220,160,.9);">${t.detail_first_reader || '🥇 Vous êtes le premier à lire ce message'}</span>`;
+          readCountEl.innerHTML = `<span style="color:rgba(100,220,160,.9);">${t.detail_first_reader || t.detail_first_reader}</span>`;
         } else {
           const prev = selectedGhost.openCount || 0;
-          readCountEl.innerHTML = `<span style="color:var(--spirit-dim);">${_currentLang === 'fr' ? '👁 ' + prev + ' personne' + (prev > 1 ? 's ont' : ' a') + ' lu ce message avant vous' : '👁 ' + prev + ' person' + (prev > 1 ? 's' : '') + ' read this before you'}</span>`;
+          readCountEl.innerHTML = `<span style="color:var(--spirit-dim);">${_currentLang === 'fr' ? '👁 ' + prev + ' personne' + (prev > 1 ? 's ont' : ' a') + t.detail_already_read_suffix || ' lu ce message avant vous' : '👁 ' + prev + ' person' + (prev > 1 ? 's' : '') + ' read this before you'}</span>`;
         }
         readCountEl.style.display = 'block';
       }
@@ -5777,7 +5803,7 @@ window.toggleBusinessMode = () => {
     const t3 = document.getElementById('step3Title');
     const s3 = document.getElementById('step3Sub');
     if (t3) t3.textContent = t.dep_biz_visual_title || 'Ajouter un visuel';
-    if (s3) s3.textContent = t.dep_biz_visual_sub || 'Photo ou vidéo pour illustrer votre offre (optionnel).';
+    if (s3) s3.textContent = t.dep_biz_visual_sub || t.dep_biz_media_hint || 'Photo ou vidéo pour illustrer votre offre (optionnel).';
     const depBtn = document.getElementById('depositBtn');
     if (depBtn) depBtn.textContent = t.dep_biz_deposit || '🏪 Publier cette offre';
     // Forcer durée 1 mois + rayon 50m
