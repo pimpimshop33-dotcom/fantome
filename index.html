@@ -36,7 +36,7 @@
 <!-- Manifest PWA -->
 <link rel="manifest" href="/ghostub/manifest.json">
 
-<script type="module" src="app.js?v=46"></script>
+<script type="module" src="app.js?v=47"></script>
 
 <style>
 /* ── BASE VARIABLES ────────────────────────────────────── */
@@ -1702,7 +1702,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <div style="display:flex;align-items:center;gap:8px;">
           <div class="map-count" id="mapCount" aria-live="polite">0 ghost(s)</div>
           <button id="mapShareBtn" onclick="shareMapLocation()" class="map-header-btn" aria-label="Partager ce lieu" data-i18n="map_share_btn">↗ Partager</button>
-          <button id="huntModeBtn" onclick="toggleHuntMode()" class="map-header-btn" aria-label="Activer le mode chasse">🎯 Chasse</button>
+          <button id="huntModeBtn" onclick="toggleHuntMode()" class="map-header-btn" aria-label="Activer le mode chasse" data-i18n="map_hunt_off">🎯 Chasse</button>
         </div>
       </div>
       <div id="mapContainer" role="region" aria-label="Carte interactive des fantômes proches"></div>
@@ -1717,7 +1717,7 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         <div class="profile-name-big" id="profileName">…</div>
         <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;">
           <button onclick="shareMyProfile()" style="font-size:12px;color:rgba(168,180,255,.7);background:rgba(168,180,255,.07);border:1px solid rgba(168,180,255,.25);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:'Instrument Sans',sans-serif;" data-i18n="profile_share_profile">↗ Partager mon profil</button>
-          <button onclick="generateYearCard()" id="yearCardBtn" style="font-size:12px;color:rgba(255,200,80,.8);background:rgba(255,200,80,.07);border:1px solid rgba(255,200,80,.3);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:'Instrument Sans',sans-serif;">✦ Mon année</button>
+          <button onclick="generateYearCard()" id="yearCardBtn" style="font-size:12px;color:rgba(255,200,80,.8);background:rgba(255,200,80,.07);border:1px solid rgba(255,200,80,.3);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:'Instrument Sans',sans-serif;" data-i18n="profile_year_btn">✦ Mon année</button>
         </div>
       </div>
       <!-- ── RANG sous le nom ─────────────────────────── -->
