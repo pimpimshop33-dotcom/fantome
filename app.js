@@ -257,6 +257,7 @@ const LANGS = {
     map_you: '📍 Vous êtes ici',
     map_hunt_on: '🎯 Chasse ON',
     map_hunt_off: '🎯 Chasse',
+    profile_year_btn: '✦ Mon année',
     map_share_btn: '↗ Partager',
     dep_success_title: 'Fantôme ancré',
     dep_success_sub: 'Votre trace repose dans ce lieu.<br>Une âme la découvrira… peut-être.',
@@ -749,6 +750,7 @@ const LANGS = {
     map_you: '📍 You are here',
     map_hunt_on: '🎯 Hunt ON',
     map_hunt_off: '🎯 Hunt',
+    profile_year_btn: '✦ My year',
     map_share_btn: '↗ Share',
     dep_success_title: 'Ghost anchored',
     dep_success_sub: 'Your trace rests in this place.<br>A soul will discover it… perhaps.',
@@ -4407,12 +4409,12 @@ window.generateYearCard = async () => {
       } else {
         _downloadCanvas(canvas, 'mon-annee-ghostub.png');
       }
-      if (btn) { btn.textContent = '❆ Mon année'; btn.disabled = false; }
+      if (btn) { btn.textContent = t.profile_year_btn || (t.lang === 'en' ? '❆ My year' : '❆ Mon année'); btn.disabled = false; }
     }, 'image/png');
 
   } catch(e) {
     console.warn('generateYearCard:', e);
-    if (btn) { btn.textContent = '❆ Mon année'; btn.disabled = false; }
+    if (btn) { btn.textContent = t.profile_year_btn || (t.lang === 'en' ? '❆ My year' : '❆ Mon année'); btn.disabled = false; }
   }
 };
 
