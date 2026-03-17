@@ -283,6 +283,7 @@ const LANGS = {
     // Notifications
     notif_new_ghost_title: '👻 Nouveau fantôme proche !',
     notif_reso_title: '✦ Votre trace a résonné',
+    whisper_vibration: '✦ Une âme a résonné sur ton ghost',
     notif_disc_title: '🔮 Votre fantôme secret a été trouvé !',
     notif_open_title: '✉ Votre trace a été découverte',
     notif_reply_title: '↩ Quelqu\'un vous a répondu',
@@ -776,6 +777,7 @@ const LANGS = {
     // Notifications
     notif_new_ghost_title: '👻 New ghost nearby!',
     notif_reso_title: '✦ Your trace resonated',
+    whisper_vibration: '✦ A soul resonated with your ghost',
     notif_disc_title: '🔮 Your secret ghost was found!',
     notif_open_title: '✉ Your trace was discovered',
     notif_reply_title: '↩ Someone replied to you',
@@ -1138,7 +1140,8 @@ const COLL = {
   REPORTS: 'reports',
   DISCOVERIES: 'discoveries',
   PREMIUM_CODES: 'premiumCodes',
-  GHOST_STATS: 'ghostStats'
+  GHOST_STATS: 'ghostStats',
+  WHISPERS: 'whispers'
 };
 
 // ── UTILS ────────────────────────────────────────────────
@@ -1493,85 +1496,27 @@ function buildLeafletMap(centerLat, centerLng, h) {
     }
   });
 
-  // ── ZONES HANTÉES — clusters 5+ ghosts dans 200m ─────────
-  const _hauntedSpotted = new Set();
-  const _hauntedZones = [];
-
-  nearbyGhosts.forEach((g) => {
-    if (_hauntedSpotted.has(g.id) || !g.lat || !g.lng) return;
+  // ── GHOST SPOTS : clusters 3+ ghosts dans 50m ───────────
+  const _spotted = new Set();
+  nearbyGhosts.forEach((g, i) => {
+    if (_spotted.has(g.id) || !g.lat || !g.lng) return;
     const cluster = nearbyGhosts.filter(h =>
       h.id !== g.id && h.lat && h.lng &&
-      distanceMeters(g.lat, g.lng, h.lat, h.lng) <= 200
+      distanceMeters(g.lat, g.lng, h.lat, h.lng) <= 50
     );
-    const total = cluster.length + 1;
-
-    if (total >= 3) {
+    if (cluster.length >= 2) { // g + 2 autres = 3 au total
       const clusterIds = [g.id, ...cluster.map(h => h.id)];
-      clusterIds.forEach(id => _hauntedSpotted.add(id));
-
-      // Calculer le barycentre de la zone
-      const allInCluster = [g, ...cluster];
-      const cLat = allInCluster.reduce((s,p) => s + p.lat, 0) / allInCluster.length;
-      const cLng = allInCluster.reduce((s,p) => s + p.lng, 0) / allInCluster.length;
-
-      // Intensité selon le nombre de ghosts
-      const isHaunted = total >= 5;
-      const isHot = total >= 8;
-
-      // Cercle de halo — zone hantée
-      const haloColor = isHot
-        ? 'rgba(255,100,100,0.15)'
-        : isHaunted
-        ? 'rgba(168,180,255,0.12)'
-        : 'rgba(168,180,255,0.06)';
-      const haloStroke = isHot
-        ? 'rgba(255,120,120,0.5)'
-        : isHaunted
-        ? 'rgba(168,180,255,0.45)'
-        : 'rgba(168,180,255,0.2)';
-
-      L.circle([cLat, cLng], {
-        radius: Math.min(80 + total * 15, 250),
-        color: haloStroke,
-        fillColor: haloColor,
-        fillOpacity: 1,
-        weight: 1.5,
-        dashArray: isHaunted ? '' : '3 5',
-        interactive: false
-      }).addTo(map);
-
-      // Badge de zone
-      const badgeLabel = isHot
-        ? (_currentLang === 'en' ? '🔥 Infested · ' + total : '🔥 Infesté · ' + total)
-        : isHaunted
-        ? (_currentLang === 'en' ? '👻 Haunted · ' + total : '👻 Hanté · ' + total)
-        : (_currentLang === 'en' ? '✦ Ghost Spot · ' + total : '✦ Ghost Spot · ' + total);
-
-      const badgeColor = isHot
-        ? 'rgba(255,120,100,0.9)'
-        : 'rgba(168,180,255,0.9)';
-      const badgeBg = isHot
-        ? 'rgba(30,10,10,0.88)'
-        : 'rgba(10,8,20,0.88)';
-      const badgeBorder = isHot
-        ? 'rgba(255,100,80,0.6)'
-        : 'rgba(168,180,255,0.5)';
-
-      const zoneIcon = L.divIcon({
-        html: `<div style="display:flex;align-items:center;justify-content:center;">
-          <div style="font-size:11px;font-weight:600;color:${badgeColor};background:${badgeBg};border:1px solid ${badgeBorder};border-radius:20px;padding:3px 10px;white-space:nowrap;backdrop-filter:blur(4px);box-shadow:0 0 12px ${badgeBorder};">${badgeLabel}</div>
+      clusterIds.forEach(id => _spotted.add(id));
+      const spotIcon = L.divIcon({
+        html: `<div style="position:relative;display:flex;align-items:center;justify-content:center;">
+          <div style="position:absolute;width:56px;height:56px;border-radius:50%;background:rgba(255,200,80,.08);border:1.5px solid rgba(255,200,80,.4);animation:ghostFloat 3s ease-in-out infinite;"></div>
+          <div style="font-size:11px;font-weight:600;color:rgba(255,200,80,.9);background:rgba(10,8,20,.85);border:1px solid rgba(255,200,80,.5);border-radius:20px;padding:3px 8px;white-space:nowrap;position:relative;z-index:1;">✦ Ghost Spot · ${clusterIds.length}</div>
         </div>`,
-        iconSize: [140, 24], iconAnchor: [70, 12], className: ''
+        iconSize: [120, 32], iconAnchor: [60, 16], className: ''
       });
-
-      L.marker([cLat, cLng], { icon: zoneIcon })
+      L.marker([g.lat, g.lng], { icon: spotIcon })
         .addTo(map)
-        .on('click', () => {
-          const msg = isHot
-            ? (_currentLang === 'en' ? `🔥 ${total} ghosts infest this area!` : `🔥 ${total} fantômes infestent ce lieu !`)
-            : (_currentLang === 'en' ? `👻 ${total} ghosts haunt this area` : `👻 ${total} fantômes hantent ce lieu`);
-          showToast('info', msg);
-        });
+        .on('click', () => showToast('info', clusterIds.length + (_currentLang === 'en' ? ' presences here — come closer!' : t.misc_presences_here || ' présences ici — approche-toi !')));
     }
   });
   setTimeout(() => map && map.invalidateSize(), 500);
@@ -1594,6 +1539,7 @@ onAuthStateChanged(auth, async user => {
   if (user) {
     currentUser = user;
     watchMyGhostResonances();
+    _startWhisperListener();
     Analytics.track('session_start', { uid_hash: btoa(user.uid).slice(0,8) });
     Analytics.track('app_open');
     // FIX: Migrer les découvertes anonymes vers le compte utilisateur
@@ -5187,6 +5133,37 @@ function fireResonanceParticles(btn) {
   setTimeout(() => btn.classList.remove('firing'), 500);
 }
 
+
+// ── GHOST WHISPER — écouter les résonances en temps réel ──
+let _whisperUnsub = null;
+function _startWhisperListener() {
+  if (!currentUser) return;
+  if (_whisperUnsub) _whisperUnsub();
+  let _firstSnapshot = true;
+  _whisperUnsub = onSnapshot(
+    doc(db, COLL.WHISPERS, currentUser.uid),
+    (snap) => {
+      if (_firstSnapshot) { _firstSnapshot = false; return; } // ignorer l'état initial
+      if (!snap.exists()) return;
+      const data = snap.data();
+      // Vibration mystérieuse — pattern distinctif
+      if (navigator.vibrate) {
+        navigator.vibrate([80, 60, 80, 60, 300]);
+      }
+      // Toast discret avec l'emoji du ghost
+      const emoji = data.ghostEmoji || '👻';
+      const loc = data.ghostLocation || '';
+      const msg = t.whisper_vibration || (
+        _currentLang === 'en'
+          ? emoji + ' A soul resonated with your ghost'
+          : emoji + ' Une âme a résonné sur ton fantôme'
+      );
+      showToast('success', msg + (loc ? ' · ' + loc : ''), 3500);
+    },
+    () => {} // ignorer les erreurs silencieusement
+  );
+}
+
 window.resonate = async () => {
   const btn = document.getElementById('resonanceBtn');
   if (btn.classList.contains('resonated') || !selectedGhost) return;
@@ -5214,6 +5191,16 @@ window.resonate = async () => {
   if (selectedGhost.authorUid) {
     setDoc(doc(db, COLL.USERS, selectedGhost.authorUid), { totalResonances: increment(1) }, { merge: true })
       .catch(e => console.warn('totalResonances increment:', e));
+    // ── GHOST WHISPER — vibration mystérieuse pour l'auteur ──
+    if (selectedGhost.authorUid !== currentUser?.uid) {
+      setDoc(doc(db, COLL.WHISPERS, selectedGhost.authorUid), {
+        lastWhisper: serverTimestamp(),
+        ghostId: selectedGhost.id,
+        ghostEmoji: selectedGhost.emoji || '👻',
+        ghostLocation: selectedGhost.location || '',
+        count: increment(1)
+      }, { merge: true }).catch(() => {});
+    }
   }
   Analytics.track('resonate');
 };
