@@ -78,7 +78,7 @@
 <!-- Manifest PWA -->
 <link rel="manifest" href="/ghostub/manifest.json">
 
-<script type="module" src="app.js?v=28"></script>
+<script type="module" src="app.js?v=29"></script>
 
 <style>
 /* ── BASE VARIABLES ────────────────────────────────────── */
@@ -1705,14 +1705,14 @@ if ('serviceWorker' in navigator) {
           <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="handleVideo(this)" aria-hidden="true">
           <div id="videoPreview"></div>
         </div>
+          </div>
+        </div>
         <div class="deposit-error" id="depositError" role="alert" aria-live="polite"></div>
         <div style="display:flex;gap:10px;">
           <button class="wizard-back-btn" onclick="wizardBack(3)">← Retour</button>
           <button class="btn-primary" id="depositBtn" style="flex:2;" onclick="depositGhost()">👻 Ancrer ce fantôme</button>
         </div>
       </div>
-    </div>
-  </div>
 
   <!-- MAP -->
   <div class="screen" id="screenMap" aria-label="Carte des fantômes">
