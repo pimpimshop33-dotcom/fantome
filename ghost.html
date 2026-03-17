@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#060608">
+<title>👻 Ghostub — Un message t'attend</title>
+<meta property="og:title" content="👻 Quelqu'un a laissé quelque chose ici">
+<meta property="og:description" content="Un message secret ancré dans ce lieu. Approche-toi pour le lire.">
+<meta property="og:image" content="https://raw.githubusercontent.com/pimpimshop33-dotcom/ghostub/main/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=Instrument+Sans:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #060608;
+    --deep: #0d0d12;
+    --spirit: #a8b4ff;
+    --ether: #c8d4ff;
+    --warm: #f0e8d8;
+    --warm-dim: rgba(240,232,216,0.55);
+    --border: rgba(168,180,255,0.12);
+    --border-bright: rgba(168,180,255,0.3);
+  }
+
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--warm);
+    font-family: 'Instrument Sans', sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ── MAP FOND ── */
+  #mapBg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: var(--void);
+    filter: brightness(0.35) saturate(0.6);
+  }
+
+  /* Vignette sombre autour */
+  #mapBg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 50%, transparent 20%, rgba(6,6,8,0.7) 70%, rgba(6,6,8,0.95) 100%);
+  }
+
+  /* ── PULSE CENTRAL ── */
+  .pulse-wrap {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pulse-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(168,180,255,0.4);
+    animation: pulseRing 3s ease-out infinite;
+  }
+  .pulse-ring:nth-child(2) { animation-delay: 1s; }
+  .pulse-ring:nth-child(3) { animation-delay: 2s; }
+
+  @keyframes pulseRing {
+    0%   { width: 24px; height: 24px; opacity: 0.9; border-color: rgba(168,180,255,0.7); }
+    100% { width: 160px; height: 160px; opacity: 0; border-color: rgba(168,180,255,0); }
+  }
+
+  .pulse-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #e0e8ff, #7080e0);
+    border: 2px solid rgba(255,255,255,0.9);
+    box-shadow: 0 0 0 4px rgba(168,180,255,0.2), 0 0 24px rgba(168,180,255,0.8);
+    position: relative;
+    z-index: 1;
+    animation: dotPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes dotPulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(168,180,255,0.2), 0 0 24px rgba(168,180,255,0.8); }
+    50%       { box-shadow: 0 0 0 8px rgba(168,180,255,0.1), 0 0 40px rgba(168,180,255,1); }
+  }
+
+  /* ── GHOST FLOTTANT ── */
+  .ghost-float {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -80%);
+    font-size: 56px;
+    filter: drop-shadow(0 0 24px rgba(168,180,255,0.6)) drop-shadow(0 0 8px rgba(168,180,255,0.4));
+    animation: float 4s ease-in-out infinite;
+    z-index: 3;
+    opacity: 0;
+    transition: opacity 0.8s ease 0.3s;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translate(-50%, -80%) translateY(0); }
+    50%       { transform: translate(-50%, -80%) translateY(-14px); }
+  }
+
+  /* ── CARTE BOTTOM SHEET ── */
+  .sheet {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 420px;
+    background: linear-gradient(180deg, rgba(13,13,18,0) 0%, rgba(13,13,18,0.98) 8%, #0d0d12 100%);
+    padding: 60px 28px 40px;
+    padding-bottom: calc(40px + env(safe-area-inset-bottom));
+    text-align: center;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s ease 0.5s, transform 0.7s ease 0.5s;
+  }
+
+  .sheet-eyebrow {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: rgba(168,180,255,0.5);
+    margin-bottom: 14px;
+  }
+
+  .sheet-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 36px;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--ether);
+    line-height: 1.3;
+    margin-bottom: 10px;
+    text-shadow: 0 0 40px rgba(168,180,255,0.3);
+  }
+
+  .sheet-sub {
+    font-size: 13px;
+    color: var(--warm-dim);
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+
+  .sheet-location {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: rgba(168,180,255,0.6);
+    background: rgba(168,180,255,0.06);
+    border: 1px solid rgba(168,180,255,0.15);
+    border-radius: 20px;
+    padding: 5px 12px;
+    margin-bottom: 28px;
+    letter-spacing: 0.3px;
+  }
+
+  .sheet-location-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(168,180,255,0.6);
+    box-shadow: 0 0 8px rgba(168,180,255,0.6);
+    animation: dotPulse 2s ease-in-out infinite;
+  }
+
+  /* ── BOUTON PRINCIPAL ── */
+  .cta-btn {
+    display: block;
+    width: 100%;
+    padding: 17px;
+    background: linear-gradient(135deg, rgba(168,180,255,0.22) 0%, rgba(168,180,255,0.08) 100%);
+    border: 1px solid rgba(168,180,255,0.45);
+    border-radius: 16px;
+    color: var(--ether);
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+    box-shadow: 0 0 32px rgba(168,180,255,0.1);
+  }
+
+  .cta-btn:hover {
+    background: linear-gradient(135deg, rgba(168,180,255,0.32) 0%, rgba(168,180,255,0.14) 100%);
+    box-shadow: 0 0 48px rgba(168,180,255,0.2);
+    transform: translateY(-1px);
+  }
+
+  .cta-btn:active { transform: scale(0.98); }
+
+  .cta-hint {
+    font-size: 11px;
+    color: rgba(168,180,255,0.3);
+    letter-spacing: 0.3px;
+  }
+
+  /* ── PARTICLES ── */
+  .particles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+  }
+  .particle {
+    position: absolute;
+    width: 1.5px;
+    height: 1.5px;
+    background: var(--spirit);
+    border-radius: 50%;
+    opacity: 0;
+    animation: drift linear infinite;
+  }
+  @keyframes drift {
+    0%   { opacity: 0; transform: translateY(100vh); }
+    10%  { opacity: 0.4; }
+    90%  { opacity: 0.15; }
+    100% { opacity: 0; transform: translateY(-10vh) translateX(20px); }
+  }
+
+  /* ── LOADED STATE ── */
+  body.loaded .ghost-float { opacity: 1; }
+  body.loaded .sheet { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- Carte fond (Leaflet ou fond statique) -->
+<div id="mapBg"></div>
+
+<!-- Particules -->
+<div class="particles" id="particles"></div>
+
+<!-- Ghost flottant -->
+<div class="ghost-float" id="ghostEmoji">👻</div>
+
+<!-- Point pulsant central -->
+<div class="pulse-wrap">
+  <div class="pulse-ring"></div>
+  <div class="pulse-ring"></div>
+  <div class="pulse-ring"></div>
+  <div class="pulse-dot"></div>
+</div>
+
+<!-- Sheet bas -->
+<div class="sheet" id="sheet">
+  <div class="sheet-eyebrow" id="eyebrow">Message ancré ici</div>
+  <div class="sheet-title" id="mainTitle">Quelqu'un a laissé<br>quelque chose ici.</div>
+  <div class="sheet-sub" id="mainSub">Un message secret attend d'être lu.<br>Tu dois être sur place pour l'ouvrir.</div>
+  <div class="sheet-location" id="locationBadge">
+    <div class="sheet-location-dot"></div>
+    <span id="locationText">Chargement…</span>
+  </div>
+  <a class="cta-btn" id="ctaBtn" href="#">✉ Approche-toi pour lire</a>
+  <div class="cta-hint">Gratuit · Sans pub · Disponible sur Android &amp; iOS</div>
+</div>
+
+<script type="module">
+  // ── Détecter la langue ────────────────────────────────
+  const lang = navigator.language?.startsWith('en') ? 'en' : 'fr';
+  const i18n = {
+    fr: {
+      eyebrow: 'Message ancré ici',
+      title: 'Quelqu\'un a laissé<br>quelque chose ici.',
+      sub: 'Un message secret attend d\'être lu.<br>Tu dois être sur place pour l\'ouvrir.',
+      cta: '✉ Approche-toi pour lire',
+      hint: 'Gratuit · Sans pub · Disponible sur Android & iOS',
+      loading: 'Chargement…',
+      unknown: 'Position inconnue',
+    },
+    en: {
+      eyebrow: 'Message anchored here',
+      title: 'Someone left<br>something here.',
+      sub: 'A secret message is waiting to be read.<br>You need to be on-site to open it.',
+      cta: '✉ Get close to read it',
+      hint: 'Free · No ads · Available on Android & iOS',
+      loading: 'Loading…',
+      unknown: 'Unknown location',
+    }
+  };
+  const t = i18n[lang];
+
+  // ── Appliquer i18n ────────────────────────────────────
+  document.getElementById('eyebrow').textContent = t.eyebrow;
+  document.getElementById('mainTitle').innerHTML = t.title;
+  document.getElementById('mainSub').textContent = t.sub;
+  document.getElementById('ctaBtn').textContent = t.cta;
+  document.querySelector('.cta-hint').innerHTML = t.hint;
+  document.getElementById('locationText').textContent = t.loading;
+
+  // ── Lire les paramètres URL ───────────────────────────
+  const params = new URLSearchParams(location.search);
+  const ghostId = params.get('id') || params.get('ghost');
+  const ghostLat = parseFloat(params.get('lat') || '0');
+  const ghostLng = parseFloat(params.get('lng') || '0');
+  const ghostEmoji = params.get('emoji') || '👻';
+  const ghostLocation = decodeURIComponent(params.get('loc') || '');
+
+  // Emoji du ghost
+  document.getElementById('ghostEmoji').textContent = ghostEmoji;
+
+  // Location
+  document.getElementById('locationText').textContent = ghostLocation || t.unknown;
+
+  // ── CTA → ouvrir l'app ───────────────────────────────
+  const appUrl = 'https://pimpimshop33-dotcom.github.io/ghostub/' 
+    + (ghostId ? '?ghost=' + ghostId : '');
+  document.getElementById('ctaBtn').href = appUrl;
+
+  // ── Carte fond avec Leaflet ──────────────────────────
+  if (ghostLat && ghostLng) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = () => {
+      const mapDiv = document.getElementById('mapBg');
+      mapDiv.style.filter = 'brightness(0.4) saturate(0.5)';
+      const map = L.map('mapBg', {
+        center: [ghostLat, ghostLng],
+        zoom: 16,
+        zoomControl: false,
+        attributionControl: false,
+        dragging: false,
+        touchZoom: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        tap: false,
+      });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 20
+      }).addTo(map);
+    };
+    document.head.appendChild(script);
+  }
+
+  // ── Particules ───────────────────────────────────────
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (8 + Math.random() * 12) + 's';
+    p.style.animationDelay = (Math.random() * 10) + 's';
+    container.appendChild(p);
+  }
+
+  // ── Reveal animé ────────────────────────────────────
+  setTimeout(() => document.body.classList.add('loaded'), 100);
+</script>
+</body>
+</html>
