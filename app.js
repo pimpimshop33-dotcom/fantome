@@ -3076,12 +3076,14 @@ function _downloadCanvas(canvas, name) {
 }
 
 function buildShareLink(ghost) {
-  const base = 'https://pimpimshop33-dotcom.github.io/ghostub/';
+  // Pointer vers la landing page mystère
+  const base = 'https://pimpimshop33-dotcom.github.io/ghostub/ghost.html';
   const params = new URLSearchParams({
-    ghost: ghost.id,
+    id: ghost.id,
     lat: ghost.lat ? ghost.lat.toFixed(5) : '',
     lng: ghost.lng ? ghost.lng.toFixed(5) : '',
-    loc: ghost.location || 'Lieu mystérieux'
+    loc: ghost.location || 'Lieu mystérieux',
+    emoji: ghost.emoji || '👻'
   });
   if (currentUser) params.set('ref', currentUser.uid.slice(0, 8));
   return base + '?' + params.toString();
