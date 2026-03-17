@@ -78,7 +78,7 @@
 <!-- Manifest PWA -->
 <link rel="manifest" href="/ghostub/manifest.json">
 
-<script type="module" src="app.js?v=37"></script>
+<script type="module" src="app.js?v=38"></script>
 
 <style>
 /* ── BASE VARIABLES ────────────────────────────────────── */
@@ -1222,9 +1222,9 @@ if ('serviceWorker' in navigator) {
 
   <div class="deposit-success" id="depositSuccess" role="status" aria-live="polite">
     <div class="success-ghost" aria-hidden="true">👻</div>
-    <div class="success-title">Fantôme ancré</div>
-    <div class="success-sub" id="successSubText">Votre trace repose dans ce lieu.<br>Une âme la découvrira… peut-être.</div>
-    <div class="success-hint">Appuie pour continuer</div>
+    <div class="success-title" data-i18n="dep_success_title">Fantôme ancré</div>
+    <div class="success-sub" id="successSubText" data-i18n="dep_success_sub">Votre trace repose dans ce lieu.<br>Une âme la découvrira… peut-être.</div>
+    <div class="success-hint" data-i18n="dep_success_hint">Appuie pour continuer</div>
   </div>
 
   <div class="notch" aria-hidden="true"></div>
@@ -1752,7 +1752,7 @@ if ('serviceWorker' in navigator) {
         <div class="map-title" data-i18n="map_title">Carte des fantômes</div>
         <div style="display:flex;align-items:center;gap:8px;">
           <div class="map-count" id="mapCount" aria-live="polite">0 ghost(s)</div>
-          <button id="mapShareBtn" onclick="shareMapLocation()" class="map-header-btn" aria-label="Partager ce lieu">↗ Partager</button>
+          <button id="mapShareBtn" onclick="shareMapLocation()" class="map-header-btn" aria-label="Partager ce lieu" data-i18n="map_share_btn">↗ Partager</button>
           <button id="huntModeBtn" onclick="toggleHuntMode()" class="map-header-btn" aria-label="Activer le mode chasse">🎯 Chasse</button>
         </div>
       </div>
