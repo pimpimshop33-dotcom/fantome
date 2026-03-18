@@ -1597,8 +1597,14 @@ function buildLeafletMap(centerLat, centerLng, h) {
     // Badge flottant
   });
 
-  // ── LÉGENDE zones hantées ──
-  const legendEl = document.getElementById('mapHauntedLegend');
+  // ── LÉGENDE zones hantées — injectée dans le conteneur Leaflet ──
+  let legendEl = document.getElementById('mapHauntedLegend');
+  if (!legendEl) {
+    legendEl = document.createElement('div');
+    legendEl.id = 'mapHauntedLegend';
+    legendEl.style.cssText = 'display:none;position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:1000;align-items:center;gap:6px;padding:5px 12px;background:rgba(8,6,18,.85);backdrop-filter:blur(8px);border:1px solid rgba(168,180,255,.2);border-radius:20px;flex-wrap:wrap;white-space:nowrap;pointer-events:none;';
+    document.getElementById('leafletMap').appendChild(legendEl);
+  }
   const zones = { spot: 0, haunted: 0, infest: 0 };
   const zoneGhosts = { spot: 0, haunted: 0, infest: 0 };
   const _check = new Set();
