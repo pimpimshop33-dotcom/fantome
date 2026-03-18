@@ -308,7 +308,7 @@ button, [role="button"] {
 .leaflet-popup-tip{background:#1a1a24 !important;}
 .leaflet-popup-content{font-family:'Instrument Sans',sans-serif;font-size:13px;line-height:1.5;}
 /* Tuiles sombres — brightness pour lisibilité rues sans perdre l'ambiance */
-.leaflet-tile{filter:brightness(1.9) contrast(0.85);}
+.leaflet-tile{filter:brightness(1.9) contrast(1.25);}
 
 /* ── DEPOSIT SUCCESS ───────────────────────────────────── */
 .deposit-success{position:absolute;inset:0;background:rgba(6,4,16,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;z-index:100;opacity:0;pointer-events:none;transition:opacity .5s;}
