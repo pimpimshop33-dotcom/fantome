@@ -130,6 +130,7 @@ const LANGS = {
     dep_err_long: 'Message trop long (280 caractères max).',
     dep_err_gps: 'Géolocalisation requise — activez-la dans votre navigateur.',
     dep_err_offline: 'Vous êtes hors ligne — reconnectez-vous pour déposer.',
+    dep_err_generic: 'Erreur lors du dépôt — vérifie ta connexion et réessaie.',
     misc_error_generic: 'Erreur — réessaie plus tard.',
     stripe_btn_premium: '✦ Devenir Chasseur Premium',
     stripe_btn_commerce: '🏪 Activer le Plan Commerce',
@@ -646,6 +647,7 @@ const LANGS = {
     dep_err_long: 'Message too long (280 chars max).',
     dep_err_gps: 'Location required — enable it in your browser.',
     dep_err_offline: 'You\'re offline — reconnect to drop a ghost.',
+    dep_err_generic: 'Error while dropping — check your connection and try again.',
     misc_error_generic: 'Error — please try again later.',
     stripe_btn_premium: '✦ Become a Premium Hunter',
     stripe_btn_commerce: '🏪 Activate Commerce Plan',
@@ -5533,7 +5535,8 @@ window.depositGhost = async () => {
     successEl.addEventListener('click', dismissSuccess);
     setTimeout(() => dismissSuccess(), 6000);
   } catch(e) {
-    err.textContent = t.dep_err_generic || 'Une erreur est survenue — vérifie ta connexion et réessaie.';
+    const detail = e?.message ? ` (${e.message})` : '';
+    err.textContent = (t.dep_err_generic || 'Erreur lors du dépôt — vérifie ta connexion et réessaie.') + detail;
     console.warn('depositGhost error:', e);
     depositBtn.textContent = t.dep_deposit_btn || '👻 Ancrer ce fantôme';
     depositBtn.disabled = false;
