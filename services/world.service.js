@@ -26,9 +26,26 @@ export const DEPOSIT = {
   MAX_ACTIVE  : 5,
 };
 
-const GEOHASH_QUERY_PRECISION = 4;
 const GEOHASH_STORE_PRECISION = 5;
-const QUERY_LIMIT = 50;
+const QUERY_LIMIT = 100;
+
+// Retourne les 9 cellules geohash5 couvrant ~7km autour de lat/lng
+function getGeohash5Neighbors(lat, lng) {
+  const d = 0.045; // ~5km en degrés
+  const cells = new Set();
+  const offsets = [
+    [0,0],[d,0],[-d,0],[0,d],[0,-d],
+    [d,d],[d,-d],[-d,d],[-d,-d]
+  ];
+  for (const [dlat, dlng] of offsets) {
+    cells.add(encodeGeohash(
+      Math.max(-90,  Math.min(90,  lat + dlat)),
+      Math.max(-180, Math.min(180, lng + dlng)),
+      GEOHASH_STORE_PRECISION
+    ));
+  }
+  return [...cells]; // 1–9 valeurs uniques
+}
 
 const GH_CHARS = '0123456789bcdefghjkmnpqrstuvwxyz';
 
@@ -60,7 +77,7 @@ export function encodeGeohash(lat, lng, precision = GEOHASH_STORE_PRECISION) {
 export function buildGeohashFields(lat, lng) {
   return {
     geohash  : encodeGeohash(lat, lng, GEOHASH_STORE_PRECISION),
-    geohash4 : encodeGeohash(lat, lng, GEOHASH_QUERY_PRECISION),
+    geohash4 : encodeGeohash(lat, lng, 4), // conservé pour compatibilité anciens docs
   };
 }
 
@@ -138,13 +155,14 @@ const WorldService = {
       ));
     }
 
-    const prefix = encodeGeohash(lat, lng, GEOHASH_QUERY_PRECISION);
+    // Query sur 9 cellules geohash5 voisines (~7km de couverture)
+    // Firestore 'in' supporte jusqu'à 30 valeurs — on est à 9 max
+    const hashes = getGeohash5Neighbors(lat, lng);
 
     try {
       const snap = await getDocs(query(
         collection(this._db, 'ghosts'),
-        where('geohash4', '>=', prefix),
-        where('geohash4', '<=', prefix + '\uf8ff'),
+        where('geohash', 'in', hashes),
         limit(QUERY_LIMIT)
       ));
 
@@ -156,8 +174,7 @@ const WorldService = {
       console.warn('[WorldService] getVisibleGhosts fallback:', e.code);
     }
 
-    // Fallback : fantômes sans geohash4 (créés avant le fix geohash)
-    // On filtre sur expired=false pour respecter les règles Firestore
+    // Fallback : fantômes sans geohash (anciens documents)
     return getDocs(query(
       collection(this._db, 'ghosts'),
       where('expired', '==', false),
