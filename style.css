@@ -300,7 +300,7 @@ button, [role="button"] {
 #screenMap{display:none;flex-direction:column;height:100%;}
 #screenMap.active{display:flex !important;}
 #mapContainer{width:100%;flex:1;min-height:550px;background:var(--deep);display:block;}
-.map-screen-wrap{flex:1;display:flex;flex-direction:column;height:100%;}
+.map-screen-wrap{flex:1;display:flex;flex-direction:column;height:100%;position:relative;}
 .map-header{padding:12px 20px 10px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
 .map-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ether);}
 .map-count{font-size:11px;color:var(--spirit-dim);}
