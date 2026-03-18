@@ -1595,21 +1595,36 @@ function buildLeafletMap(centerLat, centerLng, h) {
     }).addTo(map);
 
     // Badge flottant
-    const label = _currentLang === 'en' ? labelEn : labelFr;
-    const badgeBg = level === 'infest' ? 'rgba(255,60,40,.15)' : level === 'haunted' ? 'rgba(140,60,255,.12)' : 'rgba(255,200,80,.08)';
-    const spotIcon = L.divIcon({
-      html: `<div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;">
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:${level==='infest'?72:level==='haunted'?62:52}px;height:${level==='infest'?72:level==='haunted'?62:52}px;border-radius:50%;background:${badgeBg};border:1.5px solid ${borderColor};animation:ghostFloat ${level==='infest'?'1.8':'2.4'}s ease-in-out infinite;"></div>
-        <div style="font-size:11px;font-weight:700;color:${level==='infest'?'rgba(255,120,100,.95)':level==='haunted'?'rgba(200,140,255,.95)':'rgba(255,210,80,.95)'};background:rgba(8,6,18,.88);border:1px solid ${borderColor};border-radius:20px;padding:3px 10px;white-space:nowrap;position:relative;z-index:1;letter-spacing:.3px;">${label}</div>
-      </div>`,
-      iconSize: [140, 36], iconAnchor: [70, 18], className: ''
-    });
-    const msgFr = `${n} présences concentrées ici${level==='infest'?' — zone fortement infestée !':level==='haunted'?' — zone hantée.':' — approche-toi !'}`;
-    const msgEn = `${n} presences concentrated here${level==='infest'?' — heavily infested zone!':level==='haunted'?' — haunted zone.':' — come closer!'}`;
-    L.marker([g.lat, g.lng], { icon: spotIcon, zIndexOffset: 500 })
-      .addTo(map)
-      .on('click', () => showToast('info', _currentLang === 'en' ? msgEn : msgFr));
   });
+
+  // ── LÉGENDE zones hantées ──
+  const legendEl = document.getElementById('mapHauntedLegend');
+  const zones = { spot: 0, haunted: 0, infest: 0 };
+  const _check = new Set();
+  nearbyGhosts.forEach(g => {
+    if (_check.has(g.id) || !g.lat || !g.lng) return;
+    const cl = nearbyGhosts.filter(h => h.id !== g.id && h.lat && h.lng && distanceMeters(g.lat, g.lng, h.lat, h.lng) <= 300);
+    if (cl.length < 2) return;
+    const n2 = cl.length + 1;
+    [g.id, ...cl.map(h => h.id)].forEach(id => _check.add(id));
+    if (n2 >= 8) zones.infest++;
+    else if (n2 >= 5) zones.haunted++;
+    else zones.spot++;
+  });
+  if (legendEl) {
+    const hasAny = zones.spot || zones.haunted || zones.infest;
+    if (hasAny) {
+      const items = [];
+      if (zones.spot)    items.push('<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:rgba(255,200,80,0.5);border:1.5px solid rgba(255,200,80,.7);display:inline-block;"></span><span style="font-size:10px;color:rgba(255,210,80,.9);">Ghost Spot</span></span>');
+      if (zones.haunted) items.push('<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:rgba(168,100,255,0.5);border:1.5px solid rgba(168,100,255,.7);display:inline-block;"></span><span style="font-size:10px;color:rgba(200,140,255,.9);">' + (_currentLang==='en'?'Haunted zone':'Zone hantée') + '</span></span>');
+      if (zones.infest)  items.push('<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:rgba(255,80,60,0.5);border:1.5px solid rgba(255,80,60,.7);display:inline-block;"></span><span style="font-size:10px;color:rgba(255,120,100,.9);">Infestation</span></span>');
+      legendEl.innerHTML = items.join('<span style="color:rgba(168,180,255,.2);margin:0 6px;">·</span>');
+      legendEl.style.display = 'flex';
+    } else {
+      legendEl.style.display = 'none';
+    }
+  }
+
   setTimeout(() => map && map.invalidateSize(), 500);
   Analytics.track('map_opened', { ghost_count: nearbyGhosts.length, hunt_mode: huntMode });
 }
