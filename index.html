@@ -1712,8 +1712,9 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
           <button id="huntModeBtn" onclick="toggleHuntMode()" class="map-header-btn" aria-label="Activer le mode chasse" data-i18n="map_hunt_off">🎯 Chasse</button>
         </div>
       </div>
-      <div id="mapContainer" role="region" aria-label="Carte interactive des fantômes proches"></div>
-      <div id="mapHauntedLegend" style="display:none;align-items:center;gap:6px;padding:5px 14px;background:rgba(8,6,18,.82);backdrop-filter:blur(8px);border-bottom:1px solid rgba(168,180,255,.1);flex-wrap:wrap;flex-shrink:0;order:-1;"></div>
+      <div id="mapContainer" role="region" aria-label="Carte interactive des fantômes proches" style="position:relative;">
+        <div id="mapHauntedLegend" style="display:none;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:1000;align-items:center;gap:6px;padding:5px 12px;background:rgba(8,6,18,.82);backdrop-filter:blur(8px);border:1px solid rgba(168,180,255,.15);border-radius:20px;flex-wrap:wrap;white-space:nowrap;"></div>
+      </div>
     </div>
   </div>
 
