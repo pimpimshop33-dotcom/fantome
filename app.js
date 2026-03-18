@@ -1600,6 +1600,7 @@ function buildLeafletMap(centerLat, centerLng, h) {
   // ── LÉGENDE zones hantées ──
   const legendEl = document.getElementById('mapHauntedLegend');
   const zones = { spot: 0, haunted: 0, infest: 0 };
+  const zoneGhosts = { spot: 0, haunted: 0, infest: 0 };
   const _check = new Set();
   nearbyGhosts.forEach(g => {
     if (_check.has(g.id) || !g.lat || !g.lng) return;
@@ -1607,17 +1608,17 @@ function buildLeafletMap(centerLat, centerLng, h) {
     if (cl.length < 2) return;
     const n2 = cl.length + 1;
     [g.id, ...cl.map(h => h.id)].forEach(id => _check.add(id));
-    if (n2 >= 8) zones.infest++;
-    else if (n2 >= 5) zones.haunted++;
-    else zones.spot++;
+    if (n2 >= 8) { zones.infest++; zoneGhosts.infest += n2; }
+    else if (n2 >= 5) { zones.haunted++; zoneGhosts.haunted += n2; }
+    else { zones.spot++; zoneGhosts.spot += n2; }
   });
   if (legendEl) {
     const hasAny = zones.spot || zones.haunted || zones.infest;
     if (hasAny) {
       const items = [];
-      if (zones.spot)    items.push('<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:rgba(255,200,80,0.5);border:1.5px solid rgba(255,200,80,.7);display:inline-block;"></span><span style="font-size:10px;color:rgba(255,210,80,.9);">Ghost Spot</span></span>');
-      if (zones.haunted) items.push('<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:rgba(168,100,255,0.5);border:1.5px solid rgba(168,100,255,.7);display:inline-block;"></span><span style="font-size:10px;color:rgba(200,140,255,.9);">' + (_currentLang==='en'?'Haunted zone':'Zone hantée') + '</span></span>');
-      if (zones.infest)  items.push('<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:rgba(255,80,60,0.5);border:1.5px solid rgba(255,80,60,.7);display:inline-block;"></span><span style="font-size:10px;color:rgba(255,120,100,.9);">Infestation</span></span>');
+      if (zones.spot)    items.push(`<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:rgba(255,200,80,0.5);border:1.5px solid rgba(255,200,80,.7);display:inline-block;"></span><span style="font-size:10px;color:rgba(255,210,80,.9);">Ghost Spot · ${zoneGhosts.spot}👻</span></span>`);
+      if (zones.haunted) items.push(`<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:rgba(168,100,255,0.5);border:1.5px solid rgba(168,100,255,.7);display:inline-block;"></span><span style="font-size:10px;color:rgba(200,140,255,.9);">${_currentLang==='en'?'Haunted':'Hantée'} · ${zoneGhosts.haunted}👻</span></span>`);
+      if (zones.infest)  items.push(`<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:rgba(255,80,60,0.5);border:1.5px solid rgba(255,80,60,.7);display:inline-block;"></span><span style="font-size:10px;color:rgba(255,120,100,.9);">Infestation · ${zoneGhosts.infest}👻</span></span>`);
       legendEl.innerHTML = items.join('<span style="color:rgba(168,180,255,.2);margin:0 6px;">·</span>');
       legendEl.style.display = 'flex';
     } else {
