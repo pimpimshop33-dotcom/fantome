@@ -1321,3 +1321,204 @@ body {
     transparent 100%
   ) !important;
 }
+
+/* ══════════════════════════════════════════════════════════
+   HOMESCREEN — Traduit depuis React Native
+   flex:1 · justifyContent:center · alignItems:center
+   ══════════════════════════════════════════════════════════ */
+
+/* ── SLIDE 0 : layout centré (flex+center comme RN) ─────── */
+#obScene0 {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0;
+  padding: 24px 32px 16px;
+  text-align: center;
+}
+
+/* ── VISUAL : logo flottant ──────────────────────────────── */
+.ob-home-visual {
+  position: relative;
+  width: 180px; height: 180px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 32px;
+  flex-shrink: 0;
+}
+
+/* Glow de fond */
+.ob-home-glow {
+  position: absolute; inset: -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99,102,241,0.20) 0%, transparent 70%);
+  animation: obResoPulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Anneaux pulsants — traduction de SHADOW.glow */
+.ob-home-ring {
+  position: absolute; border-radius: 50%;
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  border: 1.5px solid rgba(99,102,241,0.20);
+  animation: homeRingPulse 4s ease-out infinite;
+  pointer-events: none;
+}
+.ob-hr1 { width: 120px; height: 120px; animation-delay: 0s; }
+.ob-hr2 { width: 160px; height: 160px; animation-delay: 1s;  border-style: dashed; opacity: 0.55; }
+.ob-hr3 { width: 200px; height: 200px; animation-delay: 2s;  opacity: 0.28; }
+
+@keyframes homeRingPulse {
+  0%   { transform: translate(-50%,-50%) scale(0.85); opacity: 0; }
+  15%  { opacity: 1; }
+  80%  { opacity: 0.3; }
+  100% { transform: translate(-50%,-50%) scale(1.20); opacity: 0; }
+}
+
+/* Logo emoji — fontSize:42 + SHADOW.glow traduit en filter */
+.ob-home-logo {
+  font-size: 96px;
+  position: relative; z-index: 2;
+  animation: floatG 3.5s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 24px rgba(99,102,241,0.90))
+    drop-shadow(0 0 48px rgba(99,102,241,0.45))
+    drop-shadow(0 0 80px rgba(79,70,229,0.22));
+  line-height: 1;
+}
+
+/* ── TEXTE ───────────────────────────────────────────────── */
+.ob-home-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 40px; /* marginBottom:40 du RN */
+  gap: 14px;
+}
+
+/* Titre "👻 Ghostub" — fontSize:42 color:COLORS.text */
+.ob-home-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.ob-home-title-ghost {
+  font-size: 36px;
+  filter: drop-shadow(0 0 12px rgba(99,102,241,0.80));
+  animation: floatG 3s ease-in-out infinite;
+}
+
+.ob-home-title-word {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 44px;
+  font-weight: 300;
+  font-style: italic;
+  color: #FFFFFF; /* COLORS.text */
+  letter-spacing: -0.5px;
+  text-shadow: 0 0 40px rgba(99,102,241,0.35);
+  /* typewriter conservé */
+  border-right-color: rgba(99,102,241,0.80);
+}
+
+/* Subtitle — color:COLORS.subtext = #9CA3AF */
+.ob-home-subtitle {
+  font-family: 'Instrument Sans', sans-serif;
+  font-size: 16px;
+  color: #9CA3AF; /* exactement COLORS.subtext */
+  line-height: 1.65;
+  letter-spacing: 0.1px;
+}
+
+/* ── BOUTON EXPLORER ─────────────────────────────────────── */
+/* backgroundColor:COLORS.primary + paddingVertical:15 + paddingHorizontal:40
+   borderRadius:30 + SHADOW.glow (shadowColor:#6366F1 opacity:0.8 radius:20) */
+.ob-home-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.ob-home-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 260px;
+  padding: 16px 40px;   /* paddingVertical:15 paddingHorizontal:40 */
+  background: #4F46E5;  /* COLORS.primary exact */
+  border: none;
+  border-radius: 30px;  /* borderRadius:30 exact */
+  color: #FFFFFF;       /* color:"#fff" exact */
+  font-family: 'Instrument Sans', sans-serif;
+  font-size: 16px;      /* fontSize:16 exact */
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  touch-action: manipulation;
+  /* SHADOW.glow traduit en box-shadow :
+     shadowColor:#6366F1 opacity:0.8 radius:20 elevation:10 */
+  box-shadow:
+    0 0 20px rgba(99,102,241,0.80),   /* shadowRadius:20 + opacity:0.8 */
+    0 0 40px rgba(99,102,241,0.35),   /* halo plus large */
+    0 10px 30px rgba(79,70,229,0.40), /* elevation:10 */
+    inset 0 1px 0 rgba(255,255,255,0.15);
+  transition: all 0.25s ease;
+  animation: homeButtonPulse 3s ease-in-out infinite;
+}
+
+.ob-home-btn:hover {
+  background: #4338CA;
+  box-shadow:
+    0 0 32px rgba(99,102,241,0.95),
+    0 0 64px rgba(99,102,241,0.45),
+    0 14px 40px rgba(79,70,229,0.55);
+  transform: translateY(-2px);
+}
+
+.ob-home-btn:active {
+  transform: scale(0.96) translateY(0);
+  box-shadow:
+    0 0 14px rgba(99,102,241,0.70),
+    0 6px 20px rgba(79,70,229,0.35);
+}
+
+.ob-home-btn-icon {
+  font-size: 18px;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.5));
+}
+
+/* Pulsation douce du bouton */
+@keyframes homeButtonPulse {
+  0%,100% {
+    box-shadow:
+      0 0 20px rgba(99,102,241,0.80),
+      0 0 40px rgba(99,102,241,0.35),
+      0 10px 30px rgba(79,70,229,0.40);
+  }
+  50% {
+    box-shadow:
+      0 0 28px rgba(99,102,241,1.00),
+      0 0 56px rgba(99,102,241,0.50),
+      0 10px 30px rgba(79,70,229,0.50);
+  }
+}
+
+/* Hint sous le bouton */
+.ob-home-hint {
+  font-size: 11px;
+  color: rgba(156,163,175,0.55); /* COLORS.subtext atténué */
+  letter-spacing: 0.4px;
+}
+
+/* ── RESPONSIVE : slide 0 sur petits écrans ──────────────── */
+@media (max-height: 680px) {
+  .ob-home-visual { width: 140px; height: 140px; margin-bottom: 20px; }
+  .ob-home-logo   { font-size: 76px; }
+  .ob-home-title-word { font-size: 36px; }
+  .ob-home-text   { margin-bottom: 28px; }
+}
