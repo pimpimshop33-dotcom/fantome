@@ -471,3 +471,205 @@ body {
   from { opacity: 0; transform: translateY(12px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* ══════════════════════════════════════════════════════════
+   MICRO-INTERACTIONS v1
+   ══════════════════════════════════════════════════════════ */
+
+/* ── RIPPLE ─────────────────────────────────────────────── */
+.ghost-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168,180,255,0.25) 0%, rgba(168,180,255,0.05) 60%, transparent 100%);
+  pointer-events: none;
+  animation: ghostRipple 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  z-index: 0;
+}
+
+@keyframes ghostRipple {
+  from {
+    transform: scale(0);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* Ripple sur ghost-envelope — couleur plus subtile */
+.ghost-envelope .ghost-ripple {
+  background: radial-gradient(circle, rgba(168,180,255,0.12) 0%, transparent 70%);
+}
+
+/* Ripple sur bouton primaire */
+.btn-primary .ghost-ripple,
+.wizard-next-btn .ghost-ripple {
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+}
+
+/* ── GHOST DOT — HOVER ──────────────────────────────────── */
+.ghost-dot {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+/* ── NAV ITEM — TRANSITION DOUCE ───────────────────────── */
+.nav-item {
+  transition: color 0.2s ease, transform 0.15s cubic-bezier(0.34,1.56,0.64,1) !important;
+}
+
+/* ── BOUTONS — TRANSITION UNIVERSELLE ───────────────────── */
+button, [role="button"], .cond-btn, .type-btn, .dur-btn, .radius-btn {
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
+/* ── ACTIVE STATE — tous les boutons ─────────────────────── */
+.btn-primary:active,
+.wizard-next-btn:active,
+.btn-secondary:active,
+.resonance-btn:active,
+.ghost-card-btn:active,
+.share-btn:active,
+.report-btn:active,
+.media-btn:active {
+  transform: scale(0.96) !important;
+  filter: brightness(0.92);
+}
+
+/* ── FILTRE ACTIF — glow supplémentaire ─────────────────── */
+.filter-btn.active {
+  box-shadow: 0 0 12px rgba(168,180,255,0.15) !important;
+}
+
+/* ── INPUT LABEL — flotte au focus ──────────────────────── */
+.form-group {
+  position: relative;
+}
+
+/* ── VIBE BAR — shimmer sur invocation ──────────────────── */
+@keyframes vibeShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+.vibe-bar.invoking {
+  background: linear-gradient(
+    90deg,
+    rgba(168,180,255,0.04) 0%,
+    rgba(168,180,255,0.12) 50%,
+    rgba(168,180,255,0.04) 100%
+  ) !important;
+  background-size: 200% auto !important;
+  animation: vibeShimmer 1.2s linear infinite !important;
+}
+
+/* ── COND BTN — hover glow ───────────────────────────────── */
+.cond-btn:hover {
+  border-color: rgba(168,180,255,0.3) !important;
+  background: rgba(168,180,255,0.06) !important;
+}
+
+.cond-btn.active {
+  box-shadow: 0 0 16px rgba(168,180,255,0.1) !important;
+}
+
+/* ── EMOJI OPT — bounce ──────────────────────────────────── */
+.emoji-opt:active {
+  transform: scale(0.85) rotate(-5deg) !important;
+}
+
+.emoji-opt.active {
+  animation: emojiPop 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+@keyframes emojiPop {
+  from { transform: scale(0.9); }
+  to   { transform: scale(1); }
+}
+
+/* ── BACK BTN — slide au hover ───────────────────────────── */
+.back-btn {
+  transition: color 0.2s ease, transform 0.2s ease !important;
+}
+
+.back-btn:hover {
+  transform: translateX(-3px) !important;
+}
+
+/* ── REFRESH BTN — rotation au hover ────────────────────── */
+.refresh-btn:hover {
+  letter-spacing: 0.5px !important;
+}
+
+.refresh-btn.spinning {
+  animation: btnSpinOnce 0.6s cubic-bezier(0.25,0.8,0.25,1) !important;
+}
+
+@keyframes btnSpinOnce {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── ENVELOPE OPEN BTN — glow pulsé avant tap ───────────── */
+@keyframes sealPulse {
+  0%,100% { box-shadow: 0 0 20px rgba(168,180,255,0.1), 0 4px 16px rgba(0,0,0,0.4); }
+  50%     { box-shadow: 0 0 32px rgba(168,180,255,0.28), 0 4px 16px rgba(0,0,0,0.4); }
+}
+
+.envelope-open-btn:not(.holding):not(:disabled) {
+  animation: sealPulse 2.5s ease-in-out infinite;
+}
+
+/* ── DETAIL MESSAGE — apparition lettre par lettre visuelle  */
+.detail-message {
+  transition: opacity 0.3s ease !important;
+}
+
+/* ── SHARE BTN — hover lift ──────────────────────────────── */
+#ghostShareBtn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(168,180,255,0.2) !important;
+}
+
+/* ── BOTTOM NAV ACTIVE ITEM — glow sous l'icône ─────────── */
+.nav-item.active .nav-icon::after {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--spirit);
+  margin: 2px auto 0;
+  box-shadow: 0 0 6px var(--spirit);
+  animation: navDotPulse 2s ease-in-out infinite;
+}
+
+@keyframes navDotPulse {
+  0%,100% { opacity: 0.6; transform: scale(1); }
+  50%     { opacity: 1;   transform: scale(1.3); }
+}
+
+/* ── WIZARD STEP — transition active ────────────────────── */
+.wizard-step {
+  transition: opacity 0.3s ease !important;
+}
+
+.wizard-step.active .wizard-step-dot {
+  animation: stepPop 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+@keyframes stepPop {
+  from { transform: scale(0.8); }
+  to   { transform: scale(1); }
+}
+
+/* ── RESONANCE BTN — glow burst au click ────────────────── */
+.resonance-btn.fired {
+  animation: resoFire 0.4s ease-out forwards;
+}
+
+@keyframes resoFire {
+  0%   { box-shadow: 0 0 0 0 rgba(168,180,255,0.6); }
+  50%  { box-shadow: 0 0 0 16px rgba(168,180,255,0); }
+  100% { box-shadow: 0 0 20px rgba(168,180,255,0.1); }
+}
