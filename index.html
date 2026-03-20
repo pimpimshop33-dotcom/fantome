@@ -1218,25 +1218,74 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
     <!-- Carousel -->
     <div class="ob-carousel" id="obCarousel" aria-roledescription="carousel" aria-label="Présentation de l'application">
 
-      <!-- SLIDE 0 — Splash -->
+      <!-- SLIDE 0 — HomeScreen (ref image screen 1) -->
       <div class="ob-scene active" id="obScene0" role="group" aria-roledescription="slide" aria-label="Slide 1 : Ghostub" aria-hidden="false">
-        <div class="ob-scene-visual" aria-hidden="true">
-          <div class="ob-splash-ring ob-sr1"></div>
-          <div class="ob-splash-ring ob-sr2"></div>
-          <div class="ob-splash-ring ob-sr3"></div>
-          <div class="ob-ghost-big" style="font-size:96px;">👻</div>
+
+        <!-- Fond : brume + skyline ville -->
+        <div class="hs-bg" aria-hidden="true">
+          <div class="hs-fog hs-fog1"></div>
+          <div class="hs-fog hs-fog2"></div>
+          <div class="hs-fog hs-fog3"></div>
+          <svg class="hs-skyline" viewBox="0 0 390 160" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
+            <rect fill="#060E1A" x="0"   y="95"  width="22" height="65"/>
+            <rect fill="#060E1A" x="18"  y="78"  width="16" height="82"/>
+            <rect fill="#060E1A" x="30"  y="85"  width="28" height="75"/>
+            <rect fill="#060E1A" x="55"  y="65"  width="14" height="95"/>
+            <rect fill="#060E1A" x="65"  y="72"  width="20" height="88"/>
+            <rect fill="#060E1A" x="82"  y="58"  width="18" height="102"/>
+            <rect fill="#060E1A" x="97"  y="80"  width="24" height="80"/>
+            <rect fill="#060E1A" x="118" y="50"  width="12" height="110"/>
+            <rect fill="#060E1A" x="126" y="70"  width="22" height="90"/>
+            <rect fill="#060E1A" x="145" y="62"  width="16" height="98"/>
+            <rect fill="#060E1A" x="158" y="78"  width="20" height="82"/>
+            <rect fill="#060E1A" x="175" y="45"  width="14" height="115"/>
+            <rect fill="#060E1A" x="186" y="68"  width="26" height="92"/>
+            <rect fill="#060E1A" x="209" y="55"  width="18" height="105"/>
+            <rect fill="#060E1A" x="224" y="74"  width="16" height="86"/>
+            <rect fill="#060E1A" x="237" y="42"  width="22" height="118"/>
+            <rect fill="#060E1A" x="256" y="60"  width="20" height="100"/>
+            <rect fill="#060E1A" x="273" y="70"  width="14" height="90"/>
+            <rect fill="#060E1A" x="284" y="52"  width="18" height="108"/>
+            <rect fill="#060E1A" x="299" y="80"  width="24" height="80"/>
+            <rect fill="#060E1A" x="320" y="62"  width="16" height="98"/>
+            <rect fill="#060E1A" x="333" y="48"  width="22" height="112"/>
+            <rect fill="#060E1A" x="352" y="72"  width="20" height="88"/>
+            <rect fill="#060E1A" x="369" y="58"  width="21" height="102"/>
+            <rect fill="rgba(74,158,219,0.40)" x="60"  y="70" width="3" height="3"/>
+            <rect fill="rgba(74,158,219,0.30)" x="86"  y="65" width="2" height="2"/>
+            <rect fill="rgba(74,158,219,0.45)" x="179" y="55" width="3" height="2"/>
+            <rect fill="rgba(74,158,219,0.35)" x="241" y="52" width="2" height="3"/>
+            <rect fill="rgba(74,158,219,0.40)" x="288" y="62" width="3" height="2"/>
+            <rect fill="rgba(74,158,219,0.25)" x="337" y="58" width="2" height="2"/>
+            <defs>
+              <linearGradient id="skyFade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#07101E" stop-opacity="0"/>
+                <stop offset="100%" stop-color="#04080F" stop-opacity="1"/>
+              </linearGradient>
+            </defs>
+            <rect fill="url(#skyFade)" x="0" y="0" width="390" height="160"/>
+          </svg>
+          <div class="hs-ground-glow"></div>
         </div>
-        <div class="ob-scene-text">
-          <div class="ob-title ob-typewriter" id="obTypewriter">Ghostub</div>
-          <div class="ob-home-subtitle" data-i18n="ob_sub0">
-            Des messages secrets cachés près de toi
+
+        <!-- Ghost centré -->
+        <div class="hs-content">
+          <div class="hs-ghost-wrap" aria-hidden="true">
+            <div class="hs-ghost-ring hs-gr1"></div>
+            <div class="hs-ghost-ring hs-gr2"></div>
+            <div class="hs-ghost-icon">👻</div>
           </div>
-          <button class="ob-home-btn" onclick="goObScene(1)" style="margin-top:32px;">
-            <span>🔮</span>
-            <span data-i18n="ob_explore">Explorer</span>
-          </button>
-          <div class="ob-home-hint" data-i18n="ob_free" style="margin-top:14px;">Gratuit · Sans pub</div>
+          <div class="hs-title ob-typewriter" id="obTypewriter">GHOSTUB</div>
+          <div class="hs-subtitle" data-i18n="ob_sub0">Des messages secrets<br>cachés près de toi</div>
         </div>
+
+        <!-- Bouton COMMENCER en bas -->
+        <div class="hs-cta">
+          <button class="hs-btn" onclick="goObScene(1)">
+            <span data-i18n="ob_start">COMMENCER</span>
+          </button>
+        </div>
+
       </div>
 
       <!-- SLIDE 1 — Découvrir -->
