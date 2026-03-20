@@ -6,12 +6,12 @@
 
 /* ── VARIABLES SUPPLÉMENTAIRES ─────────────────────────── */
 :root {
-  --glass-bg:     rgba(18, 15, 35, 0.72);
-  --glass-border: rgba(168, 180, 255, 0.18);
+  --glass-bg:     rgba(10, 15, 28, 0.72);
+  --glass-border: rgba(99, 102, 241, 0.20);
   --glass-blur:   blur(20px);
-  --glow-spirit:  0 0 24px rgba(168,180,255,0.35), 0 0 48px rgba(168,180,255,0.12);
-  --glow-strong:  0 0 40px rgba(168,180,255,0.5),  0 0 80px rgba(168,180,255,0.2);
-  --glow-gold:    0 0 20px rgba(255,200,80,0.4),   0 0 40px rgba(255,200,80,0.15);
+  --glow-spirit:  0 0 24px rgba(99,102,241,0.45), 0 0 48px rgba(99,102,241,0.18);
+  --glow-strong:  0 0 40px rgba(99,102,241,0.60), 0 0 80px rgba(99,102,241,0.25);
+  --glow-gold:    0 0 20px rgba(255,200,80,0.4),  0 0 40px rgba(255,200,80,0.15);
   --noise-url:    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
 }
 
@@ -1020,4 +1020,304 @@ button, [role="button"], .cond-btn, .type-btn, .dur-btn, .radius-btn {
   width: 32px !important;
   background: var(--spirit) !important;
   box-shadow: 0 0 8px rgba(168,180,255,0.5) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PALETTE MIX v1 — Indigo électrique × Fantôme chaud
+   Surcharge ciblée des éléments clés
+   ══════════════════════════════════════════════════════════ */
+
+/* ── BODY — fond bleu nuit avec gradient indigo ─────────── */
+body {
+  background:
+    radial-gradient(ellipse at 15% 5%,  rgba(79,70,229,0.18) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 95%, rgba(99,102,241,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 50%, rgba(10,15,28,1) 0%, #080D1A 100%);
+}
+
+/* ── PHONE SHELL ─────────────────────────────────────────── */
+.phone {
+  background: rgba(10,15,28,0.80) !important;
+  border: 1px solid rgba(99,102,241,0.18) !important;
+  box-shadow:
+    0 0 0 1px rgba(99,102,241,0.06),
+    0 60px 120px rgba(0,0,0,0.95),
+    0 0 80px rgba(99,102,241,0.05) inset,
+    inset 0 1px 0 rgba(255,255,255,0.04) !important;
+}
+
+/* ── GHOST ENVELOPES ─────────────────────────────────────── */
+.ghost-envelope {
+  background: linear-gradient(
+    135deg,
+    rgba(17,24,39,0.92) 0%,
+    rgba(10,15,28,0.96) 100%
+  ) !important;
+  border: 1px solid rgba(99,102,241,0.14) !important;
+}
+.ghost-envelope:hover {
+  border-color: rgba(99,102,241,0.38) !important;
+  box-shadow:
+    0 0 28px rgba(99,102,241,0.25),
+    0 0 56px rgba(99,102,241,0.10),
+    0 12px 40px rgba(0,0,0,0.6) !important;
+}
+
+/* Flap */
+.envelope-flap {
+  background: linear-gradient(180deg,rgba(99,102,241,0.12) 0%,rgba(99,102,241,0.04) 100%) !important;
+  border-bottom-color: rgba(99,102,241,0.10) !important;
+}
+.envelope-flap::before {
+  border-top-color: rgba(99,102,241,0.08) !important;
+}
+
+/* Emoji indigo glow */
+.envelope-emoji {
+  background: rgba(99,102,241,0.09) !important;
+  border-color: rgba(99,102,241,0.18) !important;
+  filter: drop-shadow(0 0 10px rgba(99,102,241,0.45)) !important;
+}
+
+/* ── RADAR ───────────────────────────────────────────────── */
+.radar {
+  background: radial-gradient(
+    circle at center,
+    rgba(99,102,241,0.10) 0%,
+    rgba(79,70,229,0.05) 35%,
+    rgba(99,102,241,0.02) 65%,
+    transparent 85%
+  ) !important;
+  border-color: rgba(99,102,241,0.18) !important;
+}
+.radar-ring:nth-child(1) { border-color: rgba(99,102,241,0.25) !important; }
+.radar-ring:nth-child(2) { border-color: rgba(99,102,241,0.12) !important; }
+.radar-ring:nth-child(3) { border-color: rgba(99,102,241,0.08) !important; }
+.radar-sweep {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    rgba(99,102,241,0.20) 18%,
+    transparent 20%
+  ) !important;
+}
+.radar-center {
+  background: #6366F1 !important;
+  box-shadow:
+    0 0 0 3px rgba(99,102,241,0.25),
+    0 0 20px rgba(99,102,241,0.90),
+    0 0 40px rgba(99,102,241,0.45) !important;
+}
+
+/* ── BOUTONS PRIMAIRES ───────────────────────────────────── */
+.btn-primary, .wizard-next-btn {
+  background: linear-gradient(
+    135deg,
+    rgba(99,102,241,0.28) 0%,
+    rgba(79,70,229,0.18) 50%,
+    rgba(99,102,241,0.10) 100%
+  ) !important;
+  border: 1px solid rgba(99,102,241,0.50) !important;
+  box-shadow:
+    0 0 20px rgba(99,102,241,0.15),
+    0 4px 16px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.07) !important;
+}
+.btn-primary:hover, .wizard-next-btn:hover {
+  box-shadow:
+    0 0 32px rgba(99,102,241,0.35),
+    0 8px 24px rgba(0,0,0,0.5) !important;
+  border-color: rgba(99,102,241,0.70) !important;
+}
+
+/* ── BOUTON BRISER LE SCEAU ──────────────────────────────── */
+.envelope-open-btn {
+  background: linear-gradient(
+    135deg,
+    rgba(99,102,241,0.22) 0%,
+    rgba(79,70,229,0.14) 100%
+  ) !important;
+  border: 1px solid rgba(99,102,241,0.45) !important;
+}
+.envelope-open-btn:not(.holding):not(:disabled) {
+  animation: sealPulseIndigo 2.5s ease-in-out infinite !important;
+}
+@keyframes sealPulseIndigo {
+  0%,100% { box-shadow: 0 0 16px rgba(99,102,241,0.15), 0 4px 16px rgba(0,0,0,0.4); }
+  50%     { box-shadow: 0 0 32px rgba(99,102,241,0.35), 0 4px 16px rgba(0,0,0,0.4); }
+}
+.envelope-open-btn.holding {
+  box-shadow: var(--glow-strong) !important;
+  border-color: rgba(99,102,241,0.85) !important;
+}
+
+/* ── RÉSONANCE ───────────────────────────────────────────── */
+.resonance-btn {
+  background: rgba(99,102,241,0.07) !important;
+  border-color: rgba(99,102,241,0.35) !important;
+  color: #6366F1 !important;
+}
+.resonance-btn:hover {
+  box-shadow: 0 0 20px rgba(99,102,241,0.30) !important;
+  border-color: rgba(99,102,241,0.60) !important;
+}
+.resonance-btn.resonated {
+  color: #E0E7FF !important;
+  border-color: #6366F1 !important;
+  background: rgba(99,102,241,0.15) !important;
+}
+
+/* ── BOTTOM NAV ──────────────────────────────────────────── */
+.bottom-nav {
+  background: rgba(8,12,26,0.90) !important;
+  border-top-color: rgba(99,102,241,0.14) !important;
+}
+.nav-item.active {
+  color: #6366F1 !important;
+  text-shadow: 0 0 14px rgba(99,102,241,0.70) !important;
+}
+.nav-item.active .nav-icon {
+  filter: drop-shadow(0 0 8px rgba(99,102,241,0.80)) !important;
+}
+.nav-item.active .nav-icon::after {
+  background: #6366F1 !important;
+  box-shadow: 0 0 8px rgba(99,102,241,0.80) !important;
+}
+
+/* ── DISCOVERY TOAST ─────────────────────────────────────── */
+.discovery-toast {
+  background: rgba(10,15,28,0.94) !important;
+  border-color: rgba(99,102,241,0.35) !important;
+  box-shadow:
+    0 0 24px rgba(99,102,241,0.30),
+    0 0 48px rgba(99,102,241,0.12),
+    0 12px 40px rgba(0,0,0,0.60) !important;
+}
+
+/* ── DETAIL MESSAGE ──────────────────────────────────────── */
+.detail-message {
+  border-left-color: #6366F1 !important;
+  box-shadow: -4px 0 20px rgba(99,102,241,0.15) !important;
+}
+
+/* ── ENVELOPPE SCELLÉE ───────────────────────────────────── */
+.envelope-sealed-flap {
+  background: linear-gradient(180deg,rgba(99,102,241,0.16) 0%,rgba(99,102,241,0.06) 100%) !important;
+  border-color: rgba(99,102,241,0.25) !important;
+}
+.envelope-sealed-body {
+  border-color: rgba(99,102,241,0.22) !important;
+}
+.envelope-sealed-emoji {
+  filter: drop-shadow(0 0 14px rgba(99,102,241,0.55)) !important;
+}
+
+/* ── GHOST MAP MARKERS ───────────────────────────────────── */
+.ghost-map-bubble {
+  border-color: rgba(99,102,241,0.60) !important;
+  box-shadow:
+    0 0 20px rgba(99,102,241,0.40),
+    0 0 40px rgba(99,102,241,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.10) !important;
+}
+.ghost-map-ring  { border-color: rgba(99,102,241,0.45) !important; }
+.ghost-map-ring2 { border-color: rgba(99,102,241,0.20) !important; }
+.ghost-map-marker:hover .ghost-map-bubble {
+  box-shadow:
+    0 0 30px rgba(99,102,241,0.80),
+    0 0 60px rgba(99,102,241,0.35) !important;
+}
+
+/* ── VIBE DOT ────────────────────────────────────────────── */
+.vibe-dot {
+  background: rgba(99,220,160,0.85) !important;
+  box-shadow: 0 0 12px rgba(99,220,160,0.70), 0 0 24px rgba(99,220,160,0.30) !important;
+}
+
+/* ── ONBOARDING — SPLASH RINGS indigo ───────────────────── */
+.ob-splash-ring { border-color: rgba(99,102,241,0.18) !important; }
+.ob-ghost-big {
+  filter:
+    drop-shadow(0 0 30px rgba(99,102,241,0.80))
+    drop-shadow(0 0 60px rgba(99,102,241,0.35))
+    drop-shadow(0 0 100px rgba(79,70,229,0.20)) !important;
+}
+.ob-cta-btn {
+  background: linear-gradient(135deg,rgba(99,102,241,0.30),rgba(79,70,229,0.22)) !important;
+  border-color: rgba(99,102,241,0.55) !important;
+  box-shadow:
+    0 0 24px rgba(99,102,241,0.40),
+    0 0 48px rgba(99,102,241,0.18),
+    0 8px 32px rgba(0,0,0,0.45) !important;
+}
+.ob-reso-orb-core {
+  background: linear-gradient(135deg,rgba(99,102,241,0.30),rgba(79,70,229,0.24)) !important;
+  border-color: rgba(99,102,241,0.55) !important;
+  box-shadow: var(--glow-strong) !important;
+}
+.ob-radar-center { background: #6366F1 !important; }
+.ob-radar-sweep {
+  background: conic-gradient(
+    from 0deg, transparent 0%, rgba(99,102,241,0.25) 18%, transparent 20%
+  ) !important;
+}
+
+/* ── FILTRES ─────────────────────────────────────────────── */
+.filter-btn.active {
+  background: rgba(99,102,241,0.16) !important;
+  border-color: rgba(99,102,241,0.45) !important;
+  color: #E0E7FF !important;
+}
+.filter-btn:hover {
+  background: rgba(99,102,241,0.10) !important;
+  box-shadow: 0 0 12px rgba(99,102,241,0.12) !important;
+}
+
+/* ── SECTION LABELS ──────────────────────────────────────── */
+.section-label::after { background: #6366F1 !important; }
+
+/* ── BADGES PREMIUM (garder or) ──────────────────────────── */
+.badge-premium { box-shadow: 0 0 8px rgba(255,200,80,0.35) !important; }
+
+/* ── INPUTS ──────────────────────────────────────────────── */
+.form-input:focus, .form-textarea:focus {
+  border-color: rgba(99,102,241,0.55) !important;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.18), 0 0 16px rgba(99,102,241,0.10) !important;
+}
+
+/* ── WIZARD STEPS ────────────────────────────────────────── */
+.wizard-step.active .wizard-step-dot {
+  background: rgba(99,102,241,0.25) !important;
+  border-color: #6366F1 !important;
+  box-shadow: 0 0 14px rgba(99,102,241,0.40) !important;
+}
+.wizard-step.done .wizard-step-dot {
+  background: rgba(99,220,160,0.15) !important;
+  border-color: rgba(99,220,160,0.55) !important;
+}
+
+/* ── AUTH TABS ───────────────────────────────────────────── */
+.auth-tab.active {
+  border-color: rgba(99,102,241,0.30) !important;
+  color: #E0E7FF !important;
+}
+
+/* ── PARTICLES ───────────────────────────────────────────── */
+.particle { background: #6366F1 !important; }
+
+/* ── GHOST DOT EMOJI ─────────────────────────────────────── */
+.ghost-dot-emoji {
+  filter:
+    drop-shadow(0 0 8px rgba(99,102,241,0.95))
+    drop-shadow(0 0 16px rgba(99,102,241,0.55)) !important;
+}
+
+/* ── RIPPLE ──────────────────────────────────────────────── */
+.ghost-ripple {
+  background: radial-gradient(
+    circle,
+    rgba(99,102,241,0.28) 0%,
+    rgba(99,102,241,0.06) 60%,
+    transparent 100%
+  ) !important;
 }
