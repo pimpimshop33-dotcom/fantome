@@ -13,7 +13,8 @@ const GhostMicro = (() => {
 
       const cs = getComputedStyle(target);
       if (cs.position === 'static') target.style.position = 'relative';
-      target.style.overflow = 'hidden';
+      // BUG FIX #9 : overflow:clip au lieu de hidden pour ne pas couper les box-shadows
+      target.style.overflow = 'clip';
 
       const rect   = target.getBoundingClientRect();
       const size   = Math.max(rect.width, rect.height) * 2;
@@ -120,12 +121,18 @@ const GhostMicro = (() => {
     targets.forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
+      // BUG FIX #1 : guard _animating pour éviter la boucle infinie
+      // (modifier textContent dans le callback re-déclenche l'observer)
+      let _animating = false;
       new MutationObserver(mutations => {
+        if (_animating) return;
         mutations.forEach(m => {
           const val = parseInt(m.target.textContent);
           if (!isNaN(val) && val > 0) {
+            _animating = true;
             m.target.textContent = '0';
             animateCounter(m.target, val, 600);
+            setTimeout(() => { _animating = false; }, 700);
           }
         });
       }).observe(el, { childList: true, characterData: true, subtree: true });
@@ -239,6 +246,11 @@ const GhostMicro = (() => {
     initInputGlow();
     initToastHaptic();
     initRadarDotHover();
+    // BUG FIX #6 : déclencher typewriter seulement après chargement police
+    document.fonts.ready.then(() => {
+      const tw = document.getElementById('obTypewriter');
+      if (tw) tw.classList.add('fonts-ready');
+    });
   }
 
   if (document.readyState === 'loading') {
@@ -310,6 +322,17 @@ export default GhostMicro;
       }
     });
     if (screen) mo.observe(screen, { attributes: true, attributeFilter: ['class'] });
+
+    // BUG FIX #8 : stopper aussi si le node est retiré du DOM
+    const removalObserver = new MutationObserver(() => {
+      if (!document.contains(canvas)) {
+        cancelAnimationFrame(raf);
+        raf = null;
+        removalObserver.disconnect();
+        mo.disconnect();
+      }
+    });
+    removalObserver.observe(document.body, { childList: true, subtree: true });
 
     window.addEventListener('resize', resize, { passive: true });
     resize();
