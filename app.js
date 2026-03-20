@@ -419,7 +419,8 @@ const LANGS = {
     misc_screen_reply: 'Répondre — Ghostub',
     // Extra static HTML keys
     ob_skip: 'Passer →',
-    ob_sub0: 'Des messages invisibles<br>ancrés dans les lieux réels.',
+    ob_sub0: 'Des messages secrets cachés près de toi',
+    ob_explore: 'Explorer',
     ob_title1: 'Découvrez', ob_sub1: 'Passez près d\'un lieu et les<br>fantômes autour de vous apparaissent.',
     ob_title2: 'Ouvrez', ob_sub2: 'Chaque message est une<br>enveloppe scellée à dévoiler.',
     ob_title3: 'Résonnez', ob_sub3: 'Une résonance par jour —<br>choisissez le message qui vous touche.',
@@ -930,7 +931,8 @@ const LANGS = {
     misc_screen_reply: 'Reply — Ghostub',
     // Extra static HTML keys
     ob_skip: 'Skip →',
-    ob_sub0: 'Invisible messages<br>anchored in real places.',
+    ob_sub0: 'Secret messages<br>hidden near you.',
+    ob_explore: 'Explore',
     ob_title1: 'Discover', ob_sub1: 'Pass near a location and the<br>ghosts around you appear.',
     ob_title2: 'Open', ob_sub2: 'Every message is a<br>sealed envelope to unveil.',
     ob_title3: 'Resonate', ob_sub3: 'One resonance a day —<br>pick the message that moves you.',
