@@ -1027,6 +1027,19 @@ button, [role="button"], input, textarea, select,
 .ob-reso-btn{padding:14px 28px;background:rgba(168,180,255,.12);border:1px solid rgba(168,180,255,.3);border-radius:14px;color:var(--ether);font-family:'Instrument Sans',sans-serif;font-size:14px;position:relative;z-index:2;-webkit-text-fill-color:var(--ether) !important;}
 .ob-reso-particles{position:absolute;inset:-20px;pointer-events:none;}
 
+/* Force emoji natural rendering — bypass ALL inheritance */
+.emoji-opt, .emoji-opt * {
+  -webkit-text-fill-color: initial !important;
+  background-clip: initial !important;
+  -webkit-background-clip: initial !important;
+  color: initial !important;
+  filter: none !important;
+}
+.wizard-back-btn {
+  color: rgba(168,180,255,0.5) !important;
+  -webkit-text-fill-color: rgba(168,180,255,0.5) !important;
+}
+
 </style>
 </head>
 <body>
@@ -1349,7 +1362,7 @@ button, [role="button"], input, textarea, select,
         <!-- Formulaire normal (message personnel) -->
         <div id="normalDepositForm">
           <div class="emoji-picker" role="group" aria-label="Choisir un emoji">
-            <button class="emoji-opt active" onclick="pickEmoji(this,'👻')" aria-label="Emoji fantôme" aria-pressed="true">👻</button>
+            <button class="emoji-opt active" onclick="pickEmoji(this,'👻')" aria-label="Emoji fantôme" aria-pressed="true" style="-webkit-text-fill-color:initial!important;color:initial!important;">👻</button>
             <button class="emoji-opt" onclick="pickEmoji(this,'💬')" aria-label="Emoji message" aria-pressed="false">💬</button>
             <button class="emoji-opt" onclick="pickEmoji(this,'❤️')" aria-label="Emoji cœur" aria-pressed="false">❤️</button>
             <button class="emoji-opt" onclick="pickEmoji(this,'🌙')" aria-label="Emoji lune" aria-pressed="false">🌙</button>
