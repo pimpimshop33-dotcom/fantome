@@ -4784,8 +4784,11 @@ function renderGhostList() {
       : t.ghost_hint_default;
     // Surnom poétique
     const authorDisplay = g.anonymous ? getPoeticName(g.id) : escapeHTML(g.author || '');
+    const _cardIdx = filtered.indexOf(g);
+    const _cardDelay = ((_cardIdx % 5) * 0.8).toFixed(1);
+    const _distClass = g.distance <= 80 ? 'dist-near' : g.distance <= 300 ? 'dist-mid' : 'dist-far';
     return `
-    <div class="ghost-envelope${g.secret ? ' ghost-envelope-secret' : ''}" style="${ageStyle}" onclick="openGhost('${escapeHTML(g.id)}')" role="button" tabindex="0" aria-label="Trace à ${escapeHTML(g.location || t.detail_location_unknown)}, ${formatDistance(g.distance)}" onkeydown="if(event.key==='Enter'||event.key===' ')openGhost('${escapeHTML(g.id)}')">
+    <div class="ghost-envelope${g.secret ? ' ghost-envelope-secret' : ''}" style="${ageStyle};--card-delay:${_cardDelay}s" onclick="openGhost('${escapeHTML(g.id)}')" role="button" tabindex="0" aria-label="Trace à ${escapeHTML(g.location || t.detail_location_unknown)}, ${formatDistance(g.distance)}" onkeydown="if(event.key==='Enter'||event.key===' ')openGhost('${escapeHTML(g.id)}')">
       <div class="envelope-flap" aria-hidden="true"><div class="envelope-flap-inner"></div></div>
       <div class="envelope-body">
         <div class="envelope-emoji" aria-hidden="true">${emoji}</div>
@@ -4794,7 +4797,7 @@ function renderGhostList() {
           <div class="envelope-hint">${hintText}</div>
         </div>
         <div class="envelope-meta">
-          <div class="envelope-dist" style="${
+          <div class="envelope-dist ${_distClass}" style="${
             g.distance <= 50  ? 'background:rgba(100,220,160,.1);border:1px solid rgba(100,220,160,.25);color:rgba(100,220,160,.9);' :
             g.distance <= 200 ? 'background:rgba(255,200,80,.08);border:1px solid rgba(255,200,80,.2);color:rgba(255,200,80,.8);' :
                                 'background:rgba(168,180,255,.08);border:1px solid rgba(168,180,255,.12);color:rgba(168,180,255,.6);'
@@ -5683,32 +5686,184 @@ async function _doOpenEnvelope() {
       playRevealSound();
       // Vibration finale douce
       setTimeout(() => { if (navigator.vibrate) navigator.vibrate([20, 60, 20]); }, 200);
-      // Apparition mot par mot — décalé après la fin de l'animation envelope-reveal (450ms)
+      // ── SCRATCH-TO-REVEAL ─────────────────────────────────
       const msgEl = document.getElementById('detailMessage');
       if (msgEl && msgEl.textContent && msgEl.textContent.length > 1) {
-        const fullText = msgEl.textContent;
-        msgEl.textContent = '';
-        msgEl.style.opacity = '0';
-        setTimeout(() => {
-          msgEl.style.opacity = '1';
-          const words = fullText.split(' ');
-          let i = 0;
-          const interval = setInterval(() => {
-            if (i < words.length) {
-              msgEl.textContent += (i === 0 ? '' : ' ') + words[i];
-              i++;
-            } else {
-              clearInterval(interval);
-              if (navigator.vibrate) navigator.vibrate(40);
-            }
-          }, 80);
-        }, 460);
+        _initScratchReveal(msgEl);
       }
       const firstFocusable = revealed.querySelector('button, [tabindex]');
       if (firstFocusable) firstFocusable.focus();
     }, 350);
   }, 600);
   Analytics.track('envelope_opened');
+}
+
+
+// ── SCRATCH-TO-REVEAL ─────────────────────────────────────
+function _initScratchReveal(msgEl) {
+  // Wrap the message element
+  const wrapper = document.createElement('div');
+  wrapper.className = 'scratch-wrapper';
+  msgEl.parentNode.insertBefore(wrapper, msgEl);
+  wrapper.appendChild(msgEl);
+
+  // Force the message to be visible but covered by canvas
+  msgEl.style.opacity = '1';
+  msgEl.style.userSelect = 'none';
+
+  // Create canvas
+  const canvas = document.createElement('canvas');
+  canvas.id = 'scratchCanvas';
+  wrapper.appendChild(canvas);
+
+  // Hint overlay
+  const hintOverlay = document.createElement('div');
+  hintOverlay.className = 'scratch-hint-overlay';
+  hintOverlay.innerHTML = `
+    <div style="font-size:44px;filter:drop-shadow(0 0 20px rgba(168,180,255,.8));animation:scratchHint 2s ease-in-out infinite;">🖐</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;color:rgba(240,232,216,.7);letter-spacing:.5px;">Frottez pour révéler...</div>
+  `;
+  wrapper.appendChild(hintOverlay);
+
+  // Size canvas to match wrapper
+  requestAnimationFrame(() => {
+    const rect = msgEl.getBoundingClientRect();
+    const w = rect.width || wrapper.offsetWidth || 300;
+    const h = rect.height || wrapper.offsetHeight || 120;
+    canvas.width = w;
+    canvas.height = h;
+
+    const ctx = canvas.getContext('2d');
+
+    // Draw the scratch layer: dark fog with spirit glow
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0,   'rgba(14, 12, 28, 0.97)');
+    grad.addColorStop(0.4, 'rgba(22, 18, 44, 0.96)');
+    grad.addColorStop(1,   'rgba(10, 10, 22, 0.98)');
+    ctx.fillStyle = grad;
+    ctx.roundRect ? ctx.roundRect(0, 0, w, h, [0, 20, 20, 0]) : ctx.fillRect(0, 0, w, h);
+    ctx.fill();
+
+    // Subtle inner glow at top
+    const topGlow = ctx.createRadialGradient(w/2, 0, 0, w/2, 0, w*0.7);
+    topGlow.addColorStop(0, 'rgba(168,180,255,0.12)');
+    topGlow.addColorStop(1, 'transparent');
+    ctx.fillStyle = topGlow;
+    ctx.fillRect(0, 0, w, h);
+
+    // Ghost watermark
+    ctx.font = `${Math.min(w, h) * 0.55}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 0.06;
+    ctx.fillStyle = '#a8b4ff';
+    ctx.fillText('👻', w / 2, h / 2);
+    ctx.globalAlpha = 1;
+
+    // Scratch state
+    let isDrawing = false;
+    let totalPixels = 0;
+    let revealed = false;
+    let lastX = 0, lastY = 0;
+
+    function getPos(e) {
+      const r = canvas.getBoundingClientRect();
+      const src = e.touches ? e.touches[0] : e;
+      return { x: (src.clientX - r.left) * (canvas.width / r.width),
+               y: (src.clientY - r.top)  * (canvas.height / r.height) };
+    }
+
+    function scratch(x, y) {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(x, y, 28, 0, Math.PI * 2);
+      ctx.fill();
+      // Smooth line between points
+      if (isDrawing) {
+        ctx.lineWidth = 52;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      }
+      lastX = x; lastY = y;
+      checkRevealProgress();
+    }
+
+    function checkRevealProgress() {
+      if (revealed) return;
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let clearedPixels = 0;
+      for (let i = 3; i < imageData.data.length; i += 4) {
+        if (imageData.data[i] < 128) clearedPixels++;
+      }
+      const pct = clearedPixels / (imageData.data.length / 4);
+      if (pct > 0.55) _completeReveal(canvas, hintOverlay, msgEl, ctx);
+    }
+
+    // Events
+    canvas.addEventListener('mousedown', e => {
+      isDrawing = true;
+      hintOverlay.style.opacity = '0';
+      hintOverlay.style.pointerEvents = 'none';
+      const {x,y} = getPos(e);
+      scratch(x, y);
+    });
+    canvas.addEventListener('mousemove', e => {
+      if (!isDrawing) return;
+      const {x,y} = getPos(e);
+      scratch(x, y);
+    });
+    canvas.addEventListener('mouseup',   () => { isDrawing = false; });
+    canvas.addEventListener('mouseleave',() => { isDrawing = false; });
+
+    canvas.addEventListener('touchstart', e => {
+      e.preventDefault();
+      isDrawing = true;
+      hintOverlay.style.opacity = '0';
+      hintOverlay.style.pointerEvents = 'none';
+      const {x,y} = getPos(e);
+      scratch(x, y);
+    }, { passive: false });
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (!isDrawing) return;
+      const {x,y} = getPos(e);
+      scratch(x, y);
+    }, { passive: false });
+    canvas.addEventListener('touchend', () => { isDrawing = false; });
+  });
+}
+
+function _completeReveal(canvas, hintOverlay, msgEl, ctx) {
+  // Fade out canvas with sparkle burst
+  canvas.style.transition = 'opacity .6s ease';
+  canvas.style.opacity = '0';
+  hintOverlay.style.opacity = '0';
+  if (navigator.vibrate) navigator.vibrate([15, 30, 15, 50, 100]);
+  setTimeout(() => {
+    canvas.remove();
+    hintOverlay.remove();
+    // Word-by-word apparition
+    const fullText = msgEl.textContent;
+    msgEl.textContent = '';
+    msgEl.style.opacity = '0';
+    requestAnimationFrame(() => {
+      msgEl.style.transition = 'opacity .3s';
+      msgEl.style.opacity = '1';
+      const words = fullText.split(' ');
+      let i = 0;
+      const iv = setInterval(() => {
+        if (i < words.length) {
+          msgEl.textContent += (i === 0 ? '' : ' ') + words[i++];
+        } else {
+          clearInterval(iv);
+          if (navigator.vibrate) navigator.vibrate(40);
+        }
+      }, 75);
+    });
+  }, 650);
 }
 
 function showDistanceError(dist) {
