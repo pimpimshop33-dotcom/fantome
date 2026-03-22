@@ -5737,9 +5737,10 @@ function _buildScratchCanvas(msgEl) {
   // Hint overlay
   const hintOverlay = document.createElement('div');
   hintOverlay.className = 'scratch-hint-overlay';
+  hintOverlay.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:10;pointer-events:none;border-radius:20px;';
   hintOverlay.innerHTML = `
-    <div style="font-size:52px;filter:drop-shadow(0 0 24px rgba(168,180,255,.9));animation:scratchHint 2s ease-in-out infinite;">🖐</div>
-    <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:rgba(240,232,216,.75);letter-spacing:.8px;margin-top:6px;">Frottez pour révéler...</div>
+    <div style="font-size:64px;line-height:1;filter:drop-shadow(0 0 16px rgba(255,220,180,1)) drop-shadow(0 0 32px rgba(255,180,100,.8));animation:scratchHint 1.4s ease-in-out infinite;">🖐</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-style:italic;color:#f0e8d8;letter-spacing:1px;text-shadow:0 0 12px rgba(168,180,255,.8),0 2px 8px rgba(0,0,0,.9);">Frottez pour révéler...</div>
   `;
   wrapper.appendChild(hintOverlay);
 
@@ -5778,13 +5779,20 @@ function _buildScratchCanvas(msgEl) {
     ctx.roundRect(0, 0, cssW, cssH, 20);
     ctx.fill();
 
-    // Ghost watermark centré
+    // Ghost watermark centré — bien visible sur le fond sombre
     ctx.save();
-    ctx.globalAlpha = 0.07;
-    ctx.font = `${Math.min(cssW, cssH) * 0.6}px serif`;
+    ctx.font = `${Math.min(cssW, cssH) * 0.62}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#c8d4ff';
+    // Ombre lumineuse
+    ctx.shadowColor = 'rgba(168,180,255,0.6)';
+    ctx.shadowBlur = 24;
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#d0d8ff';
+    ctx.fillText('👻', cssW / 2, cssH / 2);
+    // Deuxième passe pour renforcer
+    ctx.globalAlpha = 0.18;
+    ctx.shadowBlur = 48;
     ctx.fillText('👻', cssW / 2, cssH / 2);
     ctx.restore();
 
