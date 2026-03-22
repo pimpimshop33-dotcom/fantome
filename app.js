@@ -5721,6 +5721,8 @@ function _buildScratchCanvas() {
   if (!ec || !msgEl) return;
 
   // Zone à couvrir : de detailMessage jusqu'au dernier média présent
+  // Dernier élément à couvrir : message, puis audio/photo/readCount si présents
+  // On s'arrête AVANT detailChain, detail-info et les boutons
   let bottomEl = msgEl;
   ['detailAudio','detailPhoto','detailReadCount'].forEach(id => {
     const el = document.getElementById(id);
@@ -5735,7 +5737,8 @@ function _buildScratchCanvas() {
   const relTop    = msgRect.top - ecRect.top + scrollTop - 8;
   const relLeft   = Math.max(0, msgRect.left - ecRect.left - 4);
   const cssW      = ecRect.width - relLeft + 4;
-  const cssH      = Math.max(220, bottomRect.bottom - msgRect.top + 24);
+  // Hauteur = du haut du message au bas du dernier élément média uniquement (+12px de marge)
+  const cssH      = Math.max(160, bottomRect.bottom - msgRect.top + 12);
 
   ec.style.position = 'relative';
 
