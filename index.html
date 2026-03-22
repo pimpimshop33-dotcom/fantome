@@ -109,10 +109,17 @@ body {
 
 /* Cibles tactiles WCAG */
 button,[role="button"],.nav-item,.auth-tab,.type-btn,.dur-btn,.radius-btn{min-height:44px;min-width:44px;}
+/* Emoji picker — grille horizontale */
+.emoji-picker{
+  display:flex;flex-direction:row;flex-wrap:wrap;
+  gap:6px;margin-bottom:12px;
+}
 .emoji-opt{
   min-height:44px;min-width:44px;
   width:44px;height:44px;
   font-size:22px;
+  /* Ne PAS hériter color du parent — les emojis ont leur propre couleur */
+  color:unset;
   background:rgba(122,184,245,.06);
   border:1px solid rgba(122,184,245,.15);
   border-radius:12px;
@@ -120,11 +127,24 @@ button,[role="button"],.nav-item,.auth-tab,.type-btn,.dur-btn,.radius-btn{min-he
   transition:all .2s;
   touch-action:manipulation;
   display:flex;align-items:center;justify-content:center;
-  /* forcer l'emoji visible — pas de color hérité */
-  color:initial;
+  padding:0;
+  /* Laisser les emojis s'afficher en couleur native */
+  -webkit-text-fill-color:initial !important;
+  text-shadow:none !important;
+  filter:none !important;
+  /* Taille explicite pour que l'emoji soit visible */
+  line-height:1;
 }
 .emoji-opt:hover{background:rgba(232,160,48,.12);border-color:rgba(232,160,48,.3);}
 .emoji-opt.active{background:rgba(232,160,48,.18);border-color:rgba(232,160,48,.55);box-shadow:0 0 12px rgba(232,160,48,.2);}
+.emoji-custom{
+  width:44px;height:44px;
+  background:rgba(122,184,245,.06);border:1px solid rgba(122,184,245,.15);
+  border-radius:12px;padding:0;text-align:center;font-size:20px;
+  color:var(--warm);font-family:'Instrument Sans',sans-serif;outline:none;
+  transition:border-color .2s;
+}
+.emoji-custom:focus{border-color:rgba(232,160,48,.4);}
 input,textarea,select{font-size:16px !important;}
 
 /* ── BANNERS ───────────────────────────────────────────── */
