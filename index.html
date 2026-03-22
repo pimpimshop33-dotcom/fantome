@@ -1300,6 +1300,255 @@ button, [role="button"], .back-btn, .btn-primary, .btn-secondary, .nav-item, .fi
   background: transparent !important;
 }
 
+/* ══ SUPPRESSION DES BORDURES — fond de rue visible partout ══ */
+
+/* Phone : plus de bordure */
+.phone {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Écrans : zéro bordure, zéro fond */
+.screen.active,
+.scroll,
+#screenRadar.active,
+#screenOnboard.active,
+#screenAuth.active,
+#screenDeposit.active,
+#screenDetail.active,
+#screenProfile.active,
+#screenMap.active,
+#screenHelp.active,
+#screenReply.active {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Ghost envelopes : pas de bordure visible */
+.ghost-envelope {
+  border: none !important;
+  box-shadow: none !important;
+  background: rgba(2,4,10,0.22) !important;
+}
+.ghost-envelope:hover {
+  border: none !important;
+  box-shadow: none !important;
+  background: rgba(4,8,20,0.35) !important;
+}
+
+/* Vibe bar : sans bordure */
+.vibe-bar {
+  border: none !important;
+  box-shadow: none !important;
+  background: rgba(2,4,10,0.20) !important;
+}
+
+/* Flap des envelopes */
+.envelope-flap {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Bottom nav : sans bordure top */
+.bottom-nav {
+  border: none !important;
+  border-top: none !important;
+  box-shadow: none !important;
+  background: rgba(2,4,10,0.50) !important;
+}
+
+/* Auth form, inputs */
+.auth-tabs {
+  border: none !important;
+  background: rgba(2,4,10,0.25) !important;
+}
+.auth-tab {
+  border: none !important;
+}
+.auth-tab.active {
+  border: none !important;
+  background: rgba(168,180,255,0.12) !important;
+}
+.form-input, .form-textarea {
+  border: none !important;
+  border-bottom: 1px solid rgba(168,180,255,0.2) !important;
+  border-radius: 8px !important;
+  background: rgba(2,4,10,0.35) !important;
+}
+.form-input:focus, .form-textarea:focus {
+  border-bottom: 1px solid rgba(168,180,255,0.5) !important;
+  box-shadow: none !important;
+}
+
+/* Stat cards, empreinte */
+.stat-card,
+.empreinte-trio,
+.empreinte-pill {
+  border: none !important;
+  box-shadow: none !important;
+  background: rgba(2,4,10,0.22) !important;
+}
+
+/* Radar */
+.radar {
+  border: none !important;
+  box-shadow: none !important;
+  background: radial-gradient(circle, rgba(168,180,255,.05) 0%, transparent 70%) !important;
+}
+.radar-ring {
+  border-color: rgba(168,180,255,0.06) !important;
+}
+
+/* Reply items */
+.reply-item {
+  border: none !important;
+  background: rgba(2,4,10,0.20) !important;
+}
+
+/* Detail badges */
+.detail-badge {
+  border: none !important;
+  background: rgba(2,4,10,0.25) !important;
+}
+
+/* Detail message */
+.detail-message {
+  border: none !important;
+  border-left: 2px solid rgba(168,180,255,0.3) !important;
+  box-shadow: none !important;
+  background: rgba(2,4,10,0.35) !important;
+}
+
+/* Boutons : sans bordure dure */
+.btn-primary {
+  border: none !important;
+  box-shadow: none !important;
+  background: rgba(168,180,255,0.18) !important;
+}
+.btn-primary:hover {
+  background: rgba(168,180,255,0.28) !important;
+}
+.btn-secondary {
+  border: none !important;
+  background: rgba(168,180,255,0.08) !important;
+}
+.resonance-btn {
+  border: none !important;
+  background: rgba(168,180,255,0.10) !important;
+}
+.ghost-card-btn {
+  border: none !important;
+  background: rgba(61,184,122,0.10) !important;
+}
+.wizard-next-btn {
+  border: none !important;
+  background: rgba(168,180,255,0.15) !important;
+}
+.filter-btn {
+  border: none !important;
+  background: rgba(168,180,255,0.08) !important;
+}
+.filter-btn.active {
+  border: none !important;
+  background: rgba(168,180,255,0.22) !important;
+}
+.refresh-btn {
+  border: none !important;
+  background: rgba(168,180,255,0.08) !important;
+}
+.media-btn {
+  border: none !important;
+  background: rgba(168,180,255,0.08) !important;
+}
+.type-btn, .radius-btn, .dur-btn {
+  border: none !important;
+  background: rgba(2,4,10,0.25) !important;
+}
+.type-btn.active, .radius-btn.active, .dur-btn.active {
+  border: none !important;
+  background: rgba(168,180,255,0.18) !important;
+}
+.cond-btn {
+  border: none !important;
+  background: rgba(2,4,10,0.20) !important;
+}
+.cond-btn.active {
+  background: rgba(168,180,255,0.12) !important;
+}
+.emoji-opt {
+  border: none !important;
+  background: rgba(168,180,255,0.08) !important;
+}
+.emoji-opt.active {
+  background: rgba(168,180,255,0.22) !important;
+  box-shadow: none !important;
+}
+
+/* Enveloppe scellée */
+.envelope-sealed {
+  border: none !important;
+  box-shadow: none !important;
+}
+.envelope-sealed-flap {
+  border: none !important;
+}
+.envelope-sealed-body {
+  border: none !important;
+  box-shadow: none !important;
+  background: rgba(2,4,10,0.30) !important;
+}
+.envelope-open-btn {
+  border: none !important;
+  box-shadow: none !important;
+  background: rgba(168,180,255,0.15) !important;
+}
+
+/* Nav item */
+.nav-item { border: none !important; }
+
+/* Section labels */
+.section-label { background: transparent !important; }
+
+/* Notch sans bordure */
+.notch {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Wizard steps */
+.wizard-step-dot {
+  border: none !important;
+  background: rgba(168,180,255,0.12) !important;
+}
+.wizard-step.active .wizard-step-dot {
+  background: rgba(168,180,255,0.28) !important;
+  box-shadow: none !important;
+}
+
+/* Profile avatar */
+.profile-avatar-big {
+  border: none !important;
+  box-shadow: none !important;
+  background: rgba(168,180,255,0.12) !important;
+}
+
+/* Confirm box */
+.confirm-box {
+  border: none !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important;
+}
+
+/* Ghost list scroll */
+.ghost-list-scroll {
+  background: transparent !important;
+}
+
+/* Leaf popup */
+.leaflet-popup-content-wrapper {
+  border: none !important;
+}
+
 </style>
 </head>
 <body>
