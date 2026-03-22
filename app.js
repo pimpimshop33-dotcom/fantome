@@ -5721,24 +5721,29 @@ function _buildScratchCanvas() {
   if (!ec || !msgEl) return;
 
   // Zone à couvrir : de detailMessage jusqu'au dernier média présent
-  // Dernier élément à couvrir : message, puis audio/photo/readCount si présents
-  // On s'arrête AVANT detailChain, detail-info et les boutons
-  let bottomEl = msgEl;
-  ['detailAudio','detailPhoto','detailReadCount'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el && (el.children.length > 0 || (el.style.display !== 'none' && el.textContent.trim()))) bottomEl = el;
-  });
-
-  const ecRect     = ec.getBoundingClientRect();
-  const msgRect    = msgEl.getBoundingClientRect();
-  const bottomRect = bottomEl.getBoundingClientRect();
-
+  const ecRect  = ec.getBoundingClientRect();
   const scrollTop = ec.scrollTop || 0;
-  const relTop    = msgRect.top - ecRect.top + scrollTop - 8;
-  const relLeft   = Math.max(0, msgRect.left - ecRect.left - 4);
-  const cssW      = ecRect.width - relLeft + 4;
-  // Hauteur = du haut du message au bas du dernier élément média uniquement (+12px de marge)
-  const cssH      = Math.max(160, bottomRect.bottom - msgRect.top + 12);
+  const relLeft   = 0;
+  const cssW      = ecRect.width;
+
+  // Calculer relTop = position du message dans le scroll d'envelopeContent
+  // offsetTop est relatif au parent — on remonte jusqu'à ec
+  function offsetTopRelTo(el, ancestor) {
+    let top = 0;
+    while (el && el !== ancestor) { top += el.offsetTop; el = el.offsetParent; }
+    return top;
+  }
+  const relTop = offsetTopRelTo(msgEl, ec) - 8;
+
+  // S'arrêter AVANT le bouton Résonner (premier bouton après le contenu)
+  const stopEl = document.getElementById('resonanceBtn') || document.querySelector('#envelopeContent .detail-info');
+  let cssH;
+  if (stopEl) {
+    const stopTop = offsetTopRelTo(stopEl, ec);
+    cssH = Math.max(160, stopTop - relTop - 8);
+  } else {
+    cssH = 300;
+  }
 
   ec.style.position = 'relative';
 
