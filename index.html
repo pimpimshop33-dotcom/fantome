@@ -223,7 +223,11 @@ button,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:mani
 .ob-sub{font-size:16px !important;line-height:1.65 !important;color:rgba(232,212,168,.55) !important;}
 .ob-ghost-big{
   font-size:96px !important;
+  display:inline-block !important;
+  animation:floatG 3.5s ease-in-out infinite !important;
   filter:drop-shadow(0 0 40px rgba(122,184,245,.7)) drop-shadow(0 0 80px rgba(232,160,48,.25)) !important;
+  -webkit-text-fill-color:initial !important;
+  line-height:1 !important;
 }
 .ob-glow-ring{
   border:1px solid rgba(122,184,245,.18) !important;
@@ -232,18 +236,8 @@ button,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:mani
 .ob-glow-ring.ob-ring2{border:1px solid rgba(232,160,48,.1) !important;animation-delay:1.5s !important;}
 /* Brume sous les visuels onboarding */
 .ob-scene-visual{position:relative;}
-.ob-scene-visual::before{
-  content:'';position:absolute;width:200px;height:50px;border-radius:50%;
-  background:radial-gradient(ellipse,rgba(122,184,245,.15) 0%,transparent 70%);
-  bottom:-8px;left:50%;transform:translateX(-50%);
-  animation:fogDrift 7s ease-in-out infinite;pointer-events:none;
-}
-.ob-scene-visual::after{
-  content:'';position:absolute;width:260px;height:35px;border-radius:50%;
-  background:radial-gradient(ellipse,rgba(232,160,48,.08) 0%,transparent 70%);
-  bottom:-18px;left:50%;transform:translateX(-50%);
-  animation:fogDrift2 9s ease-in-out infinite;pointer-events:none;
-}
+.ob-scene-visual::before{display:none;}
+.ob-scene-visual::after{display:none;}
 @keyframes fogDrift{0%,100%{opacity:.5;transform:translateX(-50%) scaleX(1);}50%{opacity:.75;transform:translateX(-46%) scaleX(1.06);}}
 @keyframes fogDrift2{0%,100%{opacity:.3;transform:translateX(-50%);}50%{opacity:.5;transform:translateX(-54%) scaleX(1.05);}}
 
