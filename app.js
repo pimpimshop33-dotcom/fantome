@@ -1,5 +1,9 @@
+// ── Check guest avant dépôt ───────────────────────────────
+function _isGuestUser() {
+  return currentUser && currentUser.isAnonymous;
+}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, increment, serverTimestamp, GeoPoint, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import WorldService, { buildGeohashFields, encodeGeohash } from './services/world.service.js?v=3';
 import GhostService from './services/ghost.service.js';
@@ -3230,6 +3234,20 @@ function buildShareLink(ghost) {
 
 
 // ── GHOST CARD GENERATOR ──────────────────────────────────
+
+function _roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
 window.generateGhostCard = async () => {
   if (!selectedGhost) return;
   const btn = document.getElementById('ghostCardBtn');
@@ -3241,101 +3259,139 @@ window.generateGhostCard = async () => {
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    // ── Fond ─────────────────────────────────────────────
+    // ── Fond nuit urbaine ────────────────────────────────
     const bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0,   '#06040e');
-    bg.addColorStop(0.5, '#0a0818');
-    bg.addColorStop(1,   '#04030c');
+    bg.addColorStop(0,   '#020408');
+    bg.addColorStop(0.4, '#060c18');
+    bg.addColorStop(1,   '#020308');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
 
-    // Étoiles
-    const rng = (s) => { let x = Math.sin(s) * 10000; return x - Math.floor(x); };
-    for (let i = 0; i < 180; i++) {
-      const x = rng(i * 7.3) * W;
-      const y = rng(i * 13.7) * H;
-      const r = rng(i * 3.1) * 1.8 + 0.3;
-      const a = rng(i * 5.9) * 0.6 + 0.2;
+    // Pluie fine
+    const rng = (s) => { let x = Math.sin(s)*10000; return x - Math.floor(x); };
+    for (let i = 0; i < 120; i++) {
+      const x = rng(i*7.3)*W;
+      const y = rng(i*13.7)*H;
+      const len = rng(i*2.1)*40 + 20;
       ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(200,210,255,${a})`;
-      ctx.fill();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - len*0.15, y + len);
+      ctx.strokeStyle = `rgba(160,185,230,${rng(i*5.9)*0.25 + 0.08})`;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
     }
 
-    // Halo central
-    const halo = ctx.createRadialGradient(W/2, H*0.42, 0, W/2, H*0.42, 420);
-    halo.addColorStop(0,   'rgba(140,100,255,0.18)');
-    halo.addColorStop(0.5, 'rgba(100,80,200,0.07)');
-    halo.addColorStop(1,   'rgba(0,0,0,0)');
-    ctx.fillStyle = halo;
-    ctx.fillRect(0, 0, W, H);
+    // Halo réverbère en haut
+    const lamp1 = ctx.createRadialGradient(W*0.3, H*0.18, 0, W*0.3, H*0.18, 300);
+    lamp1.addColorStop(0, 'rgba(255,230,120,0.22)');
+    lamp1.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = lamp1; ctx.fillRect(0, 0, W, H);
+    const lamp2 = ctx.createRadialGradient(W*0.72, H*0.22, 0, W*0.72, H*0.22, 280);
+    lamp2.addColorStop(0, 'rgba(255,230,120,0.18)');
+    lamp2.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = lamp2; ctx.fillRect(0, 0, W, H);
 
-    // Ligne déco haut
-    ctx.strokeStyle = 'rgba(168,180,255,0.15)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(80, 140); ctx.lineTo(W-80, 140); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(80, 146); ctx.lineTo(W-80, 146); ctx.stroke();
+    // Brume centrale
+    const mist = ctx.createRadialGradient(W/2, H*0.45, 0, W/2, H*0.45, 520);
+    mist.addColorStop(0, 'rgba(140,170,220,0.14)');
+    mist.addColorStop(0.6, 'rgba(100,130,180,0.06)');
+    mist.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = mist; ctx.fillRect(0, 0, W, H);
 
-    // ── Logo / app name ──────────────────────────────────
+    // Sol mouillé en bas
+    const puddle = ctx.createLinearGradient(0, H*0.72, 0, H);
+    puddle.addColorStop(0, 'rgba(0,0,0,0)');
+    puddle.addColorStop(0.5, 'rgba(30,50,90,0.25)');
+    puddle.addColorStop(1, 'rgba(10,20,40,0.5)');
+    ctx.fillStyle = puddle; ctx.fillRect(0, H*0.72, W, H*0.28);
+
+    // Reflet réverbère sur sol
+    const refl = ctx.createRadialGradient(W/2, H*0.88, 0, W/2, H*0.88, 200);
+    refl.addColorStop(0, 'rgba(255,220,100,0.18)');
+    refl.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = refl; ctx.fillRect(0, H*0.75, W, H*0.25);
+
+    // ── Header app ────────────────────────────────────────
     ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(168,180,255,0.5)';
-    ctx.font = '500 38px "Instrument Sans", sans-serif';
-    ctx.letterSpacing = '6px';
-    ctx.fillText('GHOSTUB', W/2, 110);
+    ctx.letterSpacing = '8px';
+    ctx.fillStyle = 'rgba(168,180,255,0.45)';
+    ctx.font = '400 36px "Instrument Sans", sans-serif';
+    ctx.fillText('GHOSTUB', W/2, 100);
     ctx.letterSpacing = '0px';
 
-    // ── Ghost emoji central ───────────────────────────────
-    ctx.font = '200px serif';
-    ctx.fillText('👻', W/2, H*0.42);
+    // Séparateur haut
+    ctx.strokeStyle = 'rgba(168,180,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(100, 128); ctx.lineTo(W-100, 128); ctx.stroke();
 
-    // ── Message principal ─────────────────────────────────
-    ctx.fillStyle = 'rgba(230,225,255,0.92)';
-    ctx.font = 'italic 72px "Cormorant Garamond", Georgia, serif';
-    ctx.fillText(_currentLang === 'en' ? 'I broke a seal' : 'J’ai brisé un sceau', W/2, H*0.56);
+    // ── Ghost emoji avec glow ─────────────────────────────
+    ctx.shadowColor = 'rgba(168,180,255,0.7)';
+    ctx.shadowBlur = 80;
+    ctx.font = '220px serif';
+    ctx.fillText(selectedGhost.emoji || '👻', W/2, H*0.38);
+    ctx.shadowBlur = 0;
 
-    ctx.fillStyle = 'rgba(168,180,255,0.6)';
-    ctx.font = 'italic 52px "Cormorant Garamond", Georgia, serif';
-    ctx.fillText(_currentLang === 'en' ? 'in this place…' : 'dans ce lieu…', W/2, H*0.56 + 80);
+    // ── Message mystère (pas le texte — le FOMO) ──────────
+    ctx.fillStyle = 'rgba(230,228,255,0.88)';
+    ctx.font = 'italic 68px "Cormorant Garamond", Georgia, serif';
+    const line1 = _currentLang === 'en' ? 'A message is waiting for you' : 'Un message attend quelqu’un ici';
+    ctx.fillText(line1, W/2, H*0.52);
 
-    // ── Lieu ─────────────────────────────────────────────
-    const lieu = selectedGhost.location || 'Lieu inconnu';
-    const lieuShort = lieu.length > 38 ? lieu.substring(0, 36) + '…' : lieu;
-    ctx.fillStyle = 'rgba(255,240,200,0.75)';
-    ctx.font = '500 44px "Instrument Sans", sans-serif';
-    ctx.fillText('📍 ' + lieuShort, W/2, H*0.67);
-
-    // ── Date ─────────────────────────────────────────────
-    const now = new Date();
-    const dateStr = now.toLocaleDateString(_currentLang === 'fr' ? 'fr-FR' : 'en-GB', {
-      day: 'numeric', month: 'long', year: 'numeric'
-    });
-    ctx.fillStyle = 'rgba(168,180,255,0.45)';
-    ctx.font = '36px "Instrument Sans", sans-serif';
-    ctx.fillText(dateStr, W/2, H*0.74);
-
-    // ── Coordonnées ───────────────────────────────────────
-    if (selectedGhost.lat && selectedGhost.lng) {
-      const lat = selectedGhost.lat.toFixed(4);
-      const lng = selectedGhost.lng.toFixed(4);
-      ctx.fillStyle = 'rgba(120,130,180,0.4)';
-      ctx.font = '500 30px "Instrument Sans", sans-serif';
-      ctx.letterSpacing = '2px';
-      ctx.fillText(`${lat}° N   ${lng}° E`, W/2, H*0.79);
-      ctx.letterSpacing = '0px';
+    // Nombre de personnes qui peuvent encore l'ouvrir
+    const remaining = selectedGhost.maxOpenCount
+      ? Math.max(0, selectedGhost.maxOpenCount - (selectedGhost.openCount || 0))
+      : null;
+    if (remaining !== null && remaining > 0) {
+      ctx.fillStyle = 'rgba(255,180,60,0.85)';
+      ctx.font = 'italic 48px "Cormorant Garamond", Georgia, serif';
+      ctx.fillText(_currentLang === 'en' ? `Only ${remaining} can still open it` : `Plus que ${remaining} personne${remaining > 1 ? 's' : ''} peut l'ouvrir`, W/2, H*0.52 + 80);
+    } else {
+      ctx.fillStyle = 'rgba(168,180,255,0.55)';
+      ctx.font = 'italic 48px "Cormorant Garamond", Georgia, serif';
+      ctx.fillText(_currentLang === 'en' ? '…but only if you are close enough' : '…mais seulement si tu t’en approches', W/2, H*0.52 + 80);
     }
 
-    // Ligne déco bas
-    ctx.strokeStyle = 'rgba(168,180,255,0.15)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(80, H - 160); ctx.lineTo(W - 80, H - 160); ctx.stroke();
+    // ── Lieu (flou volontaire pour le mystère) ────────────
+    const lieu = selectedGhost.location || (_currentLang === 'en' ? 'Unknown place' : 'Lieu inconnu');
+    const lieuShort = lieu.length > 32 ? lieu.substring(0, 30) + '…' : lieu;
+    ctx.fillStyle = 'rgba(255,240,200,0.7)';
+    ctx.font = '500 46px "Instrument Sans", sans-serif';
+    ctx.fillText('📍 ' + lieuShort, W/2, H*0.63);
 
-    // CTA bas
-    ctx.fillStyle = 'rgba(168,180,255,0.35)';
-    ctx.font = '34px "Instrument Sans", sans-serif';
-    ctx.fillText(_currentLang === 'en' ? 'Come discover what awaits you' : 'Viens découvrir ce qui t’attend', W/2, H - 108);
-    ctx.fillStyle = 'rgba(168,180,255,0.2)';
+    // Distance et résonances
+    const resoCount = selectedGhost.resonances || 0;
+    if (resoCount > 0) {
+      ctx.fillStyle = 'rgba(255,200,80,0.65)';
+      ctx.font = '38px "Instrument Sans", sans-serif';
+      ctx.fillText('✦'.repeat(Math.min(resoCount, 5)) + ` — ${resoCount} résonance${resoCount > 1 ? 's' : ''}`, W/2, H*0.69);
+    }
+
+    // ── CTA viral ─────────────────────────────────────────
+    // Fond pill pour le CTA
+    ctx.fillStyle = 'rgba(168,180,255,0.12)';
+    const pillY = H*0.78;
+    _roundRect(ctx, W/2 - 360, pillY - 50, 720, 110, 55);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(168,180,255,0.25)';
+    ctx.lineWidth = 1.5;
+    _roundRect(ctx, W/2 - 360, pillY - 50, 720, 110, 55);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(200,215,255,0.9)';
+    ctx.font = '500 40px "Instrument Sans", sans-serif';
+    ctx.fillText(_currentLang === 'en' ? 'Come and open it on Ghostub' : 'Viens l’ouvrir sur Ghostub', W/2, pillY + 15);
+
+    // Séparateur bas
+    ctx.strokeStyle = 'rgba(168,180,255,0.10)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(100, H - 130); ctx.lineTo(W-100, H - 130); ctx.stroke();
+
+    // URL
+    ctx.fillStyle = 'rgba(168,180,255,0.3)';
     ctx.font = '28px "Instrument Sans", sans-serif';
-    ctx.fillText('ghostub.app', W/2, H - 65);
+    ctx.letterSpacing = '1px';
+    ctx.fillText('ghostub.app', W/2, H - 80);
+    ctx.letterSpacing = '0px';
 
     // ── Export ────────────────────────────────────────────
     canvas.toBlob(async (blob) => {
@@ -4712,6 +4768,32 @@ function getFilteredGhosts() {
   }
 }
 
+
+// ── Fantômes grisés à 5km — teaser quand liste vide ──────
+function _renderDistantGhostsTeaser() {
+  // Utiliser les ghosts en cache WorldService si dispo, sinon skip
+  if (!userLat || !userLng) return '';
+  // Générer des fantômes fantômes fictifs dans les directions cardinales
+  // pour montrer que l'app est vivante (pas de données réelles — juste UI)
+  const directions = [
+    { dir: _currentLang === 'en' ? 'North' : 'Nord',      dist: Math.floor(Math.random()*2000)+800,  emoji: '👻' },
+    { dir: _currentLang === 'en' ? 'South-West' : 'Sud',  dist: Math.floor(Math.random()*3000)+1200, emoji: '🌙' },
+    { dir: _currentLang === 'en' ? 'East' : 'Est',        dist: Math.floor(Math.random()*4000)+1500, emoji: '✨' },
+  ];
+  const label = _currentLang === 'en' ? 'Presences exist nearby — get closer' : 'Des présences existent aux alentours — approche-toi';
+  const items = directions.map(d => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(168,180,255,.04);border-radius:12px;opacity:.45;filter:blur(0.4px);">
+      <span style="font-size:20px;">${d.emoji}</span>
+      <span style="flex:1;font-size:12px;color:var(--warm-dim);font-family:'Cormorant Garamond',serif;font-style:italic;">??? — ${d.dir}</span>
+      <span style="font-size:11px;color:var(--spirit-dim);">${d.dist > 999 ? (d.dist/1000).toFixed(1)+'km' : d.dist+'m'}</span>
+    </div>`).join('');
+  return `
+    <div style="margin-top:4px;">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(168,180,255,.3);margin-bottom:8px;">${label}</div>
+      <div style="display:flex;flex-direction:column;gap:5px;">${items}</div>
+    </div>`;
+}
+
 function renderGhostList() {
   const list = document.getElementById('ghostList');
   const filtered = getFilteredGhosts();
@@ -4738,17 +4820,15 @@ function renderGhostList() {
         </div>
         <button onclick="showScreen('screenDeposit');setNav('nav-deposit')" style="padding:12px 24px;background:linear-gradient(135deg,rgba(168,180,255,.2),rgba(168,180,255,.08));border:1px solid var(--border-bright);border-radius:20px;color:var(--ether);font-family:'Instrument Sans',sans-serif;font-size:14px;cursor:pointer;touch-action:manipulation;">${t.radar_first_btn}</button>
       </div>` : `
-      <div style="text-align:center;padding:40px 16px 20px;">
-        <div style="font-size:52px;margin-bottom:14px;opacity:.35;filter:blur(1.5px);animation:ghostFloat 3.5s ease-in-out infinite;">👻</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ether);margin-bottom:6px;">${t.radar_empty_title}</div>
-        <div style="font-size:12px;color:var(--spirit-dim);line-height:1.65;margin-bottom:6px;">${t.radar_empty_sub}</div>
-        <div style="font-size:11px;color:rgba(168,180,255,.35);margin-bottom:22px;">
-          ${_currentLang === 'en' ? '✦ Move around to reveal nearby presences' : '✦ Déplace-toi pour révéler les présences proches'}
+      <div style="text-align:center;padding:20px 16px 12px;">
+        <div style="font-size:40px;margin-bottom:10px;opacity:.4;filter:blur(1px);animation:ghostFloat 3.5s ease-in-out infinite;">👻</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-style:italic;color:var(--ether);margin-bottom:4px;">${t.radar_empty_title}</div>
+        <div style="font-size:12px;color:var(--spirit-dim);margin-bottom:14px;">${t.radar_empty_sub}</div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;">
+          <button onclick="loadNearbyGhosts()" style="padding:8px 16px;background:rgba(168,180,255,.06);border-radius:20px;color:rgba(168,180,255,.6);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;touch-action:manipulation;">↻ ${_currentLang === 'en' ? 'Refresh' : 'Actualiser'}</button>
+          <button onclick="showScreen('screenDeposit');setNav('nav-deposit')" style="padding:8px 18px;background:rgba(168,180,255,.14);border-radius:20px;color:var(--ether);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;touch-action:manipulation;">👻 ${_currentLang === 'en' ? 'Be first to haunt' : 'Hanter en premier'}</button>
         </div>
-        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-          <button onclick="loadNearbyGhosts()" style="padding:10px 18px;background:rgba(168,180,255,.06);border:1px solid rgba(168,180,255,.2);border-radius:20px;color:rgba(168,180,255,.6);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;touch-action:manipulation;">↻ ${_currentLang === 'en' ? 'Refresh' : 'Actualiser'}</button>
-          <button onclick="showScreen('screenDeposit');setNav('nav-deposit')" style="padding:10px 20px;background:linear-gradient(135deg,rgba(168,180,255,.2),rgba(168,180,255,.07));border:1px solid rgba(168,180,255,.35);border-radius:20px;color:var(--ether);font-family:'Instrument Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;touch-action:manipulation;">👻 ${_currentLang === 'en' ? 'Be the first to haunt' : 'Hanter ce lieu en premier'}</button>
-        </div>
+        ${_renderDistantGhostsTeaser()}
       </div>`;
     return;
   }
@@ -7064,3 +7144,18 @@ document.addEventListener('click', (e) => {
     document.body.style.overflow = '';
   }
 });
+
+// ── MODE EXPLORATION ANONYME ─────────────────────────────
+window.guestExplore = async () => {
+  try {
+    await signInAnonymously(auth);
+    // onAuthStateChanged va gérer la suite
+    // On marque comme guest pour limiter les actions
+    localStorage.setItem('ghostub_guest', '1');
+  } catch(e) {
+    console.warn('guestExplore:', e);
+    // Fallback : aller au radar sans auth (lecture seule partielle)
+    showScreen('screenRadar'); setNav('nav-radar');
+    showToast('info', '🌫️ Mode exploration — connecte-toi pour déposer', 3500);
+  }
+};
