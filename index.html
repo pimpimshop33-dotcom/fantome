@@ -500,7 +500,7 @@ button,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:mani
 }
 
 /* ── DETAIL ────────────────────────────────────────────── */
-.back-btn{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--spirit-dim);cursor:pointer;padding:12px 20px 0;transition:color .2s;background:none;border:none;font-family:'Instrument Sans',sans-serif;min-height:44px;}
+.back-btn{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--spirit-dim);cursor:pointer;padding:12px 20px 0;transition:color .2s;background:none;border:none;font-family:'Instrument Sans',sans-serif;min-height:44px;-webkit-text-fill-color:var(--spirit-dim) !important;}
 .back-btn:hover{color:var(--spirit);}
 .detail-location{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--spirit-dim);margin-bottom:4px;}
 .detail-distance{font-size:12px;color:var(--spirit-dim);margin-bottom:16px;}
@@ -1234,6 +1234,9 @@ body.light-theme .form-input,.body.light-theme .form-textarea{background:rgba(23
   92%  { opacity:.2; }
   100% { opacity:0; transform:translateY(100vh) translateX(-18px); }
 }
+
+/* Empêcher webkit-text-fill de rendre les boutons blancs */
+button, [role="button"], .back-btn, .btn-primary, .btn-secondary, .nav-item, .filter-btn, .wizard-next-btn { -webkit-text-fill-color: currentColor !important; }
 
 /* z-index */
 .screen   { position:relative; z-index:5; }
