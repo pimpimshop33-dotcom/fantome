@@ -1897,7 +1897,7 @@ function showNotif(title, body) {
   navigator.serviceWorker.ready.then(reg => {
     reg.showNotification(title, {
       body,
-      icon: '/ghostub/icon.png',
+      icon: '/ghostub/icon-maskable-512.png',
       tag: 'fantome-' + Date.now(),
       vibrate: [200, 100, 200],
       data: { url: '/ghostub/' }
@@ -3788,7 +3788,7 @@ async function _seedWelcomeGhost() {
       maxOpenCount: 0,
       anonymous: true,
       author: 'Spectre_Errant',
-      authorUid: 'system',
+      authorUid: currentUser.uid,
       geohash: fields.geohash5 || fields.geohash,
       geohash4: fields.geohash4,
       expired: false,
@@ -6355,7 +6355,7 @@ window.showScreen = (id, fromPopstate = false) => {
     const alwaysBtn = document.querySelector('.cond-btn[data-cond="always"]');
     if (alwaysBtn) alwaysBtn.classList.add('active');
     document.getElementById('condExtraHour').classList.remove('show');
-    document.getElementById('condExtraAfter').classList.remove('show');
+    document.getElementById('condExtraAfter')?.classList.remove('show');
     document.getElementById('condExtraFuture').classList.remove('show');
     const chainContent = document.getElementById('chainContent');
     const chainLock = document.getElementById('chainLock');
@@ -7044,6 +7044,11 @@ function _initDepositMiniMap() {
     return;
   }
 
+  if (typeof L === 'undefined') {
+    console.warn('Leaflet not loaded yet');
+    if (loader) loader.style.display = 'none';
+    return;
+  }
   _depositMiniMap = L.map('depositMiniMap', {
     zoomControl: false,
     attributionControl: false,
