@@ -1310,13 +1310,11 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
   display:block;
   width:100%;
   min-height:220px;
+  /* hauteur auto = s'adapte au contenu (message + photo + audio) */
 }
-/* Le message reste visible sous le canvas */
-.scratch-wrapper .detail-message{
-  min-height:200px;
-  display:flex;
-  align-items:center;
-}
+/* Le canvas est positionné en absolute sur le wrapper */
+/* Le contenu est rendu invisible via JS (opacity:0/visibility:hidden) */
+/* mais conserve sa taille pour que le wrapper ait la bonne hauteur */
 #scratchCanvas{
   position:absolute;
   top:0;left:0;
