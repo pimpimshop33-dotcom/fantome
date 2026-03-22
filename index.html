@@ -1184,6 +1184,16 @@ button, [role="button"], input, textarea, select,
         <div class="auth-error" id="regAuthError" role="alert" aria-live="polite"></div>
         <button class="btn-primary" onclick="register()" data-i18n="auth_register_btn">Créer mon compte</button>
       </div>
+      <!-- Séparateur -->
+      <div style="display:flex;align-items:center;gap:12px;margin:16px 0 4px;">
+        <div style="flex:1;height:1px;background:rgba(168,180,255,.1);"></div>
+        <span style="font-size:11px;color:rgba(168,180,255,.3);letter-spacing:.5px;">ou</span>
+        <div style="flex:1;height:1px;background:rgba(168,180,255,.1);"></div>
+      </div>
+      <!-- Explorer sans compte -->
+      <button onclick="window.guestExplore()" style="width:100%;padding:11px;background:transparent;border-radius:13px;color:rgba(168,180,255,.45);font-family:'Instrument Sans',sans-serif;font-size:13px;cursor:pointer;touch-action:manipulation;letter-spacing:.2px;">
+        🌫️ Explorer sans compte <span style="opacity:.6;font-size:11px;">(lecture seule)</span>
+      </button>
     </div>
   </div>
 
@@ -1417,7 +1427,11 @@ button, [role="button"], input, textarea, select,
         <!-- Champ caché businessExtra pour compatibilité depositGhost -->
         <div id="businessExtra" style="display:none;"></div>
 
-        <button class="wizard-next-btn" onclick="wizardNext(1)" style="margin-top:14px;" data-i18n="dep_next_btn">Continuer →</button>
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button class="btn-primary" onclick="depositGhost()" style="flex:1;opacity:.7;font-size:12px;padding:11px;" id="quickDepositBtn">⚡ Déposer ici</button>
+          <button class="wizard-next-btn" onclick="wizardNext(1)" style="flex:2;" data-i18n="dep_next_btn">Personnaliser →</button>
+        </div>
+        <div style="font-size:10px;color:rgba(168,180,255,.3);text-align:center;margin-top:6px;">⚡ Déposer utilise ta position GPS et les réglages par défaut</div>
       </div>
 
       <!-- ÉTAPE 2 -->
