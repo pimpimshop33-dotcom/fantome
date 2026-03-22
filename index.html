@@ -1339,15 +1339,17 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
   50%{text-shadow:0 0 24px rgba(168,180,255,1),0 2px 8px rgba(0,0,0,.9);}
 }
 .scratch-hint-overlay{
-  position:absolute;inset:0;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:10px;
-  z-index:10;          /* au-dessus du canvas z-index:5 */
+  /* positionné collé en bas — PAS centré */
+  position:absolute;
+  left:0;right:0;bottom:0;
+  height:64px;
+  display:flex;flex-direction:row;align-items:center;justify-content:center;
+  gap:8px;
+  z-index:10;
   pointer-events:none;
-  border-radius:20px;
-  overflow:hidden;
+  border-radius:0 0 20px 20px;
+  background:none;
   transition:opacity .3s ease;
-  background:transparent;
 }
 
 /* ── RADAR HEADER — plus de punch ── */
