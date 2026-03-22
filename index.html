@@ -109,7 +109,22 @@ body {
 
 /* Cibles tactiles WCAG */
 button,[role="button"],.nav-item,.auth-tab,.type-btn,.dur-btn,.radius-btn{min-height:44px;min-width:44px;}
-.emoji-opt{min-height:44px;min-width:44px;}
+.emoji-opt{
+  min-height:44px;min-width:44px;
+  width:44px;height:44px;
+  font-size:22px;
+  background:rgba(122,184,245,.06);
+  border:1px solid rgba(122,184,245,.15);
+  border-radius:12px;
+  cursor:pointer;
+  transition:all .2s;
+  touch-action:manipulation;
+  display:flex;align-items:center;justify-content:center;
+  /* forcer l'emoji visible — pas de color hérité */
+  color:initial;
+}
+.emoji-opt:hover{background:rgba(232,160,48,.12);border-color:rgba(232,160,48,.3);}
+.emoji-opt.active{background:rgba(232,160,48,.18);border-color:rgba(232,160,48,.55);box-shadow:0 0 12px rgba(232,160,48,.2);}
 input,textarea,select{font-size:16px !important;}
 
 /* ── BANNERS ───────────────────────────────────────────── */
