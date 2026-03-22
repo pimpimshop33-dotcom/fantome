@@ -1150,6 +1150,194 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
 /* ── BADGE PREMIUM UNIFIÉ ───────────────────────────────── */
 .badge-premium{font-size:10px;background:rgba(255,200,80,.15);color:rgba(255,200,80,.9);border-radius:6px;padding:2px 6px;font-weight:600;white-space:nowrap;flex-shrink:0;border:1px solid rgba(255,200,80,.25);}
 
+/* ══════════════════════════════════════════════════════════
+   REDESIGN V2 — GHOSTUB VILLE HANTÉE
+   ══════════════════════════════════════════════════════════ */
+
+/* ── GHOST ENVELOPE CARDS — shimmer + proximity glow ── */
+@keyframes ghostShimmer{
+  0%{transform:translateX(-100%) skewX(-12deg);}
+  100%{transform:translateX(300%) skewX(-12deg);}
+}
+@keyframes ghostPulse{
+  0%,100%{box-shadow:0 2px 20px rgba(0,0,0,.4),0 0 0 1px rgba(168,180,255,.05);}
+  50%{box-shadow:0 2px 24px rgba(0,0,0,.5),0 0 18px rgba(168,180,255,.08);}
+}
+.ghost-envelope{
+  animation:ghostPulse 5s ease-in-out infinite;
+  animation-delay:var(--card-delay,0s);
+}
+.ghost-envelope::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 0%,rgba(168,180,255,.07) 50%,transparent 100%);
+  transform:translateX(-100%) skewX(-12deg);
+  transition:none;pointer-events:none;border-radius:inherit;
+  z-index:1;
+}
+.ghost-envelope:hover::before,.ghost-envelope:focus::before{
+  animation:ghostShimmer .7s ease forwards;
+}
+/* Distance badge colors */
+.envelope-dist.dist-near{background:rgba(100,220,160,.15);color:rgba(100,220,160,.95);border:1px solid rgba(100,220,160,.25);}
+.envelope-dist.dist-mid{background:rgba(168,180,255,.12);color:rgba(168,180,255,.9);border:1px solid rgba(168,180,255,.2);}
+.envelope-dist.dist-far{background:rgba(240,232,216,.06);color:rgba(240,232,216,.5);border:1px solid rgba(240,232,216,.1);}
+
+/* ── ONBOARDING — brume atmosphérique ── */
+@keyframes fogDrift{
+  0%{transform:translateX(0) scaleX(1);opacity:.5;}
+  33%{transform:translateX(8%) scaleX(1.04);opacity:.65;}
+  66%{transform:translateX(-5%) scaleX(.97);opacity:.45;}
+  100%{transform:translateX(0) scaleX(1);opacity:.5;}
+}
+@keyframes fogDrift2{
+  0%{transform:translateX(0);opacity:.3;}
+  50%{transform:translateX(-10%) scaleX(1.06);opacity:.45;}
+  100%{transform:translateX(0);opacity:.3;}
+}
+.ob-scene-visual{position:relative;}
+.ob-scene-visual::before,.ob-scene-visual::after{
+  content:'';position:absolute;border-radius:50%;pointer-events:none;
+}
+.ob-scene-visual::before{
+  width:180px;height:60px;background:radial-gradient(ellipse,rgba(168,180,255,.18) 0%,transparent 70%);
+  bottom:-10px;left:50%;transform:translateX(-50%);
+  animation:fogDrift 7s ease-in-out infinite;
+}
+.ob-scene-visual::after{
+  width:240px;height:40px;background:radial-gradient(ellipse,rgba(140,100,255,.1) 0%,transparent 70%);
+  bottom:-20px;left:50%;transform:translateX(-50%);
+  animation:fogDrift2 9s ease-in-out infinite;
+}
+/* Ghost slide 1 — bigger, more dramatic */
+.ob-ghost-big{
+  font-size:96px !important;
+  filter:drop-shadow(0 0 40px rgba(168,180,255,.7)) drop-shadow(0 0 80px rgba(140,100,255,.3)) !important;
+}
+.ob-glow-ring{
+  border:1px solid rgba(168,180,255,.2) !important;
+  box-shadow:0 0 20px rgba(168,180,255,.08),inset 0 0 20px rgba(168,180,255,.04);
+}
+.ob-glow-ring.ob-ring2{
+  border:1px solid rgba(140,100,255,.12) !important;
+  animation-delay:1.5s !important;
+}
+
+/* ── ONBOARDING — titre plus dramatique ── */
+.ob-title{
+  font-size:48px !important;
+  background:linear-gradient(135deg, #e8d4ff 0%, #a8b4ff 40%, #c8d4ff 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:-.5px;
+}
+.ob-sub{
+  font-size:16px !important;
+  line-height:1.65 !important;
+  color:rgba(240,232,216,.55) !important;
+}
+
+/* ── ENVELOPE SCELLÉE — version cinématique ── */
+.envelope-sealed{
+  border-radius:24px !important;
+  background:linear-gradient(160deg,rgba(20,18,36,0.99) 0%,rgba(10,10,22,1) 100%) !important;
+  border:1px solid rgba(168,180,255,.22) !important;
+  box-shadow:0 4px 40px rgba(0,0,0,.6),0 0 60px rgba(168,180,255,.04),inset 0 1px 0 rgba(255,255,255,.04) !important;
+  overflow:hidden;
+  position:relative;
+}
+.envelope-sealed::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,rgba(168,180,255,.07) 0%,transparent 60%);
+  pointer-events:none;
+}
+@keyframes sealPulse{
+  0%,100%{filter:drop-shadow(0 0 12px rgba(168,180,255,.4)) drop-shadow(0 0 24px rgba(168,180,255,.15));}
+  50%{filter:drop-shadow(0 0 20px rgba(168,180,255,.65)) drop-shadow(0 0 40px rgba(168,180,255,.25));}
+}
+.envelope-sealed-emoji{
+  font-size:40px !important;
+  width:64px !important;height:64px !important;
+  animation:sealPulse 3s ease-in-out infinite;
+  background:rgba(168,180,255,.06) !important;
+  border:1px solid rgba(168,180,255,.18) !important;
+  border-radius:18px !important;
+}
+.envelope-sealed-label{
+  font-size:20px !important;
+  font-weight:300 !important;
+  letter-spacing:.3px;
+}
+.envelope-sealed-body{padding:24px 22px 8px !important;}
+
+/* Bouton "Briser le sceau" */
+.envelope-open-btn{
+  background:linear-gradient(135deg,rgba(168,180,255,.14) 0%,rgba(120,90,220,.12) 100%) !important;
+  border:1px solid rgba(168,180,255,.35) !important;
+  border-radius:16px !important;
+  color:var(--ether) !important;
+  font-size:15px !important;
+  letter-spacing:.5px;
+  padding:16px !important;
+  transition:all .25s !important;
+  box-shadow:0 0 20px rgba(168,180,255,.08);
+}
+.envelope-open-btn:hover,.envelope-open-btn:active{
+  background:linear-gradient(135deg,rgba(168,180,255,.22) 0%,rgba(140,100,255,.2) 100%) !important;
+  box-shadow:0 0 30px rgba(168,180,255,.15) !important;
+  border-color:rgba(168,180,255,.55) !important;
+}
+
+/* ── DETAIL MESSAGE — plus grand, plus poétique ── */
+.detail-message{
+  font-size:28px !important;
+  line-height:1.7 !important;
+  padding:28px 24px !important;
+  border-left:2px solid rgba(168,180,255,.4) !important;
+  background:linear-gradient(160deg,rgba(22,20,40,.8) 0%,rgba(14,14,24,.9) 100%) !important;
+  border-radius:0 20px 20px 0 !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03), 0 4px 20px rgba(0,0,0,.3);
+  position:relative;
+}
+.detail-message::before{
+  content:'"';
+  position:absolute;top:8px;left:10px;
+  font-family:'Cormorant Garamond',serif;font-size:60px;
+  color:rgba(168,180,255,.12);line-height:1;pointer-events:none;
+}
+
+/* ── SCRATCH CANVAS OVERLAY ── */
+#scratchCanvas{
+  position:absolute;
+  top:0;left:0;width:100%;height:100%;
+  border-radius:0 20px 20px 0;
+  cursor:crosshair;
+  touch-action:none;
+  z-index:5;
+  pointer-events:auto;
+}
+.scratch-wrapper{
+  position:relative;
+  display:block;
+}
+@keyframes scratchHint{
+  0%,100%{opacity:.7;transform:scale(1);}
+  50%{opacity:1;transform:scale(1.03);}
+}
+.scratch-hint-overlay{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;z-index:4;pointer-events:none;border-radius:0 20px 20px 0;
+  overflow:hidden;
+}
+
+/* ── RADAR HEADER — plus de punch ── */
+#ghostCount{
+  background:linear-gradient(135deg,rgba(168,180,255,.15) 0%,rgba(140,100,255,.1) 100%);
+  border:1px solid rgba(168,180,255,.25);
+  border-radius:20px;padding:2px 12px;
+  font-weight:600;
+  box-shadow:0 0 12px rgba(168,180,255,.08);
+}
+
 </style>
 </head>
 <body>
