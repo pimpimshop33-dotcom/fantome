@@ -401,19 +401,23 @@ button,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:mani
 
 /* Zone scrollable indépendante pour la liste */
 .ghost-list-scroll{
-  flex:1;
+  /* Hauteur max = environ 3-4 cartes visibles, puis scroll */
+  max-height:36vh;
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
-  min-height:0; /* important pour que flex:1 fonctionne */
+  flex-shrink:0;
 }
-.ghost-list-scroll::-webkit-scrollbar{width:0;}
+.ghost-list-scroll::-webkit-scrollbar{width:3px;}
+.ghost-list-scroll::-webkit-scrollbar-thumb{background:rgba(168,180,255,.15);border-radius:2px;}
 
-/* screenRadar : flex column pour que la liste prenne l'espace restant */
-#screenRadar{
-  display:none;flex-direction:column;
-}
-#screenRadar.active{
-  display:flex;
+/* Dégradé en bas pour indiquer qu'il y a plus à scroller */
+.ghost-list-scroll::after{
+  content:'';
+  display:block;
+  height:16px;
+  background:linear-gradient(0deg,rgba(4,8,16,.8) 0%,transparent 100%);
+  position:sticky;bottom:0;pointer-events:none;
+  margin-top:-16px;
 }
 .ghost-envelope{
   position:relative;cursor:pointer;border-radius:16px;overflow:hidden;
