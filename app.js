@@ -173,7 +173,7 @@ const LANGS = {
     dep_chain_hint: 'Indice vers le prochain fantôme…',
     dep_chain_place: 'Placer le prochain point sur la carte',
     dep_chain_placed: '✓ Point placé — retap pour déplacer',
-    dep_biz_btn: '🏪 Mode Commerce',
+    dep_biz_btn: 'Mode Commerce',
     dep_biz_sub: 'Attirer des clients avec une offre géolocalisée',
     dep_biz_active: 'Mode activé — formulaire commerce',
     dep_biz_deposit: '🏪 Publier cette offre',
@@ -690,7 +690,7 @@ const LANGS = {
     dep_chain_hint: 'Hint toward the next ghost…',
     dep_chain_place: 'Place the next point on the map',
     dep_chain_placed: '✓ Point placed — tap again to move',
-    dep_biz_btn: '🏪 Commerce Mode',
+    dep_biz_btn: 'Commerce Mode',
     dep_biz_sub: 'Attract customers with a geolocated offer',
     dep_biz_active: 'Mode on — commerce form',
     dep_biz_deposit: '🏪 Publish this offer',
@@ -3769,8 +3769,8 @@ async function _seedWelcomeGhost() {
     const fields = buildGeohashFields(_wLat, _wLng);
     await addDoc(collection(db, COLL.GHOSTS), {
       message: _currentLang === 'en'
-        ? 'Someone was here before you… and left this trace for whoever would find it.'
-        : 'Quelqu’un est passé ici avant toi… et a laissé ça pour qui le trouverait.',
+        ? 'Welcome to Ghostub. Someone left this message just for you. Walk around to find more — each place hides a secret. Leave your own trace for the next wanderer.'
+        : 'Bienvenue sur Ghostub. Quelqu’un a laissé ce message pour toi. Promène-toi pour en découvrir d’autres — chaque lieu cache un secret. Laisse ta propre trace pour le prochain passant.',
       emoji: '👻',
       lat: _wLat,
       lng: _wLng,
