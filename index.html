@@ -1593,14 +1593,17 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
         </button>
       </div>
       <div id="envelopeContent" style="display:none;">
-        <div style="position:relative;">
-          <div class="detail-message" id="detailMessage" tabindex="-1"></div>
-          <button id="msgReportBtn" onclick="openReportModal()" aria-label="Signaler ce message comme inapproprié" title="Signaler ce message" style="display:none;position:absolute;top:8px;right:8px;background:rgba(10,8,20,.75);backdrop-filter:blur(6px);border:1px solid rgba(255,100,100,.35);border-radius:10px;color:rgba(255,120,100,.9);font-size:11px;padding:4px 8px;cursor:pointer;font-family:'Instrument Sans',sans-serif;display:flex;align-items:center;gap:4px;touch-action:manipulation;transition:all .2s;" onmouseover="this.style.background='rgba(255,60,60,.18)'" onmouseout="this.style.background='rgba(10,8,20,.75)'">⚑</button>
+        <!-- scratchZone : le canvas de grattage est injecté ICI, borné à ce div -->
+        <div id="scratchZone" style="position:relative;min-height:160px;">
+          <div style="position:relative;">
+            <div class="detail-message" id="detailMessage" tabindex="-1"></div>
+            <button id="msgReportBtn" onclick="openReportModal()" aria-label="Signaler ce message comme inapproprié" title="Signaler ce message" style="display:none;position:absolute;top:8px;right:8px;background:rgba(10,8,20,.75);backdrop-filter:blur(6px);border:1px solid rgba(255,100,100,.35);border-radius:10px;color:rgba(255,120,100,.9);font-size:11px;padding:4px 8px;cursor:pointer;font-family:'Instrument Sans',sans-serif;display:flex;align-items:center;gap:4px;touch-action:manipulation;transition:all .2s;" onmouseover="this.style.background='rgba(255,60,60,.18)'" onmouseout="this.style.background='rgba(10,8,20,.75)'">⚑</button>
+          </div>
+          <div id="detailAudio"></div>
+          <div id="detailPhoto"></div>
+          <!-- Annotation "vu par X personnes" -->
+          <div id="detailReadCount" style="display:none;text-align:center;font-size:12px;padding:8px 0 4px;font-family:'Instrument Sans',sans-serif;letter-spacing:.3px;"></div>
         </div>
-        <div id="detailAudio"></div>
-        <div id="detailPhoto"></div>
-        <!-- Annotation "vu par X personnes" -->
-        <div id="detailReadCount" style="display:none;text-align:center;font-size:12px;padding:8px 0 4px;font-family:'Instrument Sans',sans-serif;letter-spacing:.3px;"></div>
         <div id="detailChain" style="display:none;"></div>
         <div class="detail-info">
           <div class="detail-badge" id="detailAuthor"></div>
