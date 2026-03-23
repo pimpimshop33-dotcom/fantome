@@ -1377,6 +1377,8 @@ function closeModal(modalId) {
     delete modal._triggerEl;
   }
 }
+window.openModal = openModal;
+window.closeModal = closeModal;
 
 window.renderStaticMap = () => {
   const centerLat = userLat || 48.8566; // Paris par défaut si GPS indisponible
@@ -6437,9 +6439,9 @@ window.showScreen = (id, fromPopstate = false) => {
     document.querySelectorAll('.cond-btn').forEach(b => b.classList.remove('active'));
     const alwaysBtn = document.querySelector('.cond-btn[data-cond="always"]');
     if (alwaysBtn) alwaysBtn.classList.add('active');
-    document.getElementById('condExtraHour').classList.remove('show');
+    document.getElementById('condExtraHour')?.classList.remove('show');
     document.getElementById('condExtraAfter')?.classList.remove('show');
-    document.getElementById('condExtraFuture').classList.remove('show');
+    document.getElementById('condExtraFuture')?.classList.remove('show');
     const chainContent = document.getElementById('chainContent');
     const chainLock = document.getElementById('chainLock');
     const chainSection = document.getElementById('premSection_chain');
@@ -6573,21 +6575,21 @@ window.toggleBusinessMode = () => {
 };
 
 window.selectCond = (btn) => {
+  // Vérif Premium AVANT de retirer la classe active (sinon aucun bouton sélectionné)
   if (btn.dataset.cond === 'future' && !isPremium) {
     showToast('info', t.dep_cond_premium, 3500);
     return;
   }
-  btn.closest('.cond-selector').querySelectorAll('.cond-btn').forEach(b => b.classList.remove('active'));
-  // Vérif Premium pour "après un autre"
   if (btn.dataset.cond === 'after' && !isPremium) {
     showToast('info', t.dep_cond_premium, 3000);
     return;
   }
+  btn.closest('.cond-selector').querySelectorAll('.cond-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   const cond = btn.dataset.cond;
-  document.getElementById('condExtraHour').classList.toggle('show', cond === 'hour');
-  document.getElementById('condExtraAfter').classList.toggle('show', cond === 'after');
-  document.getElementById('condExtraFuture').classList.toggle('show', cond === 'future');
+  document.getElementById('condExtraHour')?.classList.toggle('show', cond === 'hour');
+  document.getElementById('condExtraAfter')?.classList.toggle('show', cond === 'after');
+  document.getElementById('condExtraFuture')?.classList.toggle('show', cond === 'future');
   // Pré-remplir la date min à demain
   if (cond === 'future') {
     const inp = document.getElementById('condFutureInput');
