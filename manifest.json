@@ -9,52 +9,16 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icon-72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-512.png",
+      "src": "icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [
@@ -72,14 +36,14 @@
       "short_name": "Radar",
       "description": "Voir les fantômes proches",
       "url": "/ghostub/?screen=radar",
-      "icons": [{ "src": "icon-96.png", "sizes": "96x96" }]
+      "icons": [{ "src": "icon-maskable-512.png", "sizes": "512x512" }]
     },
     {
       "name": "Déposer",
       "short_name": "Déposer",
       "description": "Laisser un message",
       "url": "/ghostub/?screen=deposit",
-      "icons": [{ "src": "icon-96.png", "sizes": "96x96" }]
+      "icons": [{ "src": "icon-maskable-512.png", "sizes": "512x512" }]
     }
   ],
   "categories": ["social", "lifestyle", "utilities"],
