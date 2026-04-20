@@ -1,16 +1,6 @@
 /* ── BASE VARIABLES ────────────────────────────────────── */
-:root{
-  --void:#060608;--deep:#0d0d12;--surface:#13131a;--surface2:#1a1a24;
-  --ghost:rgba(180,190,255,0.09);--spirit:#c0caff;--spirit-dim:rgba(192,202,255,0.75);
-  --spirit-glow:rgba(168,180,255,0.15);--ether:#dce6ff;--warm:#f8f2e8;
-  --warm-dim:rgba(248,242,232,0.82);--border:rgba(168,180,255,0.22);
-  --border-bright:rgba(168,180,255,0.48);--red:rgba(255,100,100,0.9);
-  /* iOS safe areas */
-  --sat: env(safe-area-inset-top, 0px);
-  --sar: env(safe-area-inset-right, 0px);
-  --sab: env(safe-area-inset-bottom, 0px);
-  --sal: env(safe-area-inset-left, 0px);
-}
+/* Source de vérité : index.html <style> (thème Ville Hantée Nocturne)
+   Ne pas redéclarer :root ici — les variables inline gagnent toujours. */
 
 /* ── RESET & BASE ──────────────────────────────────────── */
 *, *::before, *::after {
@@ -1079,3 +1069,208 @@ body.light-theme .cond-btn.active{border-color:var(--spirit-dim);background:rgba
 
 /* ── BADGE PREMIUM UNIFIÉ ───────────────────────────────── */
 .badge-premium{font-size:10px;background:rgba(255,200,80,.15);color:rgba(255,200,80,.9);border-radius:6px;padding:2px 6px;font-weight:600;white-space:nowrap;flex-shrink:0;border:1px solid rgba(255,200,80,.25);}
+
+
+/* ══════════════════════════════════════════════════════════
+   GHOSTUB v70 — REFONTE VISUELLE
+   Tier glows · Skeleton · Animations améliorées
+   ══════════════════════════════════════════════════════════ */
+
+/* ── TIER GLOW — enveloppes à bordure colorée par rareté ── */
+.ghost-envelope[data-tier="legendary"] {
+  border-color: rgba(255,200,80,0.28) !important;
+  box-shadow: 0 0 24px -6px rgba(255,200,80,0.18),
+              0 2px 20px rgba(0,0,0,0.45),
+              inset 0 1px 0 rgba(255,255,255,0.04) !important;
+}
+.ghost-envelope[data-tier="legendary"] .envelope-flap {
+  background: linear-gradient(180deg, rgba(255,200,80,0.14) 0%, rgba(255,200,80,0.04) 100%) !important;
+  border-bottom-color: rgba(255,200,80,0.12) !important;
+}
+.ghost-envelope[data-tier="legendary"] .envelope-flap::before {
+  border-top-color: rgba(255,200,80,0.10) !important;
+}
+.ghost-envelope[data-tier="legendary"] .envelope-emoji {
+  border-color: rgba(255,200,80,0.25) !important;
+  background: rgba(255,200,80,0.08) !important;
+  filter: drop-shadow(0 0 10px rgba(255,200,80,0.4)) !important;
+}
+
+.ghost-envelope[data-tier="rare"] {
+  border-color: rgba(176,128,255,0.28) !important;
+  box-shadow: 0 0 24px -6px rgba(176,128,255,0.18),
+              0 2px 20px rgba(0,0,0,0.45),
+              inset 0 1px 0 rgba(255,255,255,0.04) !important;
+}
+.ghost-envelope[data-tier="rare"] .envelope-flap {
+  background: linear-gradient(180deg, rgba(176,128,255,0.14) 0%, rgba(176,128,255,0.04) 100%) !important;
+  border-bottom-color: rgba(176,128,255,0.12) !important;
+}
+.ghost-envelope[data-tier="rare"] .envelope-flap::before {
+  border-top-color: rgba(176,128,255,0.10) !important;
+}
+.ghost-envelope[data-tier="rare"] .envelope-emoji {
+  border-color: rgba(176,128,255,0.25) !important;
+  background: rgba(176,128,255,0.08) !important;
+  filter: drop-shadow(0 0 10px rgba(176,128,255,0.4)) !important;
+}
+
+.ghost-envelope[data-tier="uncommon"] {
+  border-color: rgba(122,184,245,0.22) !important;
+  box-shadow: 0 0 18px -6px rgba(122,184,245,0.12),
+              0 2px 16px rgba(0,0,0,0.40),
+              inset 0 1px 0 rgba(255,255,255,0.03) !important;
+}
+.ghost-envelope[data-tier="uncommon"] .envelope-flap {
+  background: linear-gradient(180deg, rgba(122,184,245,0.10) 0%, rgba(122,184,245,0.03) 100%) !important;
+}
+
+/* ── TIER BADGES ───────────────────────────────────────── */
+.tier-badge {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: .6px;
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-weight: 600;
+  vertical-align: middle;
+  margin-left: 5px;
+  text-transform: uppercase;
+}
+.tier-badge-legendary {
+  background: rgba(255,200,80,0.15);
+  border: 1px solid rgba(255,200,80,0.35);
+  color: rgba(255,200,80,0.95);
+  text-shadow: 0 0 8px rgba(255,200,80,0.3);
+}
+.tier-badge-rare {
+  background: rgba(176,128,255,0.12);
+  border: 1px solid rgba(176,128,255,0.30);
+  color: rgba(200,170,255,0.90);
+}
+.tier-badge-uncommon {
+  background: rgba(122,184,245,0.10);
+  border: 1px solid rgba(122,184,245,0.22);
+  color: rgba(150,200,245,0.80);
+}
+
+/* ── SKELETON LOADING SHIMMER ──────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(122,184,245,0.04) 25%,
+    rgba(122,184,245,0.09) 50%,
+    rgba(122,184,245,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+  border-radius: 10px;
+}
+.skeleton-envelope {
+  height: 88px;
+  border-radius: 16px;
+  margin-bottom: 10px;
+}
+.skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+.skeleton-line.short { width: 60%; }
+.skeleton-line.medium { width: 80%; }
+
+/* ── SCREEN TRANSITION AMÉLIORÉE ──────────────────────── */
+@keyframes screenEnter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* ── RANK-UP CELEBRATION ──────────────────────────────── */
+@keyframes rankUpBounce {
+  0%   { transform: scale(0.7); opacity: 0; }
+  40%  { transform: scale(1.18); opacity: 1; }
+  60%  { transform: scale(0.92); }
+  80%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.rank-up-anim {
+  animation: rankUpBounce 0.9s cubic-bezier(.34,1.56,.64,1);
+}
+
+/* ── GHOST CARD STAGGER ───────────────────────────────── */
+@keyframes cardStagger {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.ghost-envelope {
+  animation: cardStagger 0.35s cubic-bezier(.22,1,.36,1) backwards;
+  animation-delay: var(--card-delay, 0s);
+}
+
+/* ── CANVAS PARTICULES ────────────────────────────────── */
+#particleCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── TILE MAP UNIQUE (plus de double layer) ───────────── */
+.leaflet-tile-pane { filter: none !important; }
+.tile-base .leaflet-tile  { filter: none !important; }
+.tile-labels .leaflet-tile { filter: none !important; }
+
+/* ── PROXIMITY BREATHING AMÉLIORÉ ─────────────────────── */
+@keyframes proximityBreathe {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(61,184,122,0.15),
+                inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(61,184,122,0.35),
+                0 0 0 1px rgba(61,184,122,0.15),
+                inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+}
+.ghost-envelope[data-proximity="close"] {
+  animation: proximityBreathe 2s ease-in-out infinite, cardStagger 0.35s cubic-bezier(.22,1,.36,1) backwards !important;
+  animation-delay: 0s, var(--card-delay, 0s) !important;
+}
+
+/* ── EMPTY STATE ──────────────────────────────────────── */
+.empty-state-ghost {
+  font-size: 56px;
+  filter: drop-shadow(0 0 20px rgba(122,184,245,0.35));
+  animation: floatG 4s ease-in-out infinite;
+  margin-bottom: 16px;
+}
+.empty-state-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-style: italic;
+  color: var(--ether);
+  margin-bottom: 6px;
+}
+.empty-state-sub {
+  font-size: 13px;
+  color: var(--spirit-dim);
+  line-height: 1.6;
+}
