@@ -7346,19 +7346,7 @@ function _initDepositMiniMap() {
     maxZoom: 20, attribution: '© CartoDB'
   }).addTo(_depositMiniMap);
 
-  // Marqueur position — pin ambre avec halo pulsant animé
-  L.divIcon && L.marker([userLat, userLng], {
-    icon: L.divIcon({
-      html: `
-        <div class="dep-mini-pin-wrap">
-          <div class="dep-mini-pin-pulse"></div>
-          <div class="dep-mini-pin-pulse dep-mini-pin-pulse2"></div>
-          <div class="dep-mini-pin-dot"></div>
-        </div>
-      `,
-      iconSize: [40, 40], iconAnchor: [20, 20], className: 'dep-mini-pin-icon'
-    })
-  }).addTo(_depositMiniMap);
+  // Pin de position géré en CSS pur via .dep-map-frame::before (plus fiable que Leaflet marker)
 
   _updateRadiusCircle();
   if (loader) loader.style.display = 'none';
