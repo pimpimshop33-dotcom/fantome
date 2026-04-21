@@ -7342,15 +7342,12 @@ function _initDepositMiniMap() {
     touchZoom: false
   }).setView([userLat, userLng], 17);
 
-  // Double tile layer — fond sombre + labels blancs par-dessus (rues visibles)
-  const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+  // Tiles CartoDB dark_all (version originale qui fonctionne)
+  const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     maxZoom: 20, attribution: '© CartoDB'
   }).addTo(_depositMiniMap);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
-    maxZoom: 20, attribution: '', pane: 'shadowPane'
-  }).addTo(_depositMiniMap);
 
-  // Cacher le loader dès qu'une tuile charge (plus fiable qu'un simple display:none à la fin)
+  // Cacher le loader dès qu'une tuile charge
   tileLayer.on('tileload', () => {
     if (loader) loader.style.display = 'none';
   });
@@ -7360,7 +7357,13 @@ function _initDepositMiniMap() {
   // Fallback ultime : cacher le loader après 2s quoi qu'il arrive
   setTimeout(() => { if (loader) loader.style.display = 'none'; }, 2000);
 
-  // Pin de position géré en CSS pur via .dep-map-frame::before (plus fiable que Leaflet marker)
+  // Marqueur position — version originale, simple et fiable
+  L.marker([userLat, userLng], {
+    icon: L.divIcon({
+      html: '<div style="width:14px;height:14px;background:#f5d491;border-radius:50%;border:2px solid rgba(255,240,200,.9);box-shadow:0 0 12px rgba(232,160,48,.8);"></div>',
+      iconSize: [14, 14], iconAnchor: [7, 7], className: ''
+    })
+  }).addTo(_depositMiniMap);
 
   _updateRadiusCircle();
   if (loader) loader.style.display = 'none';
