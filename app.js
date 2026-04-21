@@ -7343,12 +7343,22 @@ function _initDepositMiniMap() {
   }).setView([userLat, userLng], 17);
 
   // Double tile layer — fond sombre + labels blancs par-dessus (rues visibles)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+  const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
     maxZoom: 20, attribution: '© CartoDB'
   }).addTo(_depositMiniMap);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
     maxZoom: 20, attribution: '', pane: 'shadowPane'
   }).addTo(_depositMiniMap);
+
+  // Cacher le loader dès qu'une tuile charge (plus fiable qu'un simple display:none à la fin)
+  tileLayer.on('tileload', () => {
+    if (loader) loader.style.display = 'none';
+  });
+  tileLayer.on('tileerror', () => {
+    if (loader) loader.style.display = 'none';
+  });
+  // Fallback ultime : cacher le loader après 2s quoi qu'il arrive
+  setTimeout(() => { if (loader) loader.style.display = 'none'; }, 2000);
 
   // Pin de position géré en CSS pur via .dep-map-frame::before (plus fiable que Leaflet marker)
 
