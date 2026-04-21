@@ -1461,7 +1461,7 @@ function buildLeafletMap(centerLat, centerLng, h) {
   map = L.map('leafletMap', { zoomControl: true, attributionControl: false })
           .setView([centerLat, centerLng], 16);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '© CartoDB' }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '© OSM France' }).addTo(map);
 
   const userIcon = L.divIcon({
     html: '<div class="user-map-dot"></div>',
@@ -4766,7 +4766,7 @@ window.loadEmpreinteMap = async () => {
     _empreinteMap = L.map('empreinteLeaflet', { zoomControl: false, attributionControl: false })
       .setView([centerLat, centerLng], deposits.length + discoveries.length > 5 ? 12 : 14);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '© CartoDB' }).addTo(_empreinteMap);
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '© OSM France' }).addTo(_empreinteMap);
 
     // 4. Marqueurs dépôts — violet lumineux
     deposits.forEach(p => {
@@ -5108,7 +5108,7 @@ window.showPublicProfileModal = (uid, name, ghostCount, totalOpens, ghostDocs) =
     const coords = ghostDocs.filter(d => d.data().lat && d.data().lng).map(d => [d.data().lat, d.data().lng]);
     if (!coords.length) { mapEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:height:100%;font-size:12px;color:rgba(168,180,255,.4);">${t.profile_no_public_places || t.profile_no_public_place || 'Aucun lieu public'}</div>`; return; }
     const pubMap = L.map('publicEmpreinteMap', { zoomControl: false, attributionControl: false }).setView(coords[0], 13);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '© CartoDB' }).addTo(pubMap);
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OSM France' }).addTo(pubMap);
     coords.forEach(([lat, lng], i) => {
       const g = ghostDocs[i] && ghostDocs[i].data ? ghostDocs[i].data() : {};
       const em = g.emoji || '👻';
@@ -5932,7 +5932,7 @@ window.setChainMarker = () => {
   preview.innerHTML = '<div id="chainMiniMap" style="width:100%;height:120px;"></div>';
   const initChainMap = () => {
     const cmap = L.map('chainMiniMap', { zoomControl: false, attributionControl: false }).setView([userLat, userLng], 17);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '© CartoDB' }).addTo(cmap);
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '© OSM France' }).addTo(cmap);
     L.marker([userLat, userLng], { icon: L.divIcon({ html: '<div style="font-size:16px;">📍</div>', iconSize:[20,20], iconAnchor:[10,10], className:'' }) }).addTo(cmap);
     let nextMarker = null;
     cmap.on('click', e => {
@@ -7342,9 +7342,8 @@ function _initDepositMiniMap() {
     touchZoom: false
   }).setView([userLat, userLng], 17);
 
-  // Tiles CartoDB dark_all (version originale qui fonctionne)
-  const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 20, attribution: '© CartoDB'
+  const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '© OSM France'
   }).addTo(_depositMiniMap);
 
   // Cacher le loader dès qu'une tuile charge
