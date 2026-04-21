@@ -52,7 +52,7 @@
 <!-- Manifest PWA -->
 <link rel="manifest" href="/ghostub/manifest.json">
 
-<script type="module" src="app.js?v=81"></script>
+<script type="module" src="app.js?v=82"></script>
 
 <style>
 /* ══════════════════════════════════════════════════════════
@@ -924,8 +924,9 @@ button,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:mani
 
 /* ── MINI-CARTE LEAFLET DU WIZARD DE DÉPÔT ────────────── */
 /* Désature légèrement les tuiles sombres pour mieux coller à l'ambiance */
+/* Tuiles légèrement désaturées pour harmoniser avec l'ambiance — mais lisibles */
 #depositMiniMap .leaflet-tile-pane{
-  filter:saturate(.85) brightness(.95);
+  filter:saturate(.9);
 }
 /* Container avec bordure ambrée qui respire */
 #depositMiniMap{
