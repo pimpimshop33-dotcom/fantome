@@ -52,7 +52,7 @@
 <!-- Manifest PWA -->
 <link rel="manifest" href="/ghostub/manifest.json">
 
-<script type="module" src="app.js?v=87"></script>
+<script type="module" src="app.js?v=88"></script>
 
 <style>
 /* ══════════════════════════════════════════════════════════
@@ -924,23 +924,23 @@ button,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:mani
 
 /* ── FILTRE UNIVERSEL POUR TOUTES LES CARTES LEAFLET ─── */
 /* OSM France clair → ambiance sombre bleu nuit
+   On cible directement les <img> des tuiles (sélecteur le plus fiable)
    invert(1) : inverse clair→sombre
    hue-rotate(180deg) : remet les couleurs dans le bon sens après invert
-   saturate(.6) : adoucit l'aspect "trop bleu"
-   brightness(.95) : ajuste la luminosité finale
-   contrast(.85) : doux rendu nocturne
-   !important : indispensable pour battre les styles internes de Leaflet */
-#depositMiniMap .leaflet-tile-pane,
-#leafletMap .leaflet-tile-pane,
-#empreinteLeaflet .leaflet-tile-pane,
-#publicEmpreinteMap .leaflet-tile-pane,
-#chainMiniMap .leaflet-tile-pane,
-#depositMiniMap .leaflet-tile,
-#leafletMap .leaflet-tile,
-#empreinteLeaflet .leaflet-tile,
-#publicEmpreinteMap .leaflet-tile,
-#chainMiniMap .leaflet-tile{
-  filter:invert(1) hue-rotate(180deg) saturate(.6) brightness(.95) contrast(.85) !important;
+   saturate(.7) : adoucit
+   brightness(.9) : luminosité finale
+   contrast(.9) : contraste nocturne doux */
+#depositMiniMap img.leaflet-tile,
+#leafletMap img.leaflet-tile,
+#empreinteLeaflet img.leaflet-tile,
+#publicEmpreinteMap img.leaflet-tile,
+#chainMiniMap img.leaflet-tile,
+#depositMiniMap .leaflet-layer img,
+#leafletMap .leaflet-layer img,
+#empreinteLeaflet .leaflet-layer img,
+#publicEmpreinteMap .leaflet-layer img,
+#chainMiniMap .leaflet-layer img{
+  filter:invert(1) hue-rotate(180deg) saturate(.7) brightness(.9) contrast(.9) !important;
 }
 /* Pin principal — cercle ambre qui brille */
 .dep-mini-pin-wrap{
