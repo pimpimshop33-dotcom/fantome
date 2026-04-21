@@ -52,7 +52,7 @@
 <!-- Manifest PWA -->
 <link rel="manifest" href="/ghostub/manifest.json">
 
-<script type="module" src="app.js?v=77"></script>
+<script type="module" src="app.js?v=78"></script>
 
 <style>
 /* ══════════════════════════════════════════════════════════
@@ -542,6 +542,37 @@ button,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:mani
 .ghost-count-line{font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--warm-dim);text-align:center;margin-bottom:10px;}
 .ghost-count-line span{color:var(--amber);font-size:18px;text-shadow:0 0 12px var(--amber);}
 .section-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--spirit-dim);margin-bottom:10px;}
+
+/* ── SÉLECTEUR DE RAYON DU RADAR ───────────────────────── */
+.radar-radius-selector{
+  display:flex;justify-content:center;gap:6px;
+  padding:12px 20px 4px;
+}
+.radar-radius-btn{
+  padding:7px 14px;min-height:36px;
+  background:rgba(122,184,245,.04);
+  border:1px solid var(--border);
+  border-radius:10px;
+  color:var(--spirit-dim);
+  font-family:'Instrument Sans',sans-serif;
+  font-size:12px;font-weight:500;letter-spacing:.3px;
+  cursor:pointer;
+  transition:all .2s;
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  touch-action:manipulation;
+}
+.radar-radius-btn:hover{
+  color:var(--spirit);
+  border-color:var(--border-bright);
+  background:rgba(122,184,245,.08);
+}
+.radar-radius-btn.active{
+  background:linear-gradient(135deg,rgba(61,184,122,.15),rgba(122,184,245,.08));
+  border-color:rgba(61,184,122,.5);
+  color:var(--mist);
+  box-shadow:0 0 16px rgba(61,184,122,.15),inset 0 1px 0 rgba(255,255,255,.04);
+}
+.radar-radius-btn:active{transform:scale(.96);}
 
 /* ── GHOST ENVELOPES — pavé mouillé nocturne ───────────── */
 @keyframes cardShimmerAmber{
@@ -1690,8 +1721,14 @@ button, [role="button"], input, textarea, select,
         <div id="radarDots"></div>
       </div>
     </div>
+    <!-- Sélecteur de rayon de détection -->
+    <div class="radar-radius-selector" role="group" aria-label="Rayon de détection">
+      <button class="radar-radius-btn" data-r="50" onclick="setRadarRadius(50)" aria-label="Rayon 50 mètres">50 m</button>
+      <button class="radar-radius-btn active" data-r="200" onclick="setRadarRadius(200)" aria-label="Rayon 200 mètres">200 m</button>
+      <button class="radar-radius-btn" data-r="1000" onclick="setRadarRadius(1000)" aria-label="Rayon 1 kilomètre">1 km</button>
+    </div>
     <div class="radar-status" id="radarStatus" style="display:none;" aria-live="polite"></div>
-    <div class="ghost-count-line" aria-live="polite"><span id="ghostCount">0</span> présence(s) détectée(s)</div>
+    <div class="ghost-count-line" aria-live="polite"><span id="ghostCount">0</span> présence(s) détectée(s) · <span id="radarInRangeCount" style="color:var(--spirit-dim);font-size:11px;"></span></div>
     <!-- Filtres fixes -->
     <div style="display:flex;gap:6px;padding:0 20px 8px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;" role="group" aria-label="Filtres">
       <button class="filter-btn active" onclick="setFilter('all',this)" data-i18n="filter_all">🌫️ Toutes</button>
