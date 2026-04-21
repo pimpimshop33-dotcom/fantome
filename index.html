@@ -52,7 +52,7 @@
 <!-- Manifest PWA -->
 <link rel="manifest" href="/ghostub/manifest.json">
 
-<script type="module" src="app.js?v=78"></script>
+<script type="module" src="app.js?v=79"></script>
 
 <style>
 /* ══════════════════════════════════════════════════════════
@@ -783,42 +783,143 @@ button,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:mani
   letter-spacing:1.2px;text-transform:uppercase;font-weight:500;
 }
 
-/* ── DEPOSIT WIZARD ────────────────────────────────────── */
+/* ── DEPOSIT WIZARD — Ancrage rituel ──────────────────── */
 .deposit-map{
-  width:100%;height:160px;border-radius:18px;
-  background:linear-gradient(145deg,#06090f 0%,#090d18 100%);
-  border:1px solid rgba(122,184,245,.12);margin-bottom:14px;position:relative;overflow:hidden;
-  box-shadow:0 4px 24px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.02);
+  width:100%;height:170px;border-radius:18px;
+  background:
+    radial-gradient(ellipse at 50% 75%,rgba(61,184,122,.08) 0%,transparent 55%),
+    linear-gradient(145deg,#06090f 0%,#090d18 100%);
+  border:1px solid rgba(122,184,245,.14);margin-bottom:14px;position:relative;overflow:hidden;
+  box-shadow:0 4px 24px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.03),0 0 40px rgba(232,160,48,.04);
 }
+/* Grille topographique */
 .map-grid{
   position:absolute;inset:0;
-  background-image:linear-gradient(rgba(122,184,245,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(122,184,245,.05) 1px,transparent 1px);
+  background-image:
+    linear-gradient(rgba(122,184,245,.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(122,184,245,.06) 1px,transparent 1px);
   background-size:32px 32px;
 }
-.map-grid::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(232,160,48,.08) 0%,transparent 60%);}
-.map-pin{position:absolute;top:50%;left:50%;transform:translate(-50%,-100%);font-size:30px;filter:drop-shadow(0 0 14px rgba(232,160,48,.8)) drop-shadow(0 0 4px rgba(232,160,48,1));animation:floatG 2s ease-in-out infinite;z-index:2;}
-.map-pulse{position:absolute;top:50%;left:50%;border-radius:50%;border:1px solid rgba(232,160,48,.5);transform:translate(-50%,-50%);animation:mp 2s ease-out infinite;z-index:1;}
-.map-pulse2{position:absolute;top:50%;left:50%;border-radius:50%;border:1px solid rgba(232,160,48,.25);transform:translate(-50%,-50%);animation:mp 2s ease-out infinite .7s;z-index:1;}
-@keyframes mp{0%{width:12px;height:12px;opacity:.9}100%{width:90px;height:90px;opacity:0}}
-.map-loc{position:absolute;bottom:10px;left:10px;font-size:9px;letter-spacing:.5px;color:var(--amber);background:rgba(4,6,10,.85);backdrop-filter:blur(8px);padding:4px 10px;border-radius:8px;border:1px solid rgba(232,160,48,.2);}
+.map-grid::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 50%,rgba(232,160,48,.10) 0%,transparent 60%);
+}
+/* Sweep vert discret — signal d'ancrage qui balaye */
+.deposit-map::before{
+  content:'';position:absolute;top:50%;left:50%;
+  width:150%;aspect-ratio:1;border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:conic-gradient(from 0deg,transparent 0%,rgba(61,184,122,.06) 14%,transparent 22%);
+  animation:sweep 6s linear infinite;
+  pointer-events:none;z-index:0;
+}
+.map-pin{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-100%);font-size:32px;
+  filter:drop-shadow(0 0 16px rgba(232,160,48,.9)) drop-shadow(0 0 4px rgba(232,160,48,1));
+  animation:floatG 2s ease-in-out infinite;z-index:3;
+}
+.map-pulse{
+  position:absolute;top:50%;left:50%;border-radius:50%;
+  border:1.5px solid rgba(232,160,48,.55);
+  transform:translate(-50%,-50%);animation:mp 2s ease-out infinite;z-index:1;
+}
+.map-pulse2{
+  position:absolute;top:50%;left:50%;border-radius:50%;
+  border:1px solid rgba(232,160,48,.3);
+  transform:translate(-50%,-50%);animation:mp 2s ease-out infinite .7s;z-index:1;
+}
+@keyframes mp{
+  0%{width:12px;height:12px;opacity:.9;}
+  100%{width:110px;height:110px;opacity:0;}
+}
+.map-loc{
+  position:absolute;bottom:10px;left:10px;
+  font-size:10px;letter-spacing:.8px;color:var(--amber);
+  background:rgba(4,6,10,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:5px 11px;border-radius:9px;
+  border:1px solid rgba(232,160,48,.25);
+  z-index:4;
+}
+/* Bouton media (photo/audio/vidéo) — désirable, premium */
 .media-btn{
-  width:100%;padding:12px 16px;
+  width:100%;padding:14px 16px;
   background:linear-gradient(145deg,rgba(122,184,245,.06) 0%,rgba(122,184,245,.02) 100%);
-  border:1px solid rgba(122,184,245,.12);border-radius:13px;
-  color:rgba(122,184,245,.7);font-family:'Instrument Sans',sans-serif;font-size:13px;
-  cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:10px;text-align:left;
+  border:1px solid rgba(122,184,245,.14);border-radius:14px;
+  color:rgba(122,184,245,.8);font-family:'Instrument Sans',sans-serif;font-size:13px;
+  cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:12px;text-align:left;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.03);touch-action:manipulation;
 }
-.media-btn:hover{background:rgba(122,184,245,.1);border-color:rgba(122,184,245,.25);color:var(--ether);}
-.media-btn .media-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(232,160,48,.1);border-radius:9px;font-size:15px;flex-shrink:0;}
-.media-btn.recording{background:rgba(255,60,60,.08);border-color:rgba(255,80,80,.3);color:rgba(255,140,140,.9);}
-.type-selector{display:flex;gap:6px;margin-bottom:12px;}
-.type-btn,.radius-btn,.dur-btn{flex:1;padding:8px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:11px;cursor:pointer;color:var(--warm-dim);transition:all .2s;touch-action:manipulation;}
-.type-btn.active{border-color:rgba(232,160,48,.4);color:var(--amber);background:rgba(232,160,48,.08);}
-.radius-selector{display:flex;gap:6px;margin-bottom:12px;}
-.radius-btn.active{border-color:var(--spirit-dim);color:var(--spirit);}
-.duration-selector{display:flex;gap:6px;margin-bottom:14px;}
-.dur-btn.active{border-color:var(--spirit-dim);color:var(--spirit);}
+.media-btn:hover{
+  background:linear-gradient(145deg,rgba(122,184,245,.12),rgba(122,184,245,.04));
+  border-color:rgba(122,184,245,.32);
+  color:var(--ether);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 0 20px rgba(122,184,245,.08);
+}
+.media-btn:active{transform:scale(.98);}
+.media-btn .media-icon{
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,rgba(232,160,48,.15),rgba(232,160,48,.05));
+  border:1px solid rgba(232,160,48,.2);
+  border-radius:10px;font-size:16px;flex-shrink:0;
+  transition:all .25s;
+}
+.media-btn:hover .media-icon{
+  border-color:rgba(232,160,48,.4);
+  box-shadow:0 0 14px rgba(232,160,48,.15);
+}
+.media-btn.recording{
+  background:rgba(255,60,60,.08);
+  border-color:rgba(255,80,80,.35);
+  color:rgba(255,140,140,.95);
+  animation:recordingPulse 1.4s ease-in-out infinite;
+}
+@keyframes recordingPulse{
+  0%,100%{box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 0 0 rgba(255,80,80,.3);}
+  50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 0 20px rgba(255,80,80,.25);}
+}
+/* Sélecteurs type/radius/durée — feedback tactile amélioré */
+.type-selector,.radius-selector,.duration-selector{
+  display:flex;gap:6px;margin-bottom:14px;
+}
+.type-btn,.radius-btn,.dur-btn{
+  flex:1;padding:10px 8px;text-align:center;
+  background:var(--surface);
+  border:1px solid var(--border);border-radius:11px;
+  font-size:11px;font-weight:500;letter-spacing:.3px;
+  cursor:pointer;color:var(--warm-dim);
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);
+  touch-action:manipulation;
+  position:relative;
+}
+.type-btn:hover,.radius-btn:hover,.dur-btn:hover{
+  border-color:var(--border-bright);
+  color:var(--warm);
+  background:rgba(122,184,245,.05);
+}
+.type-btn:active,.radius-btn:active,.dur-btn:active{transform:scale(.95);}
+/* État actif — ambre pour type (choix principal), spirit pour secondaires */
+.type-btn.active{
+  border-color:rgba(232,160,48,.5);
+  color:var(--amber);
+  background:linear-gradient(135deg,rgba(232,160,48,.14),rgba(232,160,48,.04));
+  box-shadow:0 0 16px rgba(232,160,48,.18),inset 0 1px 0 rgba(255,255,255,.04);
+  transform:translateY(-1px);
+}
+.radius-btn.active{
+  border-color:rgba(122,184,245,.45);
+  color:var(--spirit);
+  background:linear-gradient(135deg,rgba(122,184,245,.12),rgba(122,184,245,.03));
+  box-shadow:0 0 14px rgba(122,184,245,.12),inset 0 1px 0 rgba(255,255,255,.04);
+  transform:translateY(-1px);
+}
+.dur-btn.active{
+  border-color:rgba(122,184,245,.45);
+  color:var(--spirit);
+  background:linear-gradient(135deg,rgba(122,184,245,.12),rgba(122,184,245,.03));
+  box-shadow:0 0 14px rgba(122,184,245,.12),inset 0 1px 0 rgba(255,255,255,.04);
+  transform:translateY(-1px);
+}
 .deposit-error{color:var(--red);font-size:12px;min-height:16px;margin-bottom:8px;}
 
 /* ── PROFILE ───────────────────────────────────────────── */
@@ -880,18 +981,60 @@ button,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:mani
 .leaflet-control-zoom a:hover{color:var(--amber) !important;background:rgba(232,160,48,.1) !important;}
 
 /* ── DEPOSIT SUCCESS ───────────────────────────────────── */
-.deposit-success{position:absolute;inset:0;background:rgba(2,4,8,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;z-index:100;opacity:0;pointer-events:none;transition:opacity .5s;}
+.deposit-success{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 45%,rgba(14,20,35,.95) 0%,rgba(2,4,8,.98) 70%);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:32px;z-index:100;
+  opacity:0;pointer-events:none;transition:opacity .5s;
+}
 .deposit-success.show{opacity:1;pointer-events:all;}
 .deposit-success.show .success-ghost{animation:ghostAnchor .6s cubic-bezier(.34,1.56,.64,1) forwards, floatG 3s ease-in-out .6s infinite;}
 .deposit-success.show .success-title{animation:fadeUp .5s ease .25s both;}
 .deposit-success.show .success-sub{animation:fadeUp .5s ease .45s both;}
 .deposit-success.show .success-hint{animation:fadeUp .5s ease .7s both;}
+/* Onde d'ancrage — cercles concentriques qui se propagent au sol */
+.deposit-success.show::before{
+  content:'';position:absolute;top:45%;left:50%;
+  width:12px;height:12px;border-radius:50%;
+  border:1px solid rgba(232,160,48,.5);
+  transform:translate(-50%,-50%);
+  animation:anchorWave 2.2s ease-out .3s infinite;
+  pointer-events:none;
+}
+.deposit-success.show::after{
+  content:'';position:absolute;top:45%;left:50%;
+  width:12px;height:12px;border-radius:50%;
+  border:1px solid rgba(122,184,245,.4);
+  transform:translate(-50%,-50%);
+  animation:anchorWave 2.2s ease-out 1.1s infinite;
+  pointer-events:none;
+}
+@keyframes anchorWave{
+  0%{width:12px;height:12px;opacity:.9;border-width:2px;}
+  100%{width:260px;height:260px;opacity:0;border-width:1px;}
+}
 @keyframes ghostAnchor{from{transform:scale(0.3) translateY(40px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
 .success-hint{font-size:11px;color:var(--spirit-dim);letter-spacing:.8px;text-transform:uppercase;margin-top:20px;}
-.success-ghost{font-size:60px;margin-bottom:18px;animation:floatG 3s ease-in-out infinite;filter:drop-shadow(0 0 30px rgba(232,160,48,.6)) drop-shadow(0 0 60px rgba(122,184,245,.3));}
-.success-title{font-family:'Cormorant Garamond',serif;font-size:30px;font-style:italic;color:var(--ether);margin-bottom:8px;}
-.success-sub{font-size:13px;color:var(--warm-dim);line-height:1.6;}
+.success-ghost{
+  font-size:64px;margin-bottom:20px;
+  animation:floatG 3s ease-in-out infinite;
+  filter:drop-shadow(0 0 30px rgba(232,160,48,.7)) drop-shadow(0 0 60px rgba(122,184,245,.35));
+  position:relative;z-index:2;
+}
+.success-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:32px;font-style:italic;font-weight:400;
+  color:var(--ether);margin-bottom:10px;
+  text-shadow:0 0 30px rgba(122,184,245,.3);
+  position:relative;z-index:2;
+}
+.success-sub{
+  font-size:13px;color:var(--warm-dim);line-height:1.7;
+  position:relative;z-index:2;
+}
 
 /* ── BOTTOM NAV — asphalte avec reflet ─────────────────── */
 .bottom-nav{
