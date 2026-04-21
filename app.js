@@ -7342,8 +7342,12 @@ function _initDepositMiniMap() {
     touchZoom: false
   }).setView([userLat, userLng], 17);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  // Double tile layer — fond sombre + labels blancs par-dessus (rues visibles)
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
     maxZoom: 20, attribution: '© CartoDB'
+  }).addTo(_depositMiniMap);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
+    maxZoom: 20, attribution: '', pane: 'shadowPane'
   }).addTo(_depositMiniMap);
 
   // Pin de position géré en CSS pur via .dep-map-frame::before (plus fiable que Leaflet marker)
