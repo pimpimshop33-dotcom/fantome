@@ -52,7 +52,7 @@
 <!-- Manifest PWA -->
 <link rel="manifest" href="/ghostub/manifest.json">
 
-<script type="module" src="app.js?v=75"></script>
+<script type="module" src="app.js?v=76"></script>
 
 <style>
 /* ══════════════════════════════════════════════════════════
@@ -489,22 +489,30 @@ button,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:mani
   border:1px solid rgba(232,160,48,.28);border-radius:8px;padding:2px 7px;
   pointer-events:none;opacity:0;transition:opacity .3s;
 }
-/* Apparition fantôme — flash avec zoom et lueur bleu spirit puis ambre */
+/* Apparition fantôme — synchronisée avec le passage du sweep
+   Le sweep a son pic à 17% de la circonférence et son halo 12-22%.
+   Le JS injecte un animation-delay négatif = angle du dot / 2π × 4s.
+   Résultat : chaque dot s'illumine UNIQUEMENT quand le sweep le balaie. */
 .ghost-dot-emoji{
   position:absolute;top:-28px;left:50%;transform:translateX(-50%) scale(.5);
   font-size:18px;pointer-events:none;opacity:0;
   animation:ghostReveal 4s linear infinite;
 }
 @keyframes ghostReveal{
-  0%{opacity:0;transform:translateX(-50%) scale(.3);filter:drop-shadow(0 0 0px transparent);}
-  4%{opacity:1;transform:translateX(-50%) scale(1.15);filter:drop-shadow(0 0 12px rgba(122,184,245,1));}
-  8%{transform:translateX(-50%) scale(1);filter:drop-shadow(0 0 8px rgba(122,184,245,.7));}
-  14%{opacity:.5;filter:drop-shadow(0 0 6px rgba(232,160,48,.5));}
-  22%{opacity:0;}
-  100%{opacity:0;}
+  /* Sweep arrive — fantôme invisible */
+  0%,10%{opacity:0;transform:translateX(-50%) scale(.4);filter:drop-shadow(0 0 0 transparent);}
+  /* Sweep balaie le dot — flash de lumière (pic à 17% = pic du sweep) */
+  14%{opacity:.8;transform:translateX(-50%) scale(1.1);filter:drop-shadow(0 0 10px rgba(122,184,245,.9));}
+  17%{opacity:1;transform:translateX(-50%) scale(1.2);filter:drop-shadow(0 0 14px rgba(122,184,245,1)) drop-shadow(0 0 6px rgba(232,160,48,.6));}
+  22%{opacity:.85;transform:translateX(-50%) scale(1);filter:drop-shadow(0 0 8px rgba(122,184,245,.6));}
+  /* Sweep s'éloigne — traînée de braise ambre qui s'éteint */
+  30%{opacity:.5;filter:drop-shadow(0 0 5px rgba(232,160,48,.4));}
+  45%{opacity:.15;filter:drop-shadow(0 0 3px rgba(232,160,48,.2));}
+  /* Le reste du cycle : totalement invisible, jusqu'au prochain passage */
+  60%,100%{opacity:0;transform:translateX(-50%) scale(.4);}
 }
 .ghost-dot:hover .ghost-dot-label,.ghost-dot:focus .ghost-dot-label{opacity:1;}
-.ghost-dot:hover .ghost-dot-emoji,.ghost-dot:focus .ghost-dot-emoji{opacity:.85 !important;animation:none;transform:translateX(-50%) scale(1.05);}
+.ghost-dot:hover .ghost-dot-emoji,.ghost-dot:focus .ghost-dot-emoji{opacity:.85 !important;animation:none;transform:translateX(-50%) scale(1.05);filter:drop-shadow(0 0 10px rgba(232,160,48,.7));}
 .radar-status{font-size:11px;color:var(--spirit-dim);text-align:center;padding:4px 20px 6px;}
 .ghost-count-line{font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--warm-dim);text-align:center;margin-bottom:10px;}
 .ghost-count-line span{color:var(--amber);font-size:18px;text-shadow:0 0 12px var(--amber);}
