@@ -1229,9 +1229,16 @@ const distanceMeters = (lat1, lng1, lat2, lng2) => LocationService.distanceMeter
 function isExpired(g) {
   if (g.expired) return true;
   if (!g.createdAt) return false;
-  const durations = { '24h': 86_400_000, '7 jours': 604_800_000, '1 mois': 2_592_000_000 };
+  // Mapping langue-indépendant : on accepte les libellés FR ET EN
+  const durations = {
+    '24h': 86_400_000,
+    '7 jours': 604_800_000,
+    '7 days': 604_800_000,
+    '1 mois': 2_592_000_000,
+    '1 month': 2_592_000_000
+  };
   const maxAge = durations[g.duration];
-  if (!maxAge) return false;
+  if (!maxAge) return false; // Éternel / Eternal / valeur inconnue → jamais expiré
   return (Date.now() - g.createdAt.seconds * 1000) > maxAge;
 }
 
@@ -7351,12 +7358,46 @@ window.wizardBack = (step) => { setWizardStep(step - 1); };
 // ── DEPOSIT MINI-MAP ─────────────────────────────────────
 let _depositMiniMap = null;
 let _depositRadiusCircle = null;
+let _depositMiniMapAttempts = 0;
 
 function _initDepositMiniMap() {
-  if (!userLat || !userLng) return;
   const loader = document.getElementById('depositMiniLoader');
   const container = document.getElementById('depositMiniMap');
   if (!container) return;
+
+  // Si pas de GPS encore, on attend ou on demande
+  if (!userLat || !userLng) {
+    _depositMiniMapAttempts = (_depositMiniMapAttempts || 0) + 1;
+    if (loader) loader.textContent = '📡 Localisation…';
+    // Tenter de récupérer la position si on ne l'a pas
+    if (typeof getLocation === 'function' && _depositMiniMapAttempts === 1) {
+      getLocation().then(() => {
+        // Une fois reçu, retry l'init
+        setTimeout(() => _initDepositMiniMap(), 100);
+      }).catch(() => {
+        // Pas de GPS dispo → afficher message clair, ne pas bloquer le wizard
+        if (loader) {
+          loader.textContent = (typeof _currentLang !== 'undefined' && _currentLang === 'en')
+            ? '📍 Location unavailable'
+            : '📍 Géolocalisation indisponible';
+        }
+      });
+    } else if (_depositMiniMapAttempts < 5) {
+      // Retry périodique (max 5 fois sur 10 secondes)
+      setTimeout(() => _initDepositMiniMap(), 2000);
+    } else {
+      // Abandon : on cache le loader pour ne pas rester bloqué
+      if (loader) {
+        loader.textContent = (typeof _currentLang !== 'undefined' && _currentLang === 'en')
+          ? '📍 Location unavailable'
+          : '📍 Géolocalisation indisponible';
+      }
+    }
+    return;
+  }
+
+  // GPS dispo : reset compteur
+  _depositMiniMapAttempts = 0;
 
   // Invalider si déjà initialisé (retour arrière)
   // Vérification robuste : Leaflet doit pointer vers le BON container DOM,
@@ -7369,6 +7410,10 @@ function _initDepositMiniMap() {
       _depositMiniMap.setView([userLat, userLng], 17);
       _updateRadiusCircle();
       if (loader) loader.style.display = 'none';
+      // Re-invalidation après transitions CSS pour cas où le container a été masqué/affiché
+      setTimeout(() => {
+        if (_depositMiniMap) try { _depositMiniMap.invalidateSize(); } catch(_) {}
+      }, 350);
       return;
     } else {
       // Container changé ou détaché → on détruit pour recréer proprement
