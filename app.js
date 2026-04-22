@@ -6975,6 +6975,19 @@ const _showScreenOrig = window.showScreen;
 window.showScreen = (id, fromPopstate = false) => {
   animateScreenTransition(id);
   _showScreenOrig(id, fromPopstate);
+
+  // Affiche/cache la bottom-nav selon l'écran (toujours visible sauf auth/onboarding)
+  const nav = document.getElementById('bottomNav');
+  const noNavScreens = ['screenAuth', 'screenOnboard'];
+  if (nav) {
+    if (noNavScreens.includes(id)) {
+      nav.style.display = 'none';
+      document.body.classList.remove('has-bottom-nav');
+    } else {
+      nav.style.display = 'flex';
+      document.body.classList.add('has-bottom-nav');
+    }
+  }
 };
 
 // ── REPLY CHAR COUNTER ───────────────────────────────────
