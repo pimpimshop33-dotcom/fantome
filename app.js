@@ -7442,8 +7442,42 @@ function _initDepositMiniMap() {
   }
 
   if (typeof L === 'undefined') {
-    console.warn('Leaflet not loaded yet');
-    if (loader) loader.style.display = 'none';
+    console.warn('[MiniMap] Leaflet pas encore chargé — chargement dynamique...');
+    if (loader) {
+      loader.style.display = 'flex';
+      loader.textContent = (typeof _currentLang !== 'undefined' && _currentLang === 'en')
+        ? '⏳ Loading map…'
+        : '⏳ Chargement de la carte…';
+    }
+    // Charger CSS Leaflet si pas déjà fait
+    if (!document.getElementById('leafletCSS')) {
+      const css = document.createElement('link');
+      css.id = 'leafletCSS';
+      css.rel = 'stylesheet';
+      css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(css);
+    }
+    // Charger script Leaflet si pas déjà en cours
+    let script = document.getElementById('leafletScript');
+    if (!script) {
+      script = document.createElement('script');
+      script.id = 'leafletScript';
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      document.head.appendChild(script);
+    }
+    // Attendre le chargement puis re-tenter l'init
+    script.addEventListener('load', () => {
+      console.log('[MiniMap] ✅ Leaflet chargé, re-init...');
+      _initDepositMiniMap();
+    }, { once: true });
+    script.addEventListener('error', () => {
+      console.error('[MiniMap] ❌ Échec chargement Leaflet');
+      if (loader) {
+        loader.textContent = (typeof _currentLang !== 'undefined' && _currentLang === 'en')
+          ? '⚠️ Could not load map'
+          : '⚠️ Impossible de charger la carte';
+      }
+    }, { once: true });
     return;
   }
   _depositMiniMap = L.map('depositMiniMap', {
