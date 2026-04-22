@@ -52,7 +52,7 @@
 <!-- Manifest PWA -->
 <link rel="manifest" href="/ghostub/manifest.json">
 
-<script type="module" src="app.js?v=90"></script>
+<script type="module" src="app.js?v=91"></script>
 
 <style>
 /* ══════════════════════════════════════════════════════════
@@ -1072,7 +1072,7 @@ button,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:mani
   background:radial-gradient(ellipse at 50% 45%,rgba(14,20,35,.95) 0%,rgba(2,4,8,.98) 70%);
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  text-align:center;padding:32px;z-index:100;
+  text-align:center;padding:32px;z-index:2000;
   opacity:0;pointer-events:none;transition:opacity .5s;
 }
 .deposit-success.show{opacity:1;pointer-events:all;}
@@ -1127,7 +1127,7 @@ button,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:mani
   /* TOUJOURS visible : position fixed en bas du viewport */
   position:fixed;bottom:0;left:50%;transform:translateX(-50%);
   width:100%;max-width:390px;
-  z-index:50;
+  z-index:1000;
   display:flex;justify-content:space-around;
   padding:10px 0 6px;padding-bottom:calc(6px + var(--sab));
   border-top:1px solid rgba(232,160,48,.10);
