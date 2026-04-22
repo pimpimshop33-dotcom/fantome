@@ -7178,6 +7178,12 @@ function setLoading(btn, loading, defaultText) {
 window.setLoading = setLoading;
 
 window.setNav = (id) => {
+  // Si on switch vers un autre onglet, vibration légère (feedback tactile)
+  const current = document.querySelector('.nav-item.active');
+  const isSwitch = current && current.id !== id;
+  if (isSwitch) {
+    try { window.HapticsService?.tap?.(); } catch(_) {}
+  }
   document.querySelectorAll('.nav-item').forEach(n => {
     n.classList.remove('active');
     n.setAttribute('aria-current', 'false');
