@@ -136,6 +136,13 @@ const LANGS = {
     dep_lettre_signature: '— ancré ici, à jamais',
     dep_seal_btn: 'Sceller le fantôme',
     dep_seal_hint: 'ancré à ta position actuelle, en un geste',
+    // Phase 1b v101 — La Nappe (bottom sheet)
+    dep_tool_lieu: 'Lieu',
+    dep_tool_rules: 'Règles',
+    dep_tool_media: 'Média',
+    dep_tool_identity: 'Identité',
+    dep_sheet_title: 'Réglages du fantôme',
+    dep_sheet_done: 'Terminer',
     dep_loc_placeholder: 'Nom du lieu (rue, café, parc…)',
     dep_loc_searching: 'Recherche du lieu…',
     dep_emoji_placeholder: 'Emoji (👻)',
@@ -662,6 +669,13 @@ const LANGS = {
     dep_lettre_signature: '— anchored here, forever',
     dep_seal_btn: 'Seal the ghost',
     dep_seal_hint: 'anchored to your current spot, in one tap',
+    // Phase 1b v101 — The Sheet (bottom sheet)
+    dep_tool_lieu: 'Place',
+    dep_tool_rules: 'Rules',
+    dep_tool_media: 'Media',
+    dep_tool_identity: 'Identity',
+    dep_sheet_title: 'Ghost settings',
+    dep_sheet_done: 'Done',
     dep_loc_placeholder: 'Place name (street, café, park…)',
     dep_loc_searching: 'Looking up place…',
     dep_emoji_placeholder: 'Emoji (👻)',
@@ -6098,7 +6112,7 @@ window.depositGhost = async () => {
     document.getElementById('chainMapLabel').textContent = 'Placer le prochain point sur la carte';
     document.getElementById('chainMapPreview').style.display = 'none';
     window._chainNextCoords = null;
-    depositBtn.textContent = t.dep_deposit_btn || '👻 Déposer le fantôme';
+    depositBtn.textContent = t.dep_seal_btn || t.dep_deposit_btn || 'Sceller le fantôme';
     depositBtn.disabled = false;
     clearAudio(); clearPhoto(); clearVideo();
     document.getElementById('depositSuccess').classList.add('show');
@@ -6153,7 +6167,7 @@ window.depositGhost = async () => {
     const detail = e?.message ? ` (${e.message})` : '';
     err.textContent = (t.dep_err_generic || 'Erreur lors du dépôt — vérifie ta connexion et réessaie.') + detail;
     console.warn('depositGhost error:', e);
-    depositBtn.textContent = t.dep_deposit_btn || '👻 Ancrer ce fantôme';
+    depositBtn.textContent = t.dep_seal_btn || t.dep_deposit_btn || 'Sceller le fantôme';
     depositBtn.disabled = false;
   }
 };
@@ -6669,7 +6683,7 @@ window.showScreen = (id, fromPopstate = false) => {
     const depBtn = document.getElementById('depositBtn');
     if (t3) t3.textContent = t.dep_pane3_title;
     if (s3) s3.textContent = t.dep_pane3_sub;
-    if (depBtn) depBtn.textContent = t.dep_deposit_btn || '👻 Ancrer ce fantôme';
+    if (depBtn) depBtn.textContent = t.dep_seal_btn || t.dep_deposit_btn || 'Sceller le fantôme';
     // Reset champs bizTitle/bizDesc
     const bizTitle = document.getElementById('bizTitle');
     const bizDesc  = document.getElementById('bizDesc');
@@ -6810,7 +6824,7 @@ window.toggleBusinessMode = () => {
     if (t3b) t3b.textContent = t.dep_pane3_title;
     if (s3b) s3b.textContent = t.dep_pane3_sub;
     const depBtnB = document.getElementById('depositBtn');
-    if (depBtnB) depBtnB.textContent = t.dep_deposit_btn || '👻 Ancrer ce fantôme';
+    if (depBtnB) depBtnB.textContent = t.dep_seal_btn || t.dep_deposit_btn || 'Sceller le fantôme';
   }
 };
 
@@ -7594,6 +7608,75 @@ function setWizardStep(n) {
   if (n === 2) setTimeout(_initDepositMiniMap, 80);
   if (n === 3) updatePremiumUI(); // Basculer aperçu/contenu Premium à l'affichage de l'étape 3
 }
+
+// ═══════════════════════════════════════════════════════════
+//  PHASE 1b "LA NAPPE" v101 — bottom sheet à onglets
+// ═══════════════════════════════════════════════════════════
+
+window.openLettreSheet = (tab = 'lieu') => {
+  const sheet = document.getElementById('lettreSheet');
+  const overlay = document.getElementById('lettreSheetOverlay');
+  if (!sheet || !overlay) return;
+  sheet.classList.add('open');
+  overlay.classList.add('open');
+  sheet.setAttribute('aria-hidden', 'false');
+  overlay.setAttribute('aria-hidden', 'false');
+  // Switch to requested tab
+  if (typeof window.switchLettreTab === 'function') window.switchLettreTab(tab);
+  // Init the mini map when opening on 'lieu' (deferred so layout settles)
+  if (tab === 'lieu') {
+    setTimeout(() => {
+      try { _initDepositMiniMap(); } catch (_) {}
+    }, 120);
+  }
+  // Update Premium gating UI when opening rules/media (chain, dedicated, future, video)
+  if (tab === 'rules' || tab === 'media') {
+    try { if (typeof updatePremiumUI === 'function') updatePremiumUI(); } catch (_) {}
+  }
+};
+
+window.closeLettreSheet = () => {
+  const sheet = document.getElementById('lettreSheet');
+  const overlay = document.getElementById('lettreSheetOverlay');
+  if (sheet) { sheet.classList.remove('open'); sheet.setAttribute('aria-hidden', 'true'); }
+  if (overlay) { overlay.classList.remove('open'); overlay.setAttribute('aria-hidden', 'true'); }
+};
+
+window.switchLettreTab = (tab) => {
+  // Tabs
+  document.querySelectorAll('.lettre-sheet-tab').forEach(b => {
+    const isActive = b.dataset.tab === tab;
+    b.classList.toggle('active', isActive);
+    b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+  // Panes
+  document.querySelectorAll('.lettre-sheet-pane').forEach(p => {
+    p.classList.toggle('active', p.dataset.pane === tab);
+  });
+  // Tools row visual sync (highlight which tool was tapped)
+  document.querySelectorAll('.lettre-tool').forEach(b => b.classList.remove('active'));
+  const toolMap = { lieu: 'toolBtnLieu', rules: 'toolBtnRules', media: 'toolBtnMedia', identity: 'toolBtnIdentity' };
+  const toolBtn = document.getElementById(toolMap[tab]);
+  if (toolBtn) toolBtn.classList.add('active');
+  // If switching to lieu after sheet is already open, refresh map size
+  if (tab === 'lieu') {
+    setTimeout(() => {
+      try {
+        if (_depositMiniMap && typeof _depositMiniMap.invalidateSize === 'function') {
+          _depositMiniMap.invalidateSize();
+        } else { _initDepositMiniMap(); }
+      } catch (_) {}
+    }, 80);
+  }
+};
+
+// Close sheet on Escape key (accessibility)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const sheet = document.getElementById('lettreSheet');
+    if (sheet && sheet.classList.contains('open')) window.closeLettreSheet();
+  }
+});
 
 window.pickEmoji = (el, emoji) => {
   document.querySelectorAll('.emoji-opt').forEach(e => {
