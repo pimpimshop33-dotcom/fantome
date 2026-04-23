@@ -147,6 +147,18 @@ const LANGS = {
     dep_sheet_biz_title: "Réglages de l'offre",
     dep_sheet_biz_badge: '✦ Commerce',
     dep_sheet_biz_hint: 'Visible 50m max · 1 mois · réglages auto',
+    // Phase 1d v103 — Galerie de fichiers Premium
+    prem_attach_label: 'Documents',
+    prem_attach_sub: 'PDF, JPG, PNG · jusqu\'à 3 fichiers',
+    dep_attach_label: '📎 Documents (optionnel)',
+    dep_attach_btn: 'Ajouter un fichier',
+    dep_attach_count_hint: '3 fichiers maximum · 10 Mo chacun',
+    dep_attach_remaining: 'emplacements restants',
+    dep_attach_full_hint: 'Maximum atteint — retire un fichier pour en ajouter',
+    dep_attach_full: 'Maximum 3 fichiers atteints',
+    dep_attach_too_big: 'Fichier trop lourd (max 10 Mo)',
+    dep_attach_wrong_type: 'Format non supporté (PDF, JPG, PNG uniquement)',
+    dep_attach_locked: 'Fichiers joints réservés au Premium',
     dep_loc_placeholder: 'Nom du lieu (rue, café, parc…)',
     dep_loc_searching: 'Recherche du lieu…',
     dep_emoji_placeholder: 'Emoji (👻)',
@@ -684,6 +696,18 @@ const LANGS = {
     dep_sheet_biz_title: 'Offer settings',
     dep_sheet_biz_badge: '✦ Commerce',
     dep_sheet_biz_hint: 'Visible within 50m · 1 month · auto-set',
+    // Phase 1d v103 — File gallery Premium
+    prem_attach_label: 'Files',
+    prem_attach_sub: 'PDF, JPG, PNG · up to 3 files',
+    dep_attach_label: '📎 Files (optional)',
+    dep_attach_btn: 'Add a file',
+    dep_attach_count_hint: '3 files max · 10 MB each',
+    dep_attach_remaining: 'slot(s) left',
+    dep_attach_full_hint: 'Maximum reached — remove a file to add another',
+    dep_attach_full: 'Maximum 3 files reached',
+    dep_attach_too_big: 'File too large (max 10 MB)',
+    dep_attach_wrong_type: 'Unsupported format (PDF, JPG, PNG only)',
+    dep_attach_locked: 'File attachments are Premium only',
     dep_loc_placeholder: 'Place name (street, café, park…)',
     dep_loc_searching: 'Looking up place…',
     dep_emoji_placeholder: 'Emoji (👻)',
@@ -2542,6 +2566,114 @@ window.clearVideo = () => {
   document.getElementById('videoPreview').innerHTML = '';
 };
 
+// ── PHASE 1d v103 — GALERIE DE FICHIERS (PDF, JPG, PNG) Premium ─
+const ATTACH_MAX_COUNT = 3;
+const ATTACH_MAX_SIZE = 10 * 1024 * 1024; // 10 Mo
+const ATTACH_ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+
+window._pendingAttachments = window._pendingAttachments || []; // [{ file, name, type, size, blobUrl }]
+
+function _humanSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' Ko';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' Mo';
+}
+function _attachIcon(type) {
+  if (type === 'application/pdf') return '📄';
+  if (type && type.startsWith('image/')) return '🖼️';
+  return '📎';
+}
+function _renderAttachmentsList() {
+  const list = document.getElementById('attachmentsList');
+  const wrap = document.getElementById('step3AttachmentsWrap');
+  if (!list) return;
+  const items = window._pendingAttachments || [];
+  list.innerHTML = items.map((a, i) => {
+    const isImg = a.type && a.type.startsWith('image/');
+    const thumb = isImg && a.blobUrl
+      ? `<div class="attachment-thumb"><img src="${a.blobUrl}" alt=""></div>`
+      : `<div class="attachment-thumb">${_attachIcon(a.type)}</div>`;
+    const safeName = (a.name || 'fichier').replace(/[<>"']/g, '');
+    return `<div class="attachment-item">
+      ${thumb}
+      <div class="attachment-info">
+        <div class="attachment-name">${safeName}</div>
+        <div class="attachment-meta">${_humanSize(a.size || 0)}</div>
+      </div>
+      <button type="button" class="attachment-remove" onclick="removeAttachment(${i})" aria-label="Retirer ce fichier">✕</button>
+    </div>`;
+  }).join('');
+  if (wrap) wrap.classList.toggle('attachments-full', items.length >= ATTACH_MAX_COUNT);
+  const hint = document.getElementById('attachmentsCountHint');
+  if (hint) {
+    if (items.length === 0) {
+      hint.textContent = (t.dep_attach_count_hint || '3 fichiers maximum · 10 Mo chacun');
+    } else {
+      const left = ATTACH_MAX_COUNT - items.length;
+      hint.textContent = left > 0
+        ? (left + ' / ' + ATTACH_MAX_COUNT + ' ' + (t.dep_attach_remaining || 'emplacements restants'))
+        : (t.dep_attach_full_hint || 'Maximum atteint — retire un fichier pour en ajouter');
+    }
+  }
+}
+
+window.triggerAttachments = () => {
+  if (!isPremium) {
+    showToast('info', t.dep_attach_locked || t.dep_video_locked || 'Fonctionnalité réservée Premium', 3000);
+    return;
+  }
+  if ((window._pendingAttachments || []).length >= ATTACH_MAX_COUNT) {
+    showToast('warning', t.dep_attach_full || 'Maximum 3 fichiers atteints', 2500);
+    return;
+  }
+  document.getElementById('attachmentsInput').click();
+};
+
+window.handleAttachments = (input) => {
+  const files = Array.from(input.files || []);
+  if (!files.length) return;
+  const current = window._pendingAttachments || [];
+  let rejectedSize = 0, rejectedType = 0, rejectedCount = 0;
+  for (const file of files) {
+    if (current.length >= ATTACH_MAX_COUNT) { rejectedCount++; continue; }
+    const type = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : '');
+    if (!ATTACH_ALLOWED_TYPES.includes(type)) { rejectedType++; continue; }
+    if (file.size > ATTACH_MAX_SIZE) { rejectedSize++; continue; }
+    const isImg = type.startsWith('image/');
+    const blobUrl = isImg ? URL.createObjectURL(file) : null;
+    current.push({ file, name: file.name, type, size: file.size, blobUrl });
+  }
+  window._pendingAttachments = current;
+  if (rejectedType) showToast('warning', t.dep_attach_wrong_type || 'Format non supporté (PDF, JPG, PNG uniquement)', 3500);
+  if (rejectedSize) showToast('warning', t.dep_attach_too_big || 'Fichier trop lourd (max 10 Mo)', 3500);
+  if (rejectedCount) showToast('info', t.dep_attach_full || 'Maximum 3 fichiers atteints', 2500);
+  input.value = '';
+  _renderAttachmentsList();
+};
+
+window.removeAttachment = (index) => {
+  const items = window._pendingAttachments || [];
+  const item = items[index];
+  if (!item) return;
+  if (item.blobUrl) { try { URL.revokeObjectURL(item.blobUrl); } catch(_) {} }
+  items.splice(index, 1);
+  window._pendingAttachments = items;
+  _renderAttachmentsList();
+};
+
+window.clearAttachments = () => {
+  const items = window._pendingAttachments || [];
+  for (const a of items) {
+    if (a.blobUrl) { try { URL.revokeObjectURL(a.blobUrl); } catch(_) {} }
+  }
+  window._pendingAttachments = [];
+  const list = document.getElementById('attachmentsList');
+  if (list) list.innerHTML = '';
+  const wrap = document.getElementById('step3AttachmentsWrap');
+  if (wrap) wrap.classList.remove('attachments-full');
+  _renderAttachmentsList();
+};
+
 
 async function uploadMedia(uid) {
   let audioUrl = null;
@@ -2585,7 +2717,26 @@ async function uploadMedia(uid) {
     fd.append('folder', 'ghostub/videos');
     videoUrl = await uploadToCloudinary(fd, 'video');
   }
-  return { audioUrl, photoUrl, videoUrl };
+  // Phase 1d v103 — upload des fichiers joints (PDF + images), max 3
+  let attachments = null;
+  if (Array.isArray(window._pendingAttachments) && window._pendingAttachments.length > 0) {
+    attachments = [];
+    for (const a of window._pendingAttachments) {
+      try {
+        const fd = new FormData();
+        fd.append('file', a.file);
+        fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        fd.append('folder', 'ghostub/files');
+        // 'auto' laisse Cloudinary détecter le type (image vs raw pour PDF)
+        const url = await uploadToCloudinary(fd, 'auto');
+        if (url) attachments.push({ url, name: a.name, type: a.type, size: a.size });
+      } catch (e) {
+        console.warn('attachment upload failed:', a.name, e);
+      }
+    }
+    if (attachments.length === 0) attachments = null;
+  }
+  return { audioUrl, photoUrl, videoUrl, attachments };
 }
 
 
@@ -3054,6 +3205,9 @@ function updatePremiumUI() {
       premiumHtml: null }, // chainContent géré séparément
     { id: 'premSection_dedicated', icon: '💌', label: t.prem_dedicated_label || 'Pour quelqu\'un', sub: t.prem_dedicated_sub || 'Ghost secret réservé à une seule personne',
       premiumHtml: null }, // dedicatedContent géré séparément
+    // Phase 1d v103 — Galerie de fichiers
+    { id: 'premSection_attachments', icon: '📎', label: t.prem_attach_label || 'Documents', sub: t.prem_attach_sub || 'PDF, JPG, PNG · jusqu\'à 3 fichiers',
+      premiumHtml: `<label class="form-label" style="display:flex;align-items:center;justify-content:space-between;"><span>${t.dep_attach_label || '📎 Documents (optionnel)'}</span><span style="font-size:9px;background:rgba(255,200,80,.15);border:1px solid rgba(255,200,80,.3);border-radius:8px;padding:2px 6px;color:rgba(255,200,80,.8);">👑 Premium</span></label><button class="media-btn" onclick="triggerAttachments()" type="button"><span class="media-icon">📎</span><span>${t.dep_attach_btn || 'Ajouter un fichier'}</span><span style="margin-left:auto;font-size:10px;opacity:.45;">PDF, JPG, PNG</span></button>` },
   ];
 
   const _badge = (txt) => `<span class="badge-premium">✦ Premium</span>`;
@@ -3072,6 +3226,10 @@ function updatePremiumUI() {
   if (chainContent) chainContent.style.display = isPremium ? 'flex' : 'none';
   const dedContent = document.getElementById('dedicatedContent');
   if (dedContent) dedContent.style.display = isPremium ? 'block' : 'none';
+  // Phase 1d : afficher/masquer le conteneur des fichiers joints + render la liste
+  const attachContent = document.getElementById('attachmentsContent');
+  if (attachContent) attachContent.style.display = isPremium ? 'block' : 'none';
+  if (typeof _renderAttachmentsList === 'function') _renderAttachmentsList();
   // Badge avatar Premium
   const avatar = document.getElementById('profileAvatar');
   if (avatar) {
@@ -6066,12 +6224,12 @@ window.depositGhost = async () => {
     if (!cooldownCheck.ok) { err.textContent = cooldownCheck.reason; return; }
   }
   const depositBtn = document.getElementById('depositBtn');
-  const hasMedia = !!(window._pendingAudioBlob || window._pendingPhotoFile || window._pendingVideoFile);
+  const hasMedia = !!(window._pendingAudioBlob || window._pendingPhotoFile || window._pendingVideoFile || (Array.isArray(window._pendingAttachments) && window._pendingAttachments.length > 0));
   setLoading(depositBtn, true);
   depositBtn.textContent = hasMedia ? '⬆ Upload…' : '';
 
   try {
-    const { audioUrl, photoUrl, videoUrl } = await uploadMedia(currentUser.uid + '_' + Date.now());
+    const { audioUrl, photoUrl, videoUrl, attachments } = await uploadMedia(currentUser.uid + '_' + Date.now());
     if (hasMedia) depositBtn.textContent = t.dep_btn_saving;
     const chainHint = isPremium ? document.getElementById('chainHint').value.trim() : null;
     const chainNext = isPremium ? (window._chainNextCoords || null) : null;
@@ -6085,6 +6243,7 @@ window.depositGhost = async () => {
       anonymous: anon, secret: secret || false,
       dedicatedTo: (isPremium && document.getElementById('dedicatedUidInput')?.value.trim()) || null,
       audioUrl: audioUrl || null, photoUrl: photoUrl || null, videoUrl: videoUrl || null,
+      attachments: (isPremium && Array.isArray(attachments) && attachments.length > 0) ? attachments : null,
       chainHint: (isPremium && chainHint) || null,
       chainLat: chainNext ? chainNext.lat : null,
       chainLng: chainNext ? chainNext.lng : null,
@@ -6122,7 +6281,7 @@ window.depositGhost = async () => {
     window._chainNextCoords = null;
     depositBtn.textContent = t.dep_seal_btn || t.dep_deposit_btn || 'Sceller le fantôme';
     depositBtn.disabled = false;
-    clearAudio(); clearPhoto(); clearVideo();
+    clearAudio(); clearPhoto(); clearVideo(); clearAttachments();
     document.getElementById('depositSuccess').classList.add('show');
     // Ghost dédié sans UID : afficher le lien de partage
     if (isPremium && !document.getElementById('dedicatedUidInput')?.value.trim()) {
