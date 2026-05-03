@@ -52,7 +52,7 @@
 <!-- Manifest PWA -->
 <link rel="manifest" href="/ghostub/manifest.json">
 
-<script type="module" src="app.js?v=104"></script>
+<script type="module" src="app.js?v=105"></script>
 
 <style>
 /* ══════════════════════════════════════════════════════════
@@ -2619,7 +2619,10 @@ button, [role="button"], input, textarea, select,
       <span id="ptrText">data-i18n="misc_ptr_release">Relâcher pour actualiser</span>
     </div>
     <div class="radar-header">
-      <div class="radar-title" data-i18n="radar_area_title">Aux alentours</div>
+      <div>
+        <div class="radar-title" data-i18n="radar_area_title">Aux alentours</div>
+        <div id="userCoords" style="font-size:10px;color:var(--spirit-dim);opacity:.55;margin-top:2px;letter-spacing:.5px;font-family:'Instrument Sans',sans-serif;" aria-label="Coordonnées GPS"></div>
+      </div>
       <div style="display:flex;gap:6px;align-items:center;">
         <button class="audio-toggle" id="audioToggleBtn" onclick="toggleAudioEnabled()" aria-label="Activer/désactiver les sons" title="Sons">🔊</button>
         <button class="refresh-btn" onclick="loadNearbyGhosts()" aria-label="Invoquer les présences proches" data-tip="Invoquer" data-i18n="radar_invoke_btn">↻ Invoquer</button>
