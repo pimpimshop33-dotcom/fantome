@@ -3323,7 +3323,7 @@ function _renderPricingCards() {
         <div style="font-size:11px;color:var(--warm-dim);display:flex;align-items:center;gap:5px;"><span style="color:rgba(100,220,160,.8);">✓</span> ${isEn ? 'Ghost chain 🔗' : 'Chaîne fantômes 🔗'}</div>
         <div style="font-size:11px;color:var(--warm-dim);display:flex;align-items:center;gap:5px;"><span style="color:rgba(100,220,160,.8);">✓</span> ${isEn ? 'Future message 📅' : 'Message futur 📅'}</div>
       </div>
-      <button id="stripeBtn" onclick="startStripeCheckout('premium')" style="width:100%;padding:13px;background:linear-gradient(135deg,rgba(168,180,255,.25),rgba(168,180,255,.1));border:1px solid rgba(168,180,255,.5);border-radius:13px;color:var(--ether);font-family:'Instrument Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;touch-action:manipulation;">${t.stripe_btn_premium || '✦ Become Premium Hunter'}</button>
+      <button id="stripeBtn" onclick="startStripeCheckout('premium')" style="position:relative;width:100%;padding:13px;background:linear-gradient(135deg,rgba(168,180,255,.25),rgba(168,180,255,.1));border:1px solid rgba(168,180,255,.5);border-radius:13px;color:var(--ether);font-family:'Instrument Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;touch-action:manipulation;opacity:.85;">${t.stripe_btn_premium || '✦ Become Premium Hunter'}<span style="display:inline-block;margin-left:8px;font-size:10px;background:rgba(255,200,80,.2);color:rgba(255,220,140,.95);border:1px solid rgba(255,200,80,.35);border-radius:6px;padding:2px 7px;font-weight:600;letter-spacing:.5px;vertical-align:middle;">🔜 ${isEn ? 'Soon' : 'Bientôt'}</span></button>
     </div>
     <!-- Commerce -->
     <div style="background:linear-gradient(160deg,rgba(255,200,80,.06),rgba(255,200,80,.02));border:1px solid rgba(255,200,80,.25);border-radius:16px;padding:16px;margin-bottom:10px;">
@@ -3340,7 +3340,7 @@ function _renderPricingCards() {
         <div style="font-size:11px;color:var(--warm-dim);display:flex;align-items:center;gap:5px;"><span style="color:rgba(255,200,80,.8);">✓</span> ${isEn ? 'Promo code built-in' : 'Code promo intégré'}</div>
         <div style="font-size:11px;color:var(--warm-dim);display:flex;align-items:center;gap:5px;"><span style="color:rgba(255,200,80,.8);">✓</span> ${isEn ? 'Openings dashboard' : 'Dashboard ouvertures'}</div>
       </div>
-      <button id="stripeBtnCommerce" onclick="startStripeCheckout('commerce')" style="width:100%;padding:13px;background:linear-gradient(135deg,rgba(255,200,80,.2),rgba(255,200,80,.06));border:1px solid rgba(255,200,80,.4);border-radius:13px;color:rgba(255,200,80,.9);font-family:'Instrument Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;touch-action:manipulation;">${t.stripe_btn_commerce || '🏪 Activate Commerce Plan'}</button>
+      <button id="stripeBtnCommerce" onclick="startStripeCheckout('commerce')" style="position:relative;width:100%;padding:13px;background:linear-gradient(135deg,rgba(255,200,80,.2),rgba(255,200,80,.06));border:1px solid rgba(255,200,80,.4);border-radius:13px;color:rgba(255,200,80,.9);font-family:'Instrument Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;touch-action:manipulation;opacity:.85;">${t.stripe_btn_commerce || '🏪 Activate Commerce Plan'}<span style="display:inline-block;margin-left:8px;font-size:10px;background:rgba(255,200,80,.2);color:rgba(255,220,140,.95);border:1px solid rgba(255,200,80,.35);border-radius:6px;padding:2px 7px;font-weight:600;letter-spacing:.5px;vertical-align:middle;">🔜 ${isEn ? 'Soon' : 'Bientôt'}</span></button>
     </div>
     <!-- Code promo discret -->
     <div id="codeSection" style="padding:4px 0;">
@@ -3977,6 +3977,9 @@ function watchMyGhostResonances() {
     snap.docChanges().forEach(change => {
       if (change.type === 'modified') {
         const g = change.doc.data();
+        // v104 : ne pas notifier l'utilisateur pour le welcome ghost (techniquement
+        // attribué à son UID pour passer les Firestore Rules, mais ce n'est pas son ghost).
+        if (g._welcome) return;
         const id = change.doc.id;
         const prev = parseInt(localStorage.getItem('prev_reso_' + id) || '0');
         const curr = g.resonances || 0;
@@ -4184,7 +4187,10 @@ const timeRemaining = g => {
 
 
 // ══════════════════════════════════════════════════════════
-// FEATURE 1 : FANTÔME GARANTI AU 1er LANCEMENT
+// FEATURE 1 : FANTÔME GARANTI AU 1er LANCEMENT (v104)
+// Refondu : signé "Ghostub" (équipe), stats authentiques à zéro,
+// flag _welcome utilisé pour exclure ce ghost des compteurs perso
+// du user (ex: watchMyGhostResonances).
 // ══════════════════════════════════════════════════════════
 async function _seedWelcomeGhost() {
   if (!currentUser || currentUser.isAnonymous) return;
@@ -4198,8 +4204,8 @@ async function _seedWelcomeGhost() {
     const fields = buildGeohashFields(_wLat, _wLng);
     await addDoc(collection(db, COLL.GHOSTS), {
       message: _currentLang === 'en'
-        ? 'Welcome to Ghostub. Someone left this message just for you. Walk around to find more — each place hides a secret. Leave your own trace for the next wanderer.'
-        : 'Bienvenue sur Ghostub. Quelqu’un a laissé ce message pour toi. Promène-toi pour en découvrir d’autres — chaque lieu cache un secret. Laisse ta propre trace pour le prochain passant.',
+        ? 'Welcome to Ghostub. Each place around you can hide a message — left by someone who passed before. Walk a little, listen, and you will find them. When you are ready, leave your own trace. Someone, one day, will discover it. — The Ghostub team'
+        : 'Bienvenue sur Ghostub. Chaque lieu autour de toi peut cacher un message — laissé par quelqu’un qui est passé avant. Marche un peu, écoute, et tu les trouveras. Quand tu seras prêt, laisse ta propre trace. Quelqu’un, un jour, la découvrira. — L’équipe Ghostub',
       emoji: '👻',
       lat: _wLat,
       lng: _wLng,
@@ -4207,15 +4213,15 @@ async function _seedWelcomeGhost() {
       radius: '30m',
       duration: '7j',
       maxOpenCount: 0,
-      anonymous: true,
-      author: 'Spectre_Errant',
-      authorUid: currentUser.uid,
+      anonymous: false,
+      author: 'Ghostub',
+      authorUid: currentUser.uid, // imposé par les Firestore Rules ; filtré via _welcome côté client
       geohash: fields.geohash5 || fields.geohash,
       geohash4: fields.geohash4,
       expired: false,
       createdAt: serverTimestamp(),
-      resonances: Math.floor(Math.random()*3)+1,
-      openCount: Math.floor(Math.random()*6)+2,
+      resonances: 0,
+      openCount: 0,
       _welcome: true,
     });
     localStorage.setItem(key, '1');
@@ -5843,7 +5849,7 @@ window.openGhost = async (id) => {
     }
 
     const secretBtn = document.getElementById('secretBtn');
-    if (isOwner && !selectedGhost.businessMode) {
+    if (isOwner && !selectedGhost.businessMode && !selectedGhost._welcome) {
       secretBtn.style.display = 'block';
       if (selectedGhost.secret) {
         secretBtn.textContent = t.dep_secret_on || '🔮 Mode secret activé';
