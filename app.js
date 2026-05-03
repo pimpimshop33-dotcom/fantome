@@ -1231,6 +1231,9 @@ let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
 let recordingInterval = null;
+// v105 : variable d'état pour le mode de dépôt (au lieu de lire style.display)
+let _depositMode = 'normal'; // 'normal' | 'business'
+window._depositMode = _depositMode;
 
 // ── ANALYTICS LÉGER ─────────────────────────────────────
 // Stocke les événements localement + log console (extensible vers Firebase Analytics)
@@ -4057,6 +4060,15 @@ window.logout = async () => {
   Analytics.track('logout');
   _stopNotifIntervals();
   if (_unsubResonances) { _unsubResonances(); _unsubResonances = null; }
+  // v105 : nettoyer le whisper listener (memory leak + faux notifs cross-comptes)
+  if (typeof window._stopWhisperListener === 'function') window._stopWhisperListener();
+  // v105 : reset state globals pour éviter pollution entre comptes
+  nearbyGhosts = [];
+  selectedGhost = null;
+  userLat = null;
+  userLng = null;
+  _depositMode = 'normal';
+  window._depositMode = _depositMode;
   await signOut(auth);
 };
 
@@ -6094,6 +6106,10 @@ function _startWhisperListener() {
     () => {} // ignorer les erreurs silencieusement
   );
 }
+// v105 : helper de cleanup exposé pour le logout
+window._stopWhisperListener = () => {
+  if (_whisperUnsub) { try { _whisperUnsub(); } catch(_){} _whisperUnsub = null; }
+};
 
 window.resonate = async () => {
   const btn = document.getElementById('resonanceBtn');
@@ -6241,7 +6257,8 @@ window.depositGhost = async () => {
     const chainNext = isPremium ? (window._chainNextCoords || null) : null;
     const openCondition = getSelectedCond();
     const openHour = openCondition === 'hour' ? document.getElementById('condHourInput').value : null;
-    const openAfterGhostId = (openCondition === 'after' && isPremium) ? document.getElementById('condAfterInput').value.trim() : null;
+    // v105 : feature 'after' supprimée
+    const openAfterGhostId = null;
     const openDate = openCondition === 'future' ? document.getElementById('condFutureInput').value : null;
     // ── Dépôt via WorldService.createGhost() ────────────────────────────
     const ghostData = {
@@ -6257,8 +6274,8 @@ window.depositGhost = async () => {
       openHour: openHour || null,
       openAfterGhostId: openAfterGhostId || null,
       openDate: openDate || null,
-      businessMode: (isPremium && document.getElementById('businessExtra')?.style.display !== 'none') || false,
-      promoCode: (isPremium && document.getElementById('businessExtra')?.style.display !== 'none') ? (document.getElementById('promoCode')?.value.trim() || null) : null,
+      businessMode: (isPremium && _depositMode === 'business') || false,
+      promoCode: (isPremium && _depositMode === 'business') ? (document.getElementById('promoCode')?.value.trim() || null) : null,
     };
     const ghostId = await WorldService.createGhost(ghostData, userLat, userLng,
       { uid: currentUser.uid, displayName: currentUser.displayName, email: currentUser.email }
@@ -6278,6 +6295,9 @@ window.depositGhost = async () => {
     if (promoEl) promoEl.value = '';
     const bizExtra = document.getElementById('businessExtra');
     if (bizExtra) bizExtra.style.display = 'none';
+    // v105 : reset l'état du mode dépôt après succès
+    _depositMode = 'normal';
+    window._depositMode = _depositMode;
     const bizIcon = document.getElementById('businessToggleIcon');
     if (bizIcon) bizIcon.textContent = '○';
     const bizBtn = document.getElementById('businessToggleBtn');
@@ -6920,9 +6940,11 @@ window.toggleBusinessMode = () => {
   const btn        = document.getElementById('businessToggleBtn');
   const subLabel   = document.getElementById('bizToggleSubLabel');
 
-  const activating = bizForm.style.display === 'none';
+  const activating = _depositMode !== 'business';
 
   if (activating) {
+    _depositMode = 'business';
+    window._depositMode = _depositMode;
     // Remettre à l'étape 1 et scroller en haut
     if (typeof setWizardStep === 'function') setWizardStep(1);
     document.getElementById('screenDeposit')?.querySelector('.scroll')?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -6975,6 +6997,8 @@ window.toggleBusinessMode = () => {
     // Phase 1c : synchroniser la nappe (masque tabs Règles/Identité, badge ✦ Commerce)
     _applyLettreBizMode(true);
   } else {
+    _depositMode = 'normal';
+    window._depositMode = _depositMode;
     // Retour au formulaire normal
     normalForm.style.display = 'block';
     bizForm.style.display    = 'none';
@@ -7011,15 +7035,11 @@ window.selectCond = (btn) => {
     showToast('info', t.dep_cond_premium, 3500);
     return;
   }
-  if (btn.dataset.cond === 'after' && !isPremium) {
-    showToast('info', t.dep_cond_premium, 3000);
-    return;
-  }
+  // v105: feature 'after' supprimée (redondante avec chaîne de fantômes Premium)
   btn.closest('.cond-selector').querySelectorAll('.cond-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   const cond = btn.dataset.cond;
   document.getElementById('condExtraHour')?.classList.toggle('show', cond === 'hour');
-  document.getElementById('condExtraAfter')?.classList.toggle('show', cond === 'after');
   document.getElementById('condExtraFuture')?.classList.toggle('show', cond === 'future');
   // Pré-remplir la date min à demain
   if (cond === 'future') {
@@ -7098,18 +7118,8 @@ function isConditionMet(ghost) {
   }
 
   if (cond === 'after') {
-    const reqId = ghost.openAfterGhostId;
-    if (!reqId) return { ok: true };
-    const already = getDiscoveredIds().includes(reqId);
-    if (already) return { ok: true };
-    return {
-      ok: false,
-      icon: '🔗',
-      title: t.blocked_after_title,
-      sub: t.blocked_after_sub,
-      timer: null,
-      timerLabel: null
-    };
+    // v105 : feature supprimée. Anciens ghosts avec cond=after passent automatiquement.
+    return { ok: true };
   }
 
   if (cond === 'future') {
@@ -7483,7 +7493,7 @@ async function reverseGeocode(lat, lng) {
 
 window.wizardNext = (step) => {
   if (step === 1) {
-    const isBizMode = document.getElementById('businessDepositForm').style.display !== 'none';
+    const isBizMode = _depositMode === 'business';
 
     if (isBizMode) {
       // Validation mode Commerce : titre obligatoire
